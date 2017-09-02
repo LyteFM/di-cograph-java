@@ -63,14 +63,14 @@ class RecSubProblem extends RootedTreeNode {
 	 * Creates a recursive subproblem defined by the supplied graph.
 	 * @param graph The graph defining this subproblem.
 	 */
-	RecSubProblem(Graph graph) {
+	RecSubProblem(GraphHandle graphHandle) {
 		
 		this();
 
 		Hashtable<Vertex,MDTreeLeafNode> leaves = new Hashtable<Vertex,MDTreeLeafNode>();
 		
 		// Create leaves for each vertex.
-		Iterator<Vertex> vertexIt = graph.getVertices().iterator();
+		Iterator<Vertex> vertexIt = graphHandle.getVertices().iterator();
 		while (vertexIt.hasNext()) {
 			Vertex current = vertexIt.next();
 			MDTreeLeafNode currentLeaf = new MDTreeLeafNode(current);

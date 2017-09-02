@@ -6,10 +6,18 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Hashtable;
 
+import org.jgrapht.*;
+import org.jgrapht.graph.*;
+
 /* 
  * A simple, undirected graph.
  */
-public class Graph {
+public class GraphHandle {
+
+	// new: Use SimpleGraph from JGraphT for the base Graph.
+    public UndirectedGraph <String, DefaultEdge> graph;
+
+
 	
 	// The delimiter separating vertices from their list of neighbours in
 	// the input file format for graphs.
@@ -36,8 +44,9 @@ public class Graph {
 	 * an entry for y as a neighbour of x.
 	 * @param file The name of the input file specifying the graph.
 	 */
-	public Graph(String file) {		
-		vertices = buildFromFile(file);
+	public GraphHandle(String file) {
+        graph = new SimpleGraph<>(DefaultEdge.class);
+	    vertices = buildFromFile(file);
 	}
 
 	/*
@@ -77,10 +86,16 @@ public class Graph {
                 	vertex = new Vertex(vertexLabel);
                 	vertices.put(vertexLabel,vertex);
                 }
+
+                // todo: New: use JGraphT
+                if(!graph.containsVertex(vertexLabel)){
+                    graph.addVertex(vertexLabel);
+                }
                        
                 // Create vertices for each of its neighbours (if they haven't already
                 // been created) and add them as neigbhours of this vertex.
                 for (int i = 0; i < neighbourLabels.length; i++) {
+
                 	if (vertices.containsKey(neighbourLabels[i])) {
                 		vertex.addNeighbour(vertices.get(neighbourLabels[i])); 
                 	}
@@ -89,6 +104,17 @@ public class Graph {
                 		vertices.put(neighbourLabels[i],unseenNeighbour);
                 		vertex.addNeighbour(unseenNeighbour);
                 	}
+
+                	// todo: use JGraphT
+                    if( !graph.containsVertex(neighbourLabels[i])){
+                	    // if not present, create Vertex for neighbor
+                        graph.addVertex(neighbourLabels[i]);
+                    }
+                    if( !graph.containsEdge(vertexLabel, neighbourLabels[i])){
+                        // if not present, add Edge.
+                        graph.addEdge(vertexLabel, neighbourLabels[i]);
+                    }
+
                 } 
             }
         } 

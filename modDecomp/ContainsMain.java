@@ -9,7 +9,7 @@ public class ContainsMain {
 
 	public static void main(String[] args) {
 
-		Graph g = new Graph(args[0]);
+		GraphHandle g = new GraphHandle(args[0]);
 		System.out.println(g.getMDTree());
 	}
 }

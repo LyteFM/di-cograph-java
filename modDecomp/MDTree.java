@@ -8,7 +8,7 @@ class MDTree extends RootedTree {
 	/*
 	 * Creates the modular decomposition tree for the supplied graph.
 	 */
-	protected MDTree(Graph g) {
+	protected MDTree(GraphHandle g) {
 		super();
 		setRoot(buildMDTree(g));			
 	}
@@ -18,7 +18,7 @@ class MDTree extends RootedTree {
 	 * Builds the modular decomposition tree for the supplied graph.
 	 * @return The root of the constructed modular decomposition tree.
 	 */
-	private MDTreeNode buildMDTree(Graph g) {
+	private MDTreeNode buildMDTree(GraphHandle g) {
 		
 		if (g.getNumVertices() == 0) { return null; }
 		
