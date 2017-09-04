@@ -14,20 +14,28 @@ class MDTreeLeafNode extends MDTreeNode {
 	// The leaf node representation of the neighbours of the vertex 
 	// associated with this leaf node.
 	private LinkedList<MDTreeLeafNode> neighbours;
-	
+
+	private LinkedList<String> neighbourNames;
+
+
+
 	// The neighbours of this leaf node in different subproblems than the one
 	// this node is contained in.
 	private LinkedList<MDTreeLeafNode> alpha;
 	
 	// Has this leaf node been used as a pivot.
 	private boolean visited;
+
+	// todo: neu
+	private String vertexString;
 	
 
 	/* The default constructor. */
 	protected MDTreeLeafNode() {
 		super();
-		alpha = new LinkedList<MDTreeLeafNode>();
-		neighbours = new LinkedList<MDTreeLeafNode>();
+		alpha = new LinkedList<>();
+		neighbours = new LinkedList<>();
+		neighbourNames = new LinkedList<>();
 		visited = false;
 		vertex = null;
 	}
@@ -41,6 +49,11 @@ class MDTreeLeafNode extends MDTreeNode {
 	protected MDTreeLeafNode(Vertex vertex) {
 		this();
 		this.vertex = vertex;		
+	}
+
+	protected MDTreeLeafNode(String vertexString){
+		this();
+		this.vertexString = vertexString;
 	}
 	
 	
@@ -143,6 +156,23 @@ class MDTreeLeafNode extends MDTreeNode {
 	 * representation of the vertex with which it is associated.
 	 */
 	public String toString() {
-		return vertex.toString();
-	}	
+	    if(vertex != null)
+		    return vertex.toString();
+	    else
+	        return vertexString;
+	}
+
+    public String getVertexString() {
+        return vertexString;
+    }
+
+    public LinkedList<String> getNeighbourNames() {
+        return neighbourNames;
+    }
+
+    protected void addNeighbourName(String neighbour) {
+        neighbourNames.add(neighbour);
+    }
+
+
 }

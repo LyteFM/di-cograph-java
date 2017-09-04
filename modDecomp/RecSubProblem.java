@@ -1,6 +1,10 @@
 package dicograph.modDecomp;
 
+import org.jgrapht.UndirectedGraph;
+import org.jgrapht.graph.DefaultEdge;
+
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -68,7 +72,7 @@ class RecSubProblem extends RootedTreeNode {
 		this();
 
 		Hashtable<Vertex,MDTreeLeafNode> leaves = new Hashtable<Vertex,MDTreeLeafNode>();
-		
+
 		// Create leaves for each vertex.
 		Iterator<Vertex> vertexIt = graphHandle.getVertices().iterator();
 		while (vertexIt.hasNext()) {
@@ -95,7 +99,46 @@ class RecSubProblem extends RootedTreeNode {
 			addChild(current);
 		}
 				
-	}	
+	}
+
+	RecSubProblem(UndirectedGraph<String, DefaultEdge> graph){
+
+	    this();
+
+	    // Initial capacity for no rehash
+        HashMap <String, MDTreeLeafNode> nodeToLeaves = new HashMap<>( graph.vertexSet().size()*4/3 );
+
+        // create a leaf for each vertex:
+        for( String currVertex : graph.vertexSet() ) {
+            MDTreeLeafNode currentLeaf = new MDTreeLeafNode(currVertex);
+            nodeToLeaves.put(currVertex, currentLeaf);
+        }
+
+        // todo: List, maybe? Wenn nur in Reihenfolge durchlaufen.
+        // todo: Nicht String, sondern MDTreeLeafNode als Graph-Typ nutzen???
+
+        // Adds the vertex neighbors of the graph as leaf neighbors of the recursion tree:
+        for ( MDTreeLeafNode currLeaf : nodeToLeaves.values()){
+            for( DefaultEdge outEdge : graph.edgesOf( currLeaf.getVertexString() ) ){
+                String neighbourName = graph.getEdgeTarget(outEdge);
+
+                MDTreeLeafNode neighbor = nodeToLeaves.get ( neighbourName ); // only get here
+
+                if(!currLeaf.getNeighbours().contains(neighbor)) {
+                    currLeaf.addNeighbour(neighbor);
+                    System.err.println("error: " + neighbourName + " added by new but not by old");
+                }
+                currLeaf.addNeighbourName(neighbourName);
+            }
+        }
+
+        // Add leaf nodes to the problem for recursion: (move to upper loop?)
+        for( MDTreeLeafNode leafNode : nodeToLeaves.values()){
+            addChild(leafNode);
+        }
+
+
+    }
 	
 	
 	/* Resets this subproblem's attributes to their default values. */

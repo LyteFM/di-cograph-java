@@ -91,6 +91,7 @@ public class GraphHandle {
                 if(!graph.containsVertex(vertexLabel)){
                     graph.addVertex(vertexLabel);
                 }
+                //
                        
                 // Create vertices for each of its neighbours (if they haven't already
                 // been created) and add them as neigbhours of this vertex.
@@ -114,6 +115,7 @@ public class GraphHandle {
                         // if not present, add Edge.
                         graph.addEdge(vertexLabel, neighbourLabels[i]);
                     }
+                    //
 
                 } 
             }
@@ -148,8 +150,12 @@ public class GraphHandle {
 
 	
 	/* Returns the modular decomposition tree for this graph. */
-	public MDTree getMDTree() {
+	public MDTree getMDTreeOld() {
 		return new MDTree(this);
+	}
+
+	public MDTree getMDTree(){
+		return new MDTree(graph);
 	}
 	
 	

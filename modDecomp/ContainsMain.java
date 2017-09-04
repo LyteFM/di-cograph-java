@@ -10,6 +10,7 @@ public class ContainsMain {
 	public static void main(String[] args) {
 
 		GraphHandle g = new GraphHandle(args[0]);
-		System.out.println(g.getMDTree());
+		System.out.println("Old Code:\n" + g.getMDTreeOld());
+		// System.out.println("\nNew Code:\n" + g.getMDTree());
 	}
 }
