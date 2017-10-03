@@ -11,7 +11,7 @@ import java.util.StringTokenizer;
 /**
  * Created by Fynn Leitow on 05.08.17.
  */
-public class Main {
+public class TestMain {
 
     public static void main(String[] args) throws Exception {
         System.out.println("Hello world!");
