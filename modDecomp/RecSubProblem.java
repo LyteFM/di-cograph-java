@@ -199,7 +199,8 @@ class RecSubProblem extends RootedTreeNode {
 		thisProblem.numberByComp();
 		thisProblem.numberByTree();
 		
-		// Get the factorizing permutation.
+		// 2.2.: Transforms the list of ordered trees into a factorizing permutation.
+        // "A factorizing permutation is a permutation of a graph’s vertices in which the strong modules appear consecutively."
 		thisProblem.refinement();				
 		thisProblem.promotion();
 				
@@ -306,7 +307,7 @@ class RecSubProblem extends RootedTreeNode {
 				newModule.addChildrenFrom(left);										
 				FactPermElement oldLeft = left;					
 				left = (FactPermElement) left.getLeftSibling();
-				oldLeft.remove();
+				oldLeft.removeSubtree();
 				addedPivotNeighbours = true;
 			}
 			
@@ -315,7 +316,7 @@ class RecSubProblem extends RootedTreeNode {
 				newModule.addChildrenFrom(right);					
 				FactPermElement oldRight = right;
 				right = (FactPermElement) right.getRightSibling();
-				oldRight.remove();
+				oldRight.removeSubtree();
 				addedPivotNonNeighbours = true;
 			}
 			
@@ -873,13 +874,13 @@ class RecSubProblem extends RootedTreeNode {
 					currentParent.replaceThisByItsChildren();
 				}	
 				if (currentParent.hasNoChildren()) {
-					currentParent.remove();
+					currentParent.removeSubtree();
 				}
 			}
 			// Parent is not a root, must split the node.
 			else {					
 																		
-				current.remove();				
+				current.removeSubtree();
 									
 				if (currentParent.hasOnlyOneChild()) { 
 					newSibling = (MDTreeNode)currentParent.getFirstChild();
@@ -1188,9 +1189,9 @@ class RecSubProblem extends RootedTreeNode {
 				(RecSubProblem) currentSubProblem.getRightSibling();
 		}
 		if (currentSubProblem != null) {
-			currentSubProblem.remove(); 
+			currentSubProblem.removeSubtree();
 			MDTreeNode root = (MDTreeNode)currentSubProblem.getFirstChild();
-			root.remove();
+			root.removeSubtree();
 			return root;
 		}
 		else { return null; }
@@ -1199,7 +1200,8 @@ class RecSubProblem extends RootedTreeNode {
 	
 	/* 
 	 * Selects a pivot vertex from this recursive subproblem and partitions
-	 * the recursion tree according to its neighbours.
+	 * the recursion tree according to its neighbours:
+	 * N(x), x, N_bar(x)
 	 * Has the side effect that this recursive subproblem will no longer
 	 * be the current recursive subproblem, which is necessary to achieve 
 	 * linear time; returns the new current recursive subproblem.
@@ -1212,7 +1214,7 @@ class RecSubProblem extends RootedTreeNode {
 	 
 		RecSubProblem neighbourProblem = processNeighbours(pivot);
 						
-		pivot.remove();
+		pivot.removeSubtree();
 		RecSubProblem pivotProblem = new RecSubProblem(pivot);
 		
 		// Pivot forms part of first connected component of the
@@ -1274,7 +1276,7 @@ class RecSubProblem extends RootedTreeNode {
 				neighbourProblem.addChild(currentNeighbour);
 			}
 			else {
-				pullForward(currentNeighbour);
+				pullForward(currentNeighbour); // only used here (ref. 2.1 in paper)
 			}
 		}
 		return neighbourProblem;
@@ -1316,7 +1318,7 @@ class RecSubProblem extends RootedTreeNode {
 		}		
 		
 		if (currentLayer.hasNoChildren()) {
-			currentLayer.remove();
+			currentLayer.removeSubtree();
 		}
 	}
 

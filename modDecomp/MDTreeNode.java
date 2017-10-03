@@ -392,7 +392,7 @@ class MDTreeNode extends RootedTreeNode {
 			toPromote = nextToPromote;
 		}
 		
-		if (hasNoChildren() && !isALeaf()) { remove(); }
+		if (hasNoChildren() && !isALeaf()) { removeSubtree(); }
 		else if (hasOnlyOneChild()) { replaceWith(getFirstChild()); }
 	}
 	
@@ -436,7 +436,7 @@ class MDTreeNode extends RootedTreeNode {
 						
 			if (currentChild.getType() == type && type.isDegenerate()) {					
 					addChildrenFrom(currentChild);
-					currentChild.remove();
+					currentChild.removeSubtree();
 			}
 			
 			currentChild = nextChild;

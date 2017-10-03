@@ -38,7 +38,7 @@ class RootedTreeNode {
 	 * @param child The child of this node.
 	 */ 
 	protected void addChild(RootedTreeNode child) {
-		child.remove();
+		child.removeSubtree();
 		if (firstChild != null) {
 			firstChild.leftSibling = child;
 			child.rightSibling = firstChild;
@@ -75,7 +75,7 @@ class RootedTreeNode {
 	 * @param replacement The node to replace this one in the tree.
 	 */
 	protected void replaceWith(RootedTreeNode replacement) {
-		replacement.remove();
+		replacement.removeSubtree();
 		replacement.leftSibling = leftSibling;
 		replacement.rightSibling = rightSibling;
 		if (leftSibling != null) {leftSibling.rightSibling = replacement; }
@@ -91,9 +91,9 @@ class RootedTreeNode {
 	
 	/* 
 	 * Removes this node from its tree.  The node takes its children with it
-	 * as it is removed, and so this method might be better called 'removeSubtree'.
+	 * as it is removed.
 	 */
-	protected void remove() {
+	protected void removeSubtree() {
 		if (parent != null) { parent.numChildren--; }
 		if (leftSibling != null) { leftSibling.rightSibling = rightSibling; }
 		if (rightSibling != null) { rightSibling.leftSibling = leftSibling; }
@@ -111,7 +111,7 @@ class RootedTreeNode {
 	 * @param justBefore The node to be made this node's left sibling.
 	 */
 	protected void insertBefore(RootedTreeNode justBefore) {
-		remove();
+		removeSubtree();
 		leftSibling = justBefore.leftSibling;
 		if (justBefore.leftSibling != null) { 
 			justBefore.leftSibling.rightSibling = this; 
@@ -140,7 +140,7 @@ class RootedTreeNode {
 	 * @param justAfter The node to be made this node's right sibling.
 	 */
 	protected void insertAfter(RootedTreeNode justAfter) {
-		remove();
+		removeSubtree();
 		
 		rightSibling = justAfter.rightSibling;
 		if (justAfter.rightSibling != null) {
@@ -167,7 +167,7 @@ class RootedTreeNode {
 		if (parent.firstChild == this) { return; }
 		
 		RootedTreeNode newRightSibling = parent.firstChild;
-		remove();
+		removeSubtree();
 		insertBefore(newRightSibling);		
 	}
 
@@ -246,7 +246,7 @@ class RootedTreeNode {
 			currentChild.insertBefore(this);
 			currentChild = nextChild;
 		}
-		this.remove();
+		this.removeSubtree();
 	}
 	
 	
@@ -259,7 +259,7 @@ class RootedTreeNode {
 		RootedTreeNode currentChild = getFirstChild();
 		while (currentChild != null) {
 			RootedTreeNode nextChild = currentChild.getRightSibling();
-			currentChild.remove();
+			currentChild.removeSubtree();
 			currentChild = nextChild;
 		}
 		addChild(replacement);
