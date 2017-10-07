@@ -4,6 +4,8 @@ import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.TreeSet;
 
@@ -19,6 +21,21 @@ import ilog.cplex.IloCplex;
  */
 
 public class CplexDiCographEditingSolver {
+
+    // forbidden subgraphs of length 4:
+    static int [] _p4    = {1,0,0, 1,1,0, 0,1,1, 0,0,1};
+    static int [] _n     = {0,0,0, 0,0,0, 0,1,0, 1,1,0};
+    static int [] _n_bar = {1,1,0, 1,0,0, 1,1,1, 1,1,1};
+    static int [][] forbidden_len_4 = {_p4, _n, _n_bar};
+
+    // forbidden subgraphs of length 3:
+    static int [] _p3 = {1,0, 0,1, 0,0};
+    static int [] _a  = {1,0, 0,1, 0,1};
+    static int [] _b  = {0,0, 1,1, 0,1};
+    static int [] _c3 = {1,0, 0,1, 1,0};
+    static int [] _d3 = {1,1, 0,1, 1,0};
+    static int [][] forbidden_len_3 = {_p3, _a, _b, _c3, _d3};
+
 
     // input data
     DirectedGraph<String, DefaultEdge> inputGraph;
@@ -102,19 +119,27 @@ public class CplexDiCographEditingSolver {
 
         solver.addMinimize(this.objFn);
 
-        // lazy constraints for each p4
+        // lazy constraints for each forbidden subgraph
         for (int w = 0; w<this.vertexCount; w++){
             for (x = 0; x<this.vertexCount; x++){
                 if (w!=x){
                     for (y = 0; y<this.vertexCount; y++){
                         if (w!=y && x!=y){
+                            // subgraphs of length 3:
+
+                            // subgraphs of length 4:
                             for (int z = w+1; z<this.vertexCount; z++){
                                 if (x!=z && y!=z){
-                                    IloIntVar vars[] = {E[w][x], E[x][y], E[y][z],
-                                            E[w][y], E[w][z], E[x][z] };
-                                    double vals[] = {1,1,1,-1,-1,-1};
-                                    IloRange range = solver.le(solver.scalProd(vals, vars), 2, "P4_"+w+","+x+","+y+","+z);
-                                    solver.addLazyConstraint(range);
+                                    IloIntVar vars[] = {
+                                                     E[w][x], E[w][y], E[w][z],
+                                            E[x][w],          E[x][y], E[x][z],
+                                            E[y][w], E[w][x],          E[y][z],
+                                            E[z][w], E[z][x], E[z][y]
+                                    };
+                                    for( int[] vals : forbidden_len_4) {
+                                        IloRange range = solver.le(solver.scalProd(vals, vars), 2, "P4_" + w + "," + x + "," + y + "," + z);
+                                        solver.addLazyConstraint(range);
+                                    }
                                 }
                             }
                         }
