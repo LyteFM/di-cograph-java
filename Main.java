@@ -1,7 +1,11 @@
 package dicograph;
 
-import ilog.concert.*;
-import ilog.cplex.*;
+import ilog.concert.IloException;
+import ilog.concert.IloMPModeler;
+import ilog.concert.IloNumVar;
+import ilog.concert.IloObjective;
+import ilog.concert.IloRange;
+import ilog.cplex.IloCplex;
 
 /**
  * Created by Fynn Leitow on 02.10.17.
@@ -21,6 +25,13 @@ public class Main {
             return;
         }
 
+        cplexTest(args);
+
+    }
+
+
+
+    static void cplexTest(String[] args){
         try {
             // Create the modeler/solver object
             IloCplex cplex = new IloCplex();
