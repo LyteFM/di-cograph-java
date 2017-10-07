@@ -23,18 +23,23 @@ import ilog.cplex.IloCplex;
 public class CplexDiCographEditingSolver {
 
     // forbidden subgraphs of length 4:
-    static int [] _p4    = {1,0,0, 1,1,0, 0,1,1, 0,0,1};
-    static int [] _n     = {0,0,0, 0,0,0, 0,1,0, 1,1,0};
-    static int [] _n_bar = {1,1,0, 1,0,0, 1,1,1, 1,1,1};
+    static int [] _p4    = { 1,-1,-1,  1, 1,-1, -1, 1, 1, -1,-1, 1};
+    static int [] _n     = {-1,-1,-1, -1,-1,-1, -1, 1,-1,  1, 1,-1};
+    static int [] _n_bar = { 1, 1,-1,  1,-1,-1,  1, 1, 1,  1, 1, 1};
     static int [][] forbidden_len_4 = {_p4, _n, _n_bar};
+    static String [] forbidden_len_4_names = {"p4", "n", "n_bar"};
+    // threshold = number of ones - 1
+    static int [] threshold_len_4 = {5, 2, 8};
 
     // forbidden subgraphs of length 3:
-    static int [] _p3 = {1,0, 0,1, 0,0};
-    static int [] _a  = {1,0, 0,1, 0,1};
-    static int [] _b  = {0,0, 1,1, 0,1};
-    static int [] _c3 = {1,0, 0,1, 1,0};
-    static int [] _d3 = {1,1, 0,1, 1,0};
+    static int [] _p3 = { 1,-1, -1, 1, -1,-1};
+    static int [] _a  = { 1,-1, -1, 1, -1, 1};
+    static int [] _b  = {-1,-1,  1, 1, -1, 1};
+    static int [] _c3 = { 1,-1, -1, 1,  1,-1};
+    static int [] _d3 = { 1, 1, -1, 1,  1,-1};
     static int [][] forbidden_len_3 = {_p3, _a, _b, _c3, _d3};
+    static String [] forbidden_len_3_names = {"p3", "a", "b", "c3", "d3"};
+    static int [] threshold_len_3 = {1, 2, 2, 2, 3};
 
 
     // input data
@@ -117,27 +122,44 @@ public class CplexDiCographEditingSolver {
             solver.addLe(this.objFn, noOfAdjacencies * cographDistance);
         }
 
-        solver.addMinimize(this.objFn);
+        solver.addMinimize(objFn);
 
+        int w, z, j, k;
         // lazy constraints for each forbidden subgraph
-        for (int w = 0; w<this.vertexCount; w++){
-            for (x = 0; x<this.vertexCount; x++){
+        for (w = 0; w<vertexCount; w++){
+            for (x = 0; x<vertexCount; x++){
                 if (w!=x){
-                    for (y = 0; y<this.vertexCount; y++){
+                    for (y = 0; y<vertexCount; y++){
                         if (w!=y && x!=y){
+                            // todo: oder innere Schleife?
+                            IloIntVar vars_3[] = {
+                                    E[w][x], E[w][y],
+                                    E[x][w],          E[x][y],
+                                    E[y][w], E[y][x]
+                            };
                             // subgraphs of length 3:
+                            for(j = 0; j< forbidden_len_3.length; j++){
+
+                                IloRange range = solver.le(solver.scalProd(
+                                        forbidden_len_4[j], vars_3), threshold_len_3[j],
+                                        forbidden_len_4_names[j] + "_" + w + "," + x + "," + y);
+                                solver.addLazyConstraint(range);
+                            }
 
                             // subgraphs of length 4:
-                            for (int z = w+1; z<this.vertexCount; z++){
-                                if (x!=z && y!=z){
-                                    IloIntVar vars[] = {
+                            for (z = 0; z<vertexCount; z++){
+                                if (w != z && x!=z && y!=z){
+                                    IloIntVar vars_4[] = {
                                                      E[w][x], E[w][y], E[w][z],
                                             E[x][w],          E[x][y], E[x][z],
-                                            E[y][w], E[w][x],          E[y][z],
+                                            E[y][w], E[y][x],          E[y][z],
                                             E[z][w], E[z][x], E[z][y]
                                     };
-                                    for( int[] vals : forbidden_len_4) {
-                                        IloRange range = solver.le(solver.scalProd(vals, vars), 2, "P4_" + w + "," + x + "," + y + "," + z);
+                                    for( k = 0; k< forbidden_len_4.length; k++) {
+
+                                        IloRange range = solver.le(solver.scalProd(
+                                                forbidden_len_4[k], vars_4), threshold_len_4[k],
+                                                forbidden_len_4_names[k] + "_" + w + "," + x + "," + y + "," + z);
                                         solver.addLazyConstraint(range);
                                     }
                                 }
@@ -188,7 +210,10 @@ public class CplexDiCographEditingSolver {
         int noSolutions = solver.getSolnPoolNsolns();
         String solution = "";
         double bestObjectiveValue = solver.getBestObjValue();
+
+        // todo: das hier...
         this.gf.setCographEditDistance((int) Math.round(bestObjectiveValue));
+
         for (int solutionId=0; solutionId<noSolutions; solutionId++){
             if (solver.getObjValue(solutionId)<=bestObjectiveValue){
                 Boolean[][] cograph = new Boolean[this.vertexCount][this.vertexCount];
