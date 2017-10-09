@@ -21,7 +21,7 @@ public class GraphGenerator {
      * @param edgeProbability the probability of a directed edge (u,v) between any two vertices u,v
      * @return the random graph
      */
-    public static SimpleDirectedGraph generateRandomGnp(int numberVertices, double edgeProbability){
+    public static SimpleDirectedGraph<String, DefaultEdge> generateRandomGnp(int numberVertices, double edgeProbability){
 
         SimpleDirectedGraph<String, DefaultEdge> graph = new SimpleDirectedGraph<>(DefaultEdge.class);
 

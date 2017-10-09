@@ -13,6 +13,7 @@ import java.util.Calendar;
 
 import dicograph.graphIO.GraphGenerator;
 import dicograph.graphIO.SimpleMatrixExporter;
+import dicograph.graphIO.SimpleMatrixImporter;
 
 /**
  * Created by Fynn Leitow on 02.10.17.
@@ -43,11 +44,16 @@ public class Main {
         // This will output the full path where the file will be written to...
         System.out.println(logFile.getCanonicalPath());
 
-        BufferedWriter writer = new BufferedWriter(new FileWriter(logFile));
         //
 
         SimpleMatrixExporter<String, DefaultEdge> myExporter = new SimpleMatrixExporter<>();
         myExporter.exportGraph(testGraph, logFile);
+
+        // try importing and exporting again:
+        SimpleDirectedGraph<String,DefaultEdge> testGraph2 = SimpleMatrixImporter.importGraph(logFile);
+        String exp2 = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
+        File expfile = new File(exp2 + "_reimported" + ".txt");
+        myExporter.exportGraph(testGraph2, expfile);
 
     }
 

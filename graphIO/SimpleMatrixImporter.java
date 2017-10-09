@@ -1,26 +1,23 @@
 package dicograph.graphIO;
 
-import org.jgrapht.Graph;
-import org.jgrapht.ext.GraphImporter;
-import org.jgrapht.ext.ImportException;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
-import java.nio.file.Path;
 
 /**
  * Created by Fynn Leitow on 08.10.17.
  */
 public class SimpleMatrixImporter {
 
-    public static SimpleDirectedGraph importGraph(Path file) throws IOException {
+    public static SimpleDirectedGraph<String, DefaultEdge> importGraph(File file) throws IOException {
 
-        InputStream inStream = Files.newInputStream(file);
+        InputStream inStream = Files.newInputStream(file.toPath());
         BufferedReader in = new BufferedReader(new InputStreamReader(inStream));
 
         String line;
@@ -42,7 +39,7 @@ public class SimpleMatrixImporter {
 
                 // read the vertices as Strings
                 for( int i = 0; i< line.length(); i++){
-                    graph.addVertex( String.valueOf(i) );
+                    graph.addVertex( StringVertexFactory.parseInt(i) );
                 }
             } else {
                 if(line.length() != numberVertices){
@@ -57,10 +54,10 @@ public class SimpleMatrixImporter {
                 int isEdge = Character.getNumericValue(c);
                 assert isEdge == 0 || isEdge == 1;
 
-                String outVertex = Integer.toString(rowNumber);
+                String outVertex = StringVertexFactory.parseInt(rowNumber);
 
                 if(isEdge == 1){
-                    graph.addEdge(outVertex, Integer.toString(inVertex));
+                    graph.addEdge(outVertex, StringVertexFactory.parseInt(inVertex));
                 }
 
             }
