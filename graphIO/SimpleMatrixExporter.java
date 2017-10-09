@@ -13,12 +13,23 @@ import java.util.TreeMap;
  */
 public class SimpleMatrixExporter<V,E> implements GraphExporter<V,E>{
 
-    public final String columnDelimiter = "";
-    public final String lineDelimiter = "";
+    public final static String columnDelimiter = "";
+    public final static String lineDelimiter = "";
     private TreeMap<String, V> nameToVertex;
 
+    /**
+     * Empty Constructor
+     */
     public SimpleMatrixExporter(){
         nameToVertex = new TreeMap<>();
+    }
+
+    /**
+     *
+     * @param nameToVertex mapping the names (String) to the vertices
+     */
+    public SimpleMatrixExporter(TreeMap<String, V> nameToVertex){
+        this.nameToVertex = nameToVertex;
     }
 
 
@@ -26,13 +37,20 @@ public class SimpleMatrixExporter<V,E> implements GraphExporter<V,E>{
     public void exportGraph(Graph<V,E> g, Writer writer){
 
         String name;
-        for (V vertex : g.vertexSet()) {
-            // Map vertex names to vertex objects
-            name = vertex.toString();
-            if(nameToVertex.containsKey(name)){
-                throw new IllegalArgumentException("Error: vertex name " + name + " not unique!");
-            } else {
-                nameToVertex.put(name, vertex);
+        if(nameToVertex.isEmpty()) {
+            for (V vertex : g.vertexSet()) {
+                // Map vertex names to vertex objects
+                name = vertex.toString();
+                if (nameToVertex.containsKey(name)) {
+                    throw new IllegalArgumentException("Error: vertex name " + name + " not unique!");
+                } else {
+                    nameToVertex.put(name, vertex);
+                }
+            }
+        } else {
+            if(nameToVertex.size() != g.vertexSet().size()){
+                throw new IllegalArgumentException("Error: Size of vertex set (" + g.vertexSet().size()
+                        + ") and given map of names to vertices (" + nameToVertex.size() + ") differ.");
             }
         }
 
