@@ -105,27 +105,32 @@ public class CplexDiCographEditingSolver {
         this.inputGraph = inputGraph;
         // want the vertex set of the graph in sorted order for easier display and to uniquely define the matrix
         sortedVertexSet = new TreeSet<>(inputGraph.vertexSet());
-        this.parameters = parameters;
-        this.solver = new IloCplex();
+        vertexCount = sortedVertexSet.size();
+
+        solver = new IloCplex();
+        solver.setName("DiCographEditingSolver");
         solutionGraphs = new ArrayList<>();
 
-        this.solver.setName("DiCographEditingSolver");
+        this.parameters = parameters;
+
     }
 
-    public String solve() throws IloException{
+    public List<SimpleDirectedGraph<String,DefaultEdge>> solve() throws IloException{
         this.solver.setName("CplexCographSolver");
 
         // initialize boolean variables as "E_x,y"
+        int x,y;
         this.E = new IloIntVar[vertexCount][vertexCount];
-        for (int x = 0; x< vertexCount; x++){
-            for (int y = x+1; y< vertexCount; y++){
+        for (x = 0; x< vertexCount; x++){
+            for (y = 0; y< vertexCount; y++){
                 this.E[x][y]= solver.boolVar("E_"+x+","+y);
             }
         }
 
 
         DefaultEdge edge;
-        int x = 0, y = 0, i = 0;
+        x = 0; y = 0;
+        int i = 0;
 
         // No diagonal entries as self-loops are excluded:
         int noOfAdjacencies = (this.vertexCount *(this.vertexCount -1));
@@ -139,12 +144,14 @@ public class CplexDiCographEditingSolver {
                     edge = inputGraph.getEdge(sourceVertex, targetVertext);
                     int hasEdge =  edge == null ? 0 :1;
                     assert x != y;
-                    symDiff1Expr[i] = solver.prod((1 - hasEdge), E[x][y]);
+                    System.out.println("init symDiff for x: "+ x + ", y: " + y +"\n");
+                    symDiff1Expr[i] = solver.prod((1 - hasEdge), E[x][y]); // arrayOutOfBound!!
                     symDiff2Expr[i] = solver.prod(hasEdge, solver.diff(1, E[x][y] ));
                     i++;
-                    y++;
                 }
+                y++;
             }
+            y = 0;
             x++;
         }
         this.objFn = solver.sum(solver.sum(symDiff1Expr),solver.sum(symDiff2Expr));
@@ -214,16 +221,18 @@ public class CplexDiCographEditingSolver {
         if (!parameters.isVerbose()){
             solver.setOut(new NullOutputStream());
         }
+        */
 
-        if (this.parameters.isCographAllSolutions()){
+        // all solutions
+        if (parameters[1] != 0){
             solver.setParam(IloCplex.DoubleParam.SolnPoolAGap, 0.0);
             solver.setParam(IloCplex.IntParam.SolnPoolIntensity, 4);
             solver.setParam(IloCplex.IntParam.PopulateLim, 100);
             solver.populate();
         }
-        */
 
-        solver.exportModel("DiCographEdit_" + new Date());
+
+        //solver.exportModel("DiCographEdit_" + new Date());
         boolean ret = solver.solve();
         String solution = "none";
         if (ret) {
@@ -231,9 +240,9 @@ public class CplexDiCographEditingSolver {
         }
         // free memory
         solver.end();
+        System.out.print(solution);
 
-        return solution;
-
+        return solutionGraphs;
     }
 
 
@@ -260,7 +269,7 @@ public class CplexDiCographEditingSolver {
                     solutionGraph.addVertex(vertex);
                 }
 
-                Boolean[][] cograph = new Boolean[this.vertexCount][this.vertexCount];
+                //Boolean[][] cograph = new Boolean[this.vertexCount][this.vertexCount];
                 solution.append("Adjacency Matrix:\n");
                 int x=0, y=0;
 
@@ -271,7 +280,7 @@ public class CplexDiCographEditingSolver {
                             variable = solver.getValue(E[x][y], solutionId);
                         }
                         boolean hasEdge = variable>0.5;
-                        cograph[x][y]=(hasEdge);
+                        //cograph[x][y]=(hasEdge);
                         solution.append( hasEdge ?"1 " : "0 ");
                         if(hasEdge){
                             assert !vertex_x.equals(vertex_y);
@@ -279,13 +288,15 @@ public class CplexDiCographEditingSolver {
                         }
                         y++;
                     }
+                    y = 0;
                     x++;
                     solution.append("\n");
                 }
                 // gf.addCograph(cograph);
                 solutionGraphs.add(solutionGraph);
-                solution.append("\n\n");
-                solution.append(solver.getObjValue(solutionId)+"\n");
+                solution.append("\n\n")
+                        .append(solver.getObjValue(solutionId))
+                        .append("\n");
             }
         }
         return solution.toString();
