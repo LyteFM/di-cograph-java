@@ -1,12 +1,14 @@
 package dicograph.graphIO;
 
 import org.jgrapht.DirectedGraph;
+import org.jgrapht.Graph;
 import org.jgrapht.VertexFactory;
 import org.jgrapht.generate.EmptyGraphGenerator;
 import org.jgrapht.generate.GnmRandomGraphGenerator;
 import org.jgrapht.generate.GnpRandomGraphGenerator;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
+import org.jgrapht.graph.SimpleGraph;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -25,7 +27,7 @@ import static dicograph.modDecomp.MDNodeType.*;
  */
 public class GraphGenerator {
 
-    SecureRandom random;
+    private SecureRandom random;
 
     public GraphGenerator() {
         random = new SecureRandom();
@@ -69,8 +71,27 @@ public class GraphGenerator {
         return graph;
     }
 
+    public SimpleGraph<String,DefaultEdge> generateRandomCograph(int nVertices){
+        SimpleGraph<String,DefaultEdge> graph = new SimpleGraph<>(DefaultEdge.class);
+        generateCograph(graph, nVertices, false);
+
+        // use same method as for Di-Cograph. Only difference:
+        // - value for choosing the type must be 2
+        // - everything else is ok!
+
+        return graph;
+    }
+
     public SimpleDirectedGraph generateRandomDiCograph(int nVertices){
         SimpleDirectedGraph<String, DefaultEdge> graph = new SimpleDirectedGraph<>(DefaultEdge.class);
+        generateCograph(graph, nVertices,true);
+
+        return graph;
+    }
+
+
+    private void generateCograph(Graph<String,DefaultEdge> graph, int nVertices, boolean isDirected){
+
 
         // adds n vertices
         EmptyGraphGenerator<String, DefaultEdge> gen = new EmptyGraphGenerator<>(nVertices);
@@ -85,6 +106,15 @@ public class GraphGenerator {
             moduleVertices.add(vertex);
             modules.add(moduleVertices);
         }
+
+
+
+        // Directed Graphs have one additional MDType.
+        int typeMultiplier;
+        if(isDirected)
+            typeMultiplier = 3;
+        else
+            typeMultiplier =2;
 
         // Pick any number k modules G_i to perform parallel, series or order composition
 
@@ -101,7 +131,7 @@ public class GraphGenerator {
             int k = nToCombine.intValue();
 
             // generates MDNodeType
-            Double mdType = random.nextDouble() * 3;
+            Double mdType = random.nextDouble() * typeMultiplier;
             MDNodeType mdNodeType;
             if(mdType<1){
                 mdNodeType = PARALLEL;
@@ -147,11 +177,9 @@ public class GraphGenerator {
 
             moduleCount = modules.size();
         }
-
-        return graph;
     }
 
-    private static HashSet<String> union(SimpleDirectedGraph<String,DefaultEdge> g, ArrayList<HashSet<String>> modules, MDNodeType type){
+    private static HashSet<String> union(Graph<String,DefaultEdge> g, ArrayList<HashSet<String>> modules, MDNodeType type){
 
         // merge all vertices into the first module
         HashSet<String> ret = new HashSet<>(modules.get(0));
@@ -199,7 +227,7 @@ public class GraphGenerator {
      */
     public SimpleDirectedGraph<String, DefaultEdge> disturbDicograph(SimpleDirectedGraph<String, DefaultEdge> g, int nEdgeEdits){
 
-        HashSet<String> usedEdges = new HashSet<String>(nEdgeEdits*4/3);
+        HashSet<String> usedEdges = new HashSet<>(nEdgeEdits*4/3);
         ArrayList<String> vertices = new ArrayList<>(g.vertexSet());
         int nVertices = vertices.size();
 
