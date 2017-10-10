@@ -1,7 +1,9 @@
 package dicograph.modDecomp;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.ListIterator;
 
 /*
  * A leaf node in a modular decomposition tree.
@@ -10,12 +12,14 @@ class MDTreeLeafNode extends MDTreeNode {
 
 	// The vertex to which this leaf node is in one-to-one correspondance.
 	private Vertex vertex;
+    // To be replaced by this String in the JGraph
+    private String label;
 	
 	// The leaf node representation of the neighbours of the vertex 
 	// associated with this leaf node.
 	private LinkedList<MDTreeLeafNode> neighbours;
 
-	private LinkedList<String> neighbourNames;
+	private ArrayList<String> neighbourNames;
 
 
 
@@ -26,8 +30,7 @@ class MDTreeLeafNode extends MDTreeNode {
 	// Has this leaf node been used as a pivot.
 	private boolean visited;
 
-	// todo: neu
-	private String vertexString;
+
 	
 
 	/* The default constructor. */
@@ -35,7 +38,7 @@ class MDTreeLeafNode extends MDTreeNode {
 		super();
 		alpha = new LinkedList<>();
 		neighbours = new LinkedList<>();
-		neighbourNames = new LinkedList<>();
+		neighbourNames = new ArrayList<>();
 		visited = false;
 		vertex = null;
 	}
@@ -51,9 +54,10 @@ class MDTreeLeafNode extends MDTreeNode {
 		this.vertex = vertex;		
 	}
 
-	protected MDTreeLeafNode(String vertexString){
+	// neu: verwende einen String anstatt Vertex.
+	protected MDTreeLeafNode(String label){
 		this();
-		this.vertexString = vertexString;
+		this.label = label;
 	}
 	
 	
@@ -158,15 +162,30 @@ class MDTreeLeafNode extends MDTreeNode {
 	public String toString() {
 	    if(vertex != null)
 		    return vertex.toString();
-	    else
-	        return vertexString;
+	    else{
+            StringBuilder result = new StringBuilder("(label= " + label);
+
+            result.append(", neighbours: ");
+            boolean firstRun = true;
+
+            for(String name : neighbourNames){
+                if(!firstRun) {
+                    result.append(",");
+                }
+                result.append(name);
+                firstRun = false;
+            }
+            result.append(")");
+
+            return result.toString();
+        }
 	}
 
-    public String getVertexString() {
-        return vertexString;
+    public String getLabel() {
+        return label;
     }
 
-    public LinkedList<String> getNeighbourNames() {
+    public ArrayList<String> getNeighbourNames() {
         return neighbourNames;
     }
 

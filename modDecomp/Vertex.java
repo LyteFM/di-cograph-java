@@ -68,9 +68,9 @@ public class Vertex {
 	 */
 	public String toString() {		
 		
-		String result = "(label=" + label;				
+		String result = "(label= " + label;
 		
-		result += ", neighbours:";
+		result += ", neighbours: ";
 		
 		ListIterator<Vertex> neighboursIt = neighbours.listIterator();
 		
@@ -79,6 +79,6 @@ public class Vertex {
 			result += "," + neighboursIt.next().getLabel();		
 		}
 		
-		return result += ")";		
+		return result + ")";
 	}	
 }

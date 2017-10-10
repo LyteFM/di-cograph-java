@@ -1,7 +1,7 @@
 package dicograph.modDecomp;
 
-import org.jgrapht.UndirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.SimpleGraph;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -9,6 +9,7 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.ListIterator;
+import java.util.Set;
 
 /* 
  * A node in the recursion tree used to compute the modular decomposition tree
@@ -101,7 +102,7 @@ class RecSubProblem extends RootedTreeNode {
 				
 	}
 
-	RecSubProblem(UndirectedGraph<String, DefaultEdge> graph){
+	RecSubProblem(SimpleGraph<String, DefaultEdge> graph){
 
 	    this();
 
@@ -114,29 +115,30 @@ class RecSubProblem extends RootedTreeNode {
             nodeToLeaves.put(currVertex, currentLeaf);
         }
 
-        // todo: List, maybe? Wenn nur in Reihenfolge durchlaufen.
-        // todo: Nicht String, sondern MDTreeLeafNode als Graph-Typ nutzen???
-
         // Adds the vertex neighbors of the graph as leaf neighbors of the recursion tree:
         for ( MDTreeLeafNode currLeaf : nodeToLeaves.values()){
-            for( DefaultEdge outEdge : graph.edgesOf( currLeaf.getVertexString() ) ){
-                String neighbourName = graph.getEdgeTarget(outEdge);
-
-                MDTreeLeafNode neighbor = nodeToLeaves.get ( neighbourName ); // only get here
-
-                if(!currLeaf.getNeighbours().contains(neighbor)) {
-                    currLeaf.addNeighbour(neighbor);
-                    System.err.println("error: " + neighbourName + " added by new but not by old");
+            String currLeafName = currLeaf.getLabel();
+            Set<DefaultEdge> edges = graph.edgesOf( currLeafName );
+            for( DefaultEdge edge : edges ) {
+                String neighbourName = graph.getEdgeTarget(edge);
+                // edges are saved uniquely with source and target!
+                // faster like this than with .getEdge != null
+                if(neighbourName.equals(currLeafName)){
+                    neighbourName = graph.getEdgeSource(edge);
                 }
+
+                MDTreeLeafNode neighbor = nodeToLeaves.get ( neighbourName );
+                // Here: HashMap necessary, List not enough.
+
+                currLeaf.addNeighbour(neighbor);
                 currLeaf.addNeighbourName(neighbourName);
             }
         }
 
-        // Add leaf nodes to the problem for recursion: (move to upper loop?)
+        // Add leaf nodes to the problem for recursion: (move to the upper loop?)
         for( MDTreeLeafNode leafNode : nodeToLeaves.values()){
             addChild(leafNode);
         }
-
 
     }
 	
@@ -148,13 +150,14 @@ class RecSubProblem extends RootedTreeNode {
 		pivot = null;
 	}
 	
-	
+
+	// todo: anpassen!
 	/* 
 	 * Computes the MD tree for this subproblem.  The root of the 
 	 * MD tree becomes the sole child of this subproblem.  
 	 * @return The root of the constructed MD tree.
 	 */
-	protected MDTreeNode solve() {		
+	protected MDTreeNode solve() {
 				
 		// We are currently solving this subproblem.
 		active = true;
@@ -181,7 +184,7 @@ class RecSubProblem extends RootedTreeNode {
 		RecSubProblem currentSubProblem = 
 			(RecSubProblem) thisProblem.getFirstChild();
 		while (currentSubProblem != null) {				
-				MDTreeNode solvedRoot = currentSubProblem.solve();					
+				MDTreeNode solvedRoot = currentSubProblem.solve();
 				currentSubProblem = 
 					(RecSubProblem) solvedRoot.getParent().getRightSibling();
 		}

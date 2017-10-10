@@ -15,7 +15,7 @@ import org.jgrapht.graph.*;
 public class GraphHandle {
 
 	// new: Use SimpleGraph from JGraphT for the base Graph.
-    public UndirectedGraph <String, DefaultEdge> graph;
+    public SimpleGraph <String, DefaultEdge> graph;
 
 
 	
@@ -49,6 +49,10 @@ public class GraphHandle {
 	    vertices = buildFromFile(file);
 	}
 
+	public GraphHandle(SimpleGraph<String,DefaultEdge> graph){
+	    this.graph = graph;
+    }
+
 	/*
 	 * Does the work of reading the file and populating the graph with 
 	 * vertices according to the contents of the file.  See 'Graph(String )'
@@ -70,7 +74,7 @@ public class GraphHandle {
                             	
                 // Determine the current vertex's label.
             	String[] vertexAndNeighbours = line.split(VERTEX_DELIM);
-                String vertexLabel = new String(vertexAndNeighbours[0]);
+                String vertexLabel = vertexAndNeighbours[0];
                 
                 // Determine the current vertex's neighbours.
                 String[] neighbourLabels = vertexAndNeighbours[1].split(NEIGH_DELIM);

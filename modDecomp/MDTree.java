@@ -2,6 +2,7 @@ package dicograph.modDecomp;
 
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.SimpleGraph;
 
 /*
  * A modular decomposition tree of a simple, undirected graph.
@@ -16,7 +17,7 @@ class MDTree extends RootedTree {
 		setRoot(buildMDTree(g));			
 	}
 
-	protected MDTree(UndirectedGraph g) {
+	protected MDTree(SimpleGraph g) {
 		super();
 		setRoot( buildMDTree(g) );
 	}
@@ -37,7 +38,8 @@ class MDTree extends RootedTree {
 		return root;			
 	}
 
-	private MDTreeNode buildMDTree(UndirectedGraph<String, DefaultEdge> g) {
+	// new: use JGraph
+	private MDTreeNode buildMDTree(SimpleGraph<String, DefaultEdge> g) {
 
 		if (g.vertexSet().isEmpty()){
 			return null;
