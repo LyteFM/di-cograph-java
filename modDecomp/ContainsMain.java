@@ -9,8 +9,14 @@ public class ContainsMain {
 
 	public static void main(String[] args) {
 
-		GraphHandle g = new GraphHandle(args[0]);
+	    //String filePath = args[0];
+        String filePath = "importFiles/tedder_test0.txt";
+
+        // old läuft korrekt.
+		GraphHandle g = new GraphHandle(filePath);
 		System.out.println("Old Code:\n" + g.getMDTreeOld());
-		// System.out.println("\nNew Code:\n" + g.getMDTree());
+
+		GraphHandle g2 = new GraphHandle(filePath);
+		System.out.println("\nNew Code:\n" + g2.getMDTree());
 	}
 }

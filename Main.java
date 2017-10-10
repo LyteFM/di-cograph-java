@@ -37,7 +37,7 @@ public class Main {
 //            usage();
 //            return;
 //        }
-        String filePath = "importFiles/sz_14_pr_40";
+        String filePath = "importFiles/sz_15_pr_30";
         File importFile = new File(filePath+ ".txt");
         SimpleDirectedGraph<String, DefaultEdge> importGraph = SimpleMatrixImporter.importGraph(importFile);
 
