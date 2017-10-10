@@ -5,6 +5,7 @@ import org.jgrapht.ext.ExportException;
 import org.jgrapht.ext.MatrixExporter;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
+import org.jgrapht.graph.SimpleGraph;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -16,6 +17,10 @@ import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import dicograph.ILPSolver.CplexDiCographEditingSolver;
 import dicograph.graphIO.GraphGenerator;
@@ -47,9 +52,22 @@ public class Main {
         //testRNG("SHA1PRNG");
         System.out.println("The default PRNG on this system is " + new SecureRandom().getAlgorithm());
 
+        Logger log = Logger.getLogger( "TestLogger" );
+        Handler handler = new ConsoleHandler();
+        handler.setLevel( Level.FINEST );
+        log.addHandler( handler );
+        log.setLevel( Level.FINEST );
+        log.fine( "Alles ist fein!" );
+
         // so den RNG einrichten!
 
+        SimpleGraph<String, DefaultEdge> g = new SimpleGraph<>(DefaultEdge.class);
+        GraphGenerator gen = new GraphGenerator(log);
+        String res = gen.generateRandomCograph(g,14);
 
+        GraphHandle gHand = new GraphHandle(g);
+        String g_res = gHand.getMDTree().toString();
+        System.out.println("\nNew Code:\n" + MDTree.beautify(g_res));
 
     }
 
@@ -111,8 +129,8 @@ public class Main {
         }
     }
 
-    void randImportExportTest() throws IOException, ExportException{
-        GraphGenerator graphGenerator = new GraphGenerator();
+    void randImportExportTest(Logger log) throws IOException, ExportException{
+        GraphGenerator graphGenerator = new GraphGenerator(log);
         SimpleDirectedGraph<String, DefaultEdge> testGraph = graphGenerator.generateRandomGnp(11,0.3);
         System.out.println(testGraph.toString());
 

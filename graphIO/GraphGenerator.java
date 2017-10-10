@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import dicograph.ILPSolver.CplexDiCographEditingSolver;
 import dicograph.modDecomp.MDNodeType;
@@ -28,10 +29,12 @@ import static dicograph.modDecomp.MDNodeType.*;
 public class GraphGenerator {
 
     private SecureRandom random;
+    private Logger logger;
 
-    public GraphGenerator() {
+    public GraphGenerator(Logger log) {
         random = new SecureRandom();
         random.setSeed(new byte[20]);
+        logger = log;
     }
 
 
@@ -71,27 +74,24 @@ public class GraphGenerator {
         return graph;
     }
 
-    public SimpleGraph<String,DefaultEdge> generateRandomCograph(int nVertices){
-        SimpleGraph<String,DefaultEdge> graph = new SimpleGraph<>(DefaultEdge.class);
-        generateCograph(graph, nVertices, false);
+    public String generateRandomCograph(SimpleGraph<String,DefaultEdge> graph, int nVertices){
+
+        return generateCograph(graph, nVertices, false);
 
         // use same method as for Di-Cograph. Only difference:
         // - value for choosing the type must be 2
         // - everything else is ok!
-
-        return graph;
     }
 
-    public SimpleDirectedGraph generateRandomDiCograph(int nVertices){
-        SimpleDirectedGraph<String, DefaultEdge> graph = new SimpleDirectedGraph<>(DefaultEdge.class);
-        generateCograph(graph, nVertices,true);
-
-        return graph;
+    public String generateRandomDirectedCograph(SimpleDirectedGraph<String, DefaultEdge> graph, int nVertices){
+        return generateCograph(graph, nVertices,true);
     }
 
 
-    private void generateCograph(Graph<String,DefaultEdge> graph, int nVertices, boolean isDirected){
+    private String generateCograph(Graph<String,DefaultEdge> graph, int nVertices, boolean isDirected){
 
+        // todo: a) rekursiv bauen b) MDTree- und LeafNodes verwenden
+        StringBuilder mdTree = new StringBuilder();
 
         // adds n vertices
         EmptyGraphGenerator<String, DefaultEdge> gen = new EmptyGraphGenerator<>(nVertices);
@@ -127,8 +127,9 @@ public class GraphGenerator {
         while (moduleCount > 1) {
 
             // generates k: number of modules to join
-            Double nToCombine = random.nextDouble() * moduleCount;
-            int k = nToCombine.intValue();
+            Double nToCombine = random.nextDouble() * (moduleCount - 1);
+            int k = nToCombine.intValue() + 2;
+            // range of k must be from 2 to moduleCount!
 
             // generates MDNodeType
             Double mdType = random.nextDouble() * typeMultiplier;
@@ -141,9 +142,10 @@ public class GraphGenerator {
                 mdNodeType = ORDER;
             }
 
+            // todo: Das muss ich überprüfen mit den Indizes!!!
             ArrayList<Integer> possibleIndices = new ArrayList<>();
             for( int i = 0; i<k; i++){
-                possibleIndices.add(k);
+                possibleIndices.add(i);
             }
             // generates k indices to choose the G_i
             ArrayList<Integer> chosenIndices = new ArrayList<>();
@@ -151,58 +153,67 @@ public class GraphGenerator {
                 // 1.: get a random temp index for the list of possible indices
                 int size = possibleIndices.size();
                 Double nextIndex = random.nextDouble() * size;
-                int tempIndex = nextIndex.intValue();
+                int tempIndex = nextIndex.intValue(); // can't be too large!
 
                 // 2.: get the real index and update the lists
                 int realIndex = possibleIndices.get(tempIndex);
-                possibleIndices.remove(realIndex);
+                possibleIndices.remove(tempIndex);
                 chosenIndices.add(realIndex);
             }
 
             ArrayList<HashSet<String>> chosenModules = new ArrayList<>();
             for( int i : chosenIndices){
-                chosenModules.add(modules.get(i));
+                chosenModules.add(modules.get(i)); // ok jetzt wirft er schon hier.
+                modules.remove(i);
             }
 
             // PARALLEL ("0"): disjoint union - the modules G_i together are now the graph
             // SERIES ("1"):   union of the modules plus all possible arcs between members of different G_i
             // ORDER ("1->"):  union of k modules plus all possible arcs from G_i to G_j with 1 <= i < j <= k
+            String msg = "merging "+ mdNodeType + ": ";
+            for(HashSet module : chosenModules){
+                msg += module;
+            }
+            logger.fine(msg);
             HashSet<String> mergedModule = union(graph, chosenModules, mdNodeType);
 
             // remove the old modules and add the new one
-            for( int i = 0; i< k; i++){
-                modules.remove(i);
-            }
+            //for( int i : chosenIndices){
+            //     // todo: Fehler hier!!! Index >= size!
+            //}
             modules.add(mergedModule);
 
             moduleCount = modules.size();
         }
+
+        return mdTree.toString();
     }
 
-    private static HashSet<String> union(Graph<String,DefaultEdge> g, ArrayList<HashSet<String>> modules, MDNodeType type){
+    private HashSet<String> union(Graph<String,DefaultEdge> g, ArrayList<HashSet<String>> selectedModules, MDNodeType type){
 
         // merge all vertices into the first module
-        HashSet<String> ret = new HashSet<>(modules.get(0));
+        HashSet<String> ret = new HashSet<>(selectedModules.get(0));
 
-        for( int i=1; i< modules.size(); i++){
-            ret.addAll(modules.get(i));
+        for( int i=1; i< selectedModules.size(); i++){
+            ret.addAll(selectedModules.get(i));
         }
 
         // PARALLEL: no modifications on g, only on modules
         if (type == SERIES || type == ORDER){
-            for(int i = 0; i< modules.size(); i++){
-                for (int j = 0; j< modules.size(); j++){
+            for(int i = 0; i< selectedModules.size(); i++){
+                for (int j = 0; j< selectedModules.size(); j++){
 
                     if(i != j) {
                         // ORDER: add directed edges in module order only
                         // SERIES: add edges in both directions
 
                         if(type == SERIES || i <j) {
-                            HashSet<String> firstModule = modules.get(i);
-                            HashSet<String> secondModule = modules.get(i);
+                            HashSet<String> firstModule = selectedModules.get(i);
+                            HashSet<String> secondModule = selectedModules.get(j);
 
                             for(String outVertex : firstModule){
                                 for(String inVertex : secondModule){
+                                    logger.fine("Adding: " + outVertex + "->" + inVertex);
                                     assert !inVertex.equals(outVertex);
                                     g.addEdge(outVertex, inVertex);
                                 }
@@ -210,7 +221,6 @@ public class GraphGenerator {
                         }
                     }
                 }
-
             }
         }
 
