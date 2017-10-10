@@ -154,6 +154,7 @@ public class GraphHandle {
 
 	
 	/* Returns the modular decomposition tree for this graph. */
+	@Deprecated
 	public MDTree getMDTreeOld() {
 		return new MDTree(this);
 	}
@@ -171,4 +172,6 @@ public class GraphHandle {
 	public String toString() {
 		return vertices.values().toString();
 	}
+
+
 }
