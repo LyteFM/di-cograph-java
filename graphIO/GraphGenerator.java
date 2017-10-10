@@ -2,6 +2,7 @@ package dicograph.graphIO;
 
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.VertexFactory;
+import org.jgrapht.generate.EmptyGraphGenerator;
 import org.jgrapht.generate.GnmRandomGraphGenerator;
 import org.jgrapht.generate.GnpRandomGraphGenerator;
 import org.jgrapht.graph.DefaultEdge;
@@ -12,8 +13,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 
 import dicograph.ILPSolver.CplexDiCographEditingSolver;
+import dicograph.modDecomp.MDNodeType;
+
+import static dicograph.modDecomp.MDNodeType.*;
 
 /**
  * Created by Fynn Leitow on 08.10.17.
@@ -27,9 +32,7 @@ public class GraphGenerator {
         random.setSeed(new byte[20]);
     }
 
-    public GraphGenerator(SecureRandom secureRandom){
-        random = secureRandom;
-    }
+
 
 
     /**
@@ -42,7 +45,8 @@ public class GraphGenerator {
 
         SimpleDirectedGraph<String, DefaultEdge> graph = new SimpleDirectedGraph<>(DefaultEdge.class);
 
-        GnpRandomGraphGenerator generator = new GnpRandomGraphGenerator(numberVertices, edgeProbability, random, false);
+        GnpRandomGraphGenerator<String, DefaultEdge> generator =
+                new GnpRandomGraphGenerator<>(numberVertices, edgeProbability, random, false);
         generator.generateGraph(graph, new StringVertexFactory(),null);
 
         return graph;
@@ -58,19 +62,133 @@ public class GraphGenerator {
 
         SimpleDirectedGraph<String, DefaultEdge> graph = new SimpleDirectedGraph<>(DefaultEdge.class);
 
-        GnmRandomGraphGenerator generator = new GnmRandomGraphGenerator(numberVertices, numberEdges, random, false, false);
+        GnmRandomGraphGenerator<String, DefaultEdge> generator =
+                new GnmRandomGraphGenerator<>(numberVertices, numberEdges, random, false, false);
         generator.generateGraph(graph, new StringVertexFactory(), null);
 
         return graph;
     }
 
-    public SimpleDirectedGraph generateRandomDicograph(int nVertices){
+    public SimpleDirectedGraph generateRandomDiCograph(int nVertices){
         SimpleDirectedGraph<String, DefaultEdge> graph = new SimpleDirectedGraph<>(DefaultEdge.class);
 
+        // adds n vertices
+        EmptyGraphGenerator<String, DefaultEdge> gen = new EmptyGraphGenerator<>(nVertices);
+        gen.generateGraph(graph, new StringVertexFactory(), null);
 
+        // Idea: Save the Graph in the same MDTree-String-Format as in Tedder's Code for easy comparison
+
+        // init the List of modules
+        ArrayList<HashSet<String>> modules = new ArrayList<>();
+        for(String vertex : graph.vertexSet()){
+            HashSet<String> moduleVertices = new HashSet<>();
+            moduleVertices.add(vertex);
+            modules.add(moduleVertices);
+        }
+
+        // Pick any number k modules G_i to perform parallel, series or order composition
+
+        // Picking all modules should be much less likely than picking two.
+        //      idea: add option for nextGaussian.
+        //          Either: Take abs, closer to 0 means choose one, further away means any
+        //          or: distribute around nVertices/2
+
+        int moduleCount = nVertices;
+        while (moduleCount > 1) {
+
+            // generates k: number of modules to join
+            Double nToCombine = random.nextDouble() * moduleCount;
+            int k = nToCombine.intValue();
+
+            // generates MDNodeType
+            Double mdType = random.nextDouble() * 3;
+            MDNodeType mdNodeType;
+            if(mdType<1){
+                mdNodeType = PARALLEL;
+            } else if (mdType < 2){
+                mdNodeType = SERIES;
+            } else {
+                mdNodeType = ORDER;
+            }
+
+            ArrayList<Integer> possibleIndices = new ArrayList<>();
+            for( int i = 0; i<k; i++){
+                possibleIndices.add(k);
+            }
+            // generates k indices to choose the G_i
+            ArrayList<Integer> chosenIndices = new ArrayList<>();
+            for( int i = 0; i<k; i++){
+                // 1.: get a random temp index for the list of possible indices
+                int size = possibleIndices.size();
+                Double nextIndex = random.nextDouble() * size;
+                int tempIndex = nextIndex.intValue();
+
+                // 2.: get the real index and update the lists
+                int realIndex = possibleIndices.get(tempIndex);
+                possibleIndices.remove(realIndex);
+                chosenIndices.add(realIndex);
+            }
+
+            ArrayList<HashSet<String>> chosenModules = new ArrayList<>();
+            for( int i : chosenIndices){
+                chosenModules.add(modules.get(i));
+            }
+
+            // PARALLEL ("0"): disjoint union - the modules G_i together are now the graph
+            // SERIES ("1"):   union of the modules plus all possible arcs between members of different G_i
+            // ORDER ("1->"):  union of k modules plus all possible arcs from G_i to G_j with 1 <= i < j <= k
+            HashSet<String> mergedModule = union(graph, chosenModules, mdNodeType);
+
+            // remove the old modules and add the new one
+            for( int i = 0; i< k; i++){
+                modules.remove(i);
+            }
+            modules.add(mergedModule);
+
+            moduleCount = modules.size();
+        }
 
         return graph;
     }
+
+    private static HashSet<String> union(SimpleDirectedGraph<String,DefaultEdge> g, ArrayList<HashSet<String>> modules, MDNodeType type){
+
+        // merge all vertices into the first module
+        HashSet<String> ret = new HashSet<>(modules.get(0));
+
+        for( int i=1; i< modules.size(); i++){
+            ret.addAll(modules.get(i));
+        }
+
+        // PARALLEL: no modifications on g, only on modules
+        if (type == SERIES || type == ORDER){
+            for(int i = 0; i< modules.size(); i++){
+                for (int j = 0; j< modules.size(); j++){
+
+                    if(i != j) {
+                        // ORDER: add directed edges in module order only
+                        // SERIES: add edges in both directions
+
+                        if(type == SERIES || i <j) {
+                            HashSet<String> firstModule = modules.get(i);
+                            HashSet<String> secondModule = modules.get(i);
+
+                            for(String outVertex : firstModule){
+                                for(String inVertex : secondModule){
+                                    assert !inVertex.equals(outVertex);
+                                    g.addEdge(outVertex, inVertex);
+                                }
+                            }
+                        }
+                    }
+                }
+
+            }
+        }
+
+        return ret;
+    }
+
 
     /**
      * Randomly chooses two distinct vertices of g. If the edge exists in g, it is deleted. If it doesn't, it is created.
