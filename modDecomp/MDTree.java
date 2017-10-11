@@ -18,10 +18,14 @@ public class MDTree extends RootedTree {
 		setRoot(buildMDTree(graphHandle));
 	}
 
-	protected MDTree(SimpleGraph jGraph) {
+	public MDTree(UndirectedGraph jGraph) {
 		super();
 		setRoot( buildMDTree(jGraph) );
 	}
+
+	protected MDTree(){
+	    super();
+    }
 
     /**
      * Makes the String representation of MDTree human-readable.
@@ -82,7 +86,7 @@ public class MDTree extends RootedTree {
 	}
 
 	// new: use JGraph
-	private MDTreeNode buildMDTree(SimpleGraph<String, DefaultEdge> g) {
+	private MDTreeNode buildMDTree(UndirectedGraph<String, DefaultEdge> g) {
 
 		if (g.vertexSet().isEmpty()){
 			return null;

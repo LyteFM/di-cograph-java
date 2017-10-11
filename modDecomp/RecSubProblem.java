@@ -1,5 +1,6 @@
 package dicograph.modDecomp;
 
+import org.jgrapht.UndirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleGraph;
 
@@ -102,7 +103,7 @@ class RecSubProblem extends RootedTreeNode {
 				
 	}
 
-	RecSubProblem(SimpleGraph<String, DefaultEdge> graph){
+	RecSubProblem(UndirectedGraph<String, DefaultEdge> graph){
 
 	    this();
 
