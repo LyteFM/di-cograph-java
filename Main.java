@@ -84,9 +84,10 @@ public class Main {
             System.out.print(solutions.get(0));
             Double sol = mySolver.getEditingDistances().get(0);
             if(sol.intValue() > 0){
-                log.severe("Created Dicograph " + i + "not recognized as one!!!");
+                throw new RuntimeException("Created Dicograph " + i + "not recognized as one!!!");
             }
         }
+        System.out.println("\nAll graphs recognized as cographs!");
 
 
     }
