@@ -12,6 +12,8 @@ import org.jgrapht.graph.SimpleGraph;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
@@ -123,12 +125,19 @@ public class GraphGenerator {
         //          Either: Take abs, closer to 0 means choose one, further away means any
         //          or: distribute around nVertices/2
 
-        int moduleCount = nVertices;
+        int moduleCount = nVertices; // 10
         while (moduleCount > 1) {
 
             // generates k: number of modules to join
-            Double nToCombine = random.nextDouble() * (moduleCount - 1);
+            // nicer distribution: small modules must be more likely. Larger modules still appear through
+            // mergind same type of modules.
+            // former: random.nextDouble()
+            double rand = Math.abs(random.nextGaussian())/6;
+            Double nToCombine = rand * (moduleCount - 1); // <9 + rounding -> intValue: <= 8
             int k = nToCombine.intValue() + 2;
+            // fix rounding error
+            if(k > moduleCount)
+                k = moduleCount;
             // range of k must be from 2 to moduleCount!
 
             // generates MDNodeType
@@ -142,49 +151,56 @@ public class GraphGenerator {
                 mdNodeType = ORDER;
             }
 
-            // todo: Das muss ich überprüfen mit den Indizes!!!
+            // k <= 10 -> {0,1,...,k-1}.
             ArrayList<Integer> possibleIndices = new ArrayList<>();
             for( int i = 0; i<k; i++){
                 possibleIndices.add(i);
             }
             // generates k indices to choose the G_i
-            ArrayList<Integer> chosenIndices = new ArrayList<>();
+            int [] chosenIndeces = new int[k];
             for( int i = 0; i<k; i++){
                 // 1.: get a random temp index for the list of possible indices
-                int size = possibleIndices.size();
-                Double nextIndex = random.nextDouble() * size;
-                int tempIndex = nextIndex.intValue(); // can't be too large!
+                int size = possibleIndices.size(); // = k at first loop
+                Double nextIndex = random.nextDouble() * size; // from 0 to k-1
+                int tempIndex = nextIndex.intValue();
+                // fix rounding error
+                if(tempIndex>= possibleIndices.size()){
+                    tempIndex = possibleIndices.size()-1;
+                }
 
                 // 2.: get the real index and update the lists
                 int realIndex = possibleIndices.get(tempIndex);
                 possibleIndices.remove(tempIndex);
-                chosenIndices.add(realIndex);
+                //chosenIndices.add(realIndex);
+                chosenIndeces[i] = realIndex;
             }
 
             ArrayList<HashSet<String>> chosenModules = new ArrayList<>();
-            for( int i : chosenIndices){
-                chosenModules.add(modules.get(i)); // ok jetzt wirft er schon hier.
-                modules.remove(i);
+            for( int i : chosenIndeces){
+                chosenModules.add(modules.get(i));
             }
 
             // PARALLEL ("0"): disjoint union - the modules G_i together are now the graph
             // SERIES ("1"):   union of the modules plus all possible arcs between members of different G_i
             // ORDER ("1->"):  union of k modules plus all possible arcs from G_i to G_j with 1 <= i < j <= k
-            String msg = "merging "+ mdNodeType + ": ";
+            StringBuilder msg = new StringBuilder("merging "+ mdNodeType + ": ");
             for(HashSet module : chosenModules){
-                msg += module;
+                msg.append("\"").append(module).append("\", ");
             }
-            logger.fine(msg);
+            logger.fine(msg.toString());
             HashSet<String> mergedModule = union(graph, chosenModules, mdNodeType);
 
             // remove the old modules and add the new one
-            //for( int i : chosenIndices){
-            //     // todo: Fehler hier!!! Index >= size!
-            //}
+            Arrays.sort(chosenIndeces);
+            for( int i = chosenIndeces.length-1; i >= 0; i--){
+                modules.remove(i);
+            }
             modules.add(mergedModule);
 
             moduleCount = modules.size();
         }
+
+        logger.info("Generated graph: " + graph.toString());
 
         return mdTree.toString();
     }
@@ -213,8 +229,6 @@ public class GraphGenerator {
 
                             for(String outVertex : firstModule){
                                 for(String inVertex : secondModule){
-                                    logger.fine("Adding: " + outVertex + "->" + inVertex);
-                                    assert !inVertex.equals(outVertex);
                                     g.addEdge(outVertex, inVertex);
                                 }
                             }

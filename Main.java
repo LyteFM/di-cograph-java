@@ -50,6 +50,9 @@ public class Main {
 //        }
         //testRNG("NativePRNG");
         //testRNG("SHA1PRNG");
+        Double d = 0.99999999999999999 * 2; // kann echt 2 werden x)
+        System.out.println("0.99 * 2 = " + d.intValue());
+
         System.out.println("The default PRNG on this system is " + new SecureRandom().getAlgorithm());
 
         Logger log = Logger.getLogger( "TestLogger" );
@@ -59,15 +62,32 @@ public class Main {
         log.setLevel( Level.FINEST );
         log.fine( "Alles ist fein!" );
 
-        // so den RNG einrichten!
 
+        // Cograph Testing
         SimpleGraph<String, DefaultEdge> g = new SimpleGraph<>(DefaultEdge.class);
         GraphGenerator gen = new GraphGenerator(log);
-        String res = gen.generateRandomCograph(g,14);
+        String res = gen.generateRandomCograph(g,35);
 
         GraphHandle gHand = new GraphHandle(g);
         String g_res = gHand.getMDTree().toString();
         System.out.println("\nNew Code:\n" + MDTree.beautify(g_res));
+
+        // Dicograph Testing:
+        int [] parameters = {0,0}; // one solution
+
+        for( int i = 10; i< 50; i++) {
+            SimpleDirectedGraph<String, DefaultEdge> g_d = new SimpleDirectedGraph<>(DefaultEdge.class);
+            gen.generateRandomDirectedCograph(g_d, i);
+
+            CplexDiCographEditingSolver mySolver = new CplexDiCographEditingSolver(g_d, parameters);
+            List<SimpleDirectedGraph<String, DefaultEdge>> solutions = mySolver.solve();
+            System.out.print(solutions.get(0));
+            Double sol = mySolver.getEditingDistances().get(0);
+            if(sol.intValue() > 0){
+                log.severe("Created Dicograph " + i + "not recognized as one!!!");
+            }
+        }
+
 
     }
 

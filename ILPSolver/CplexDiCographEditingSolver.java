@@ -79,6 +79,7 @@ public class CplexDiCographEditingSolver {
     int [] parameters;
 
     List<SimpleDirectedGraph<String, DefaultEdge>> solutionGraphs;
+    List<Double> editingDistances;
 
     // CPLEX solver
     IloCplex solver;
@@ -110,6 +111,7 @@ public class CplexDiCographEditingSolver {
         solver = new IloCplex();
         solver.setName("DiCographEditingSolver");
         solutionGraphs = new ArrayList<>();
+        editingDistances = new ArrayList<>();
 
         this.parameters = parameters;
 
@@ -144,7 +146,6 @@ public class CplexDiCographEditingSolver {
                     edge = inputGraph.getEdge(sourceVertex, targetVertext);
                     int hasEdge =  edge == null ? 0 :1;
                     assert x != y;
-                    System.out.println("init symDiff for x: "+ x + ", y: " + y +"\n");
                     symDiff1Expr[i] = solver.prod((1 - hasEdge), E[x][y]); // arrayOutOfBound!!
                     symDiff2Expr[i] = solver.prod(hasEdge, solver.diff(1, E[x][y] ));
                     i++;
@@ -293,6 +294,7 @@ public class CplexDiCographEditingSolver {
                     solution.append("\n");
                 }
                 // gf.addCograph(cograph);
+                editingDistances.add(solver.getObjValue(solutionId));
                 solutionGraphs.add(solutionGraph);
                 solution.append("\n\n")
                         .append(solver.getObjValue(solutionId))
@@ -302,4 +304,7 @@ public class CplexDiCographEditingSolver {
         return solution.toString();
     }
 
+    public List<Double> getEditingDistances() {
+        return editingDistances;
+    }
 }
