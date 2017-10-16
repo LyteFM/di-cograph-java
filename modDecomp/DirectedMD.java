@@ -7,6 +7,17 @@ import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.graph.SimpleGraph;
 import org.jgrapht.graph.UnmodifiableDirectedGraph;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeSet;
 import java.util.logging.Logger;
 
 /**
@@ -16,18 +27,50 @@ public class DirectedMD {
 
     final UnmodifiableDirectedGraph<String, DefaultEdge> inputGraph;
     final Logger log;
+    final int nVertices;
     AsUndirectedGraph<String, DefaultEdge> G_s;
     SimpleGraph<String, DefaultEdge> G_d;
 
-    public DirectedMD(SimpleDirectedGraph<String, DefaultEdge> input, Logger logger){
+    final boolean debugMode; // false for max speed, true for nicely sorted vertices etc.
+    final String[] vertexForIndex;
+    Map<String, Integer> vertexToIndex;
+
+
+
+    public DirectedMD(SimpleDirectedGraph<String, DefaultEdge> input, Logger logger, boolean debugMode){
+
         inputGraph = new UnmodifiableDirectedGraph<>(input);
         log = logger;
+        nVertices = input.vertexSet().size();
+        vertexForIndex = new String[nVertices];
+        vertexToIndex = new HashMap<>(nVertices*4/3);
+        this.debugMode = debugMode;
+
+        // Initialize Index-Vertex-BiMap
+        if(debugMode){
+            TreeSet<String> sortedVertices = new TreeSet<>(input.vertexSet());
+            int count = 0;
+            for(String vertex : sortedVertices){
+                vertexForIndex[count] = vertex;
+                vertexToIndex.put(vertex, count);
+                count++;
+            }
+        } else {
+            int count = 0;
+            for(String vertex : input.vertexSet()){
+                vertexForIndex[count] = vertex;
+                vertexToIndex.put(vertex, count);
+                count++;
+            }
+        }
+
 
     }
 
-    void computeModularDecomposition(){
+    void computeModularDecomposition() throws InterruptedException,IOException{
 
         log.info("Starting md of graph: " + inputGraph.toString());
+
 
         // Step 1: Find G_s, G_d and H
 
@@ -68,7 +111,7 @@ public class DirectedMD {
 
     }
 
-    MDTree intersectPartitiveFamiliesOf(MDTree T_a, MDTree T_b){
+    MDTree intersectPartitiveFamiliesOf(MDTree T_a, MDTree T_b) throws InterruptedException,IOException{
         MDTree ret = new MDTree();
 
         // Notes from section 2:
@@ -83,12 +126,53 @@ public class DirectedMD {
 
         // F = F_a \cap F_b is family of sets which are members in both F_a and F_b.
 
-        // 0.) get the sets from the tree and compute their union. (initialized bool array?)
+        // 0.) get the sets from the tree and compute their union. (initialized bool array???)
         // -> Iteration über die Bäume liefert die Eingabe-Daten für DH
+        ArrayList<BitSet> nontrivModulesBoolA = T_a.getStrongModulesBool(vertexToIndex);
+        ArrayList<BitSet> nontrivModulesBoolB = T_b.getStrongModulesBool(vertexToIndex);
+        HashSet<BitSet> allModules = new HashSet<>(nontrivModulesBoolA);
+        allModules.addAll(nontrivModulesBoolB);
+
+        StringBuilder overlapInput = new StringBuilder();
+
+        // todo: kann ich die trivialen weglassen?
+        StringBuilder allVertices = new StringBuilder();
+        for(int i=0; i< nVertices;i++){
+            overlapInput.append(i).append(" -1\n");
+            allVertices.append(i).append(" ");
+        }
+        allVertices.append("-1\n");
+        overlapInput.append(allVertices);
+
+        // todo: in the end, does it even matter if I don't UNION properly (if I have doubles?)
+        for(BitSet module : allModules){
+            for(int i =0; i<nVertices; i++){
+                if(module.get(i)){
+                    overlapInput.append(i).append(" ");
+                }
+            }
+            overlapInput.append("-1\n");
+        }
+
 
         // 1.) use Dahlhaus algorithm to compute the overlap components
+        log.fine("Input for Dahlhaus algorith:\n" + overlapInput);
+        ArrayList<Integer> overlapComponentNumbers = dahlhausProcessDelegator(overlapInput.toString(), log);
 
-        // 2.) use booleanArray to compute σ(T_a,T_b) = the union of the overlap components in O(V).
+        // 2.) todo: use booleanArray to compute σ(T_a,T_b) = the union of the overlap components in O(V).
+        // Nice: since the first n Elements are the vertex singletons, we can easily get the union:
+        HashMap<Integer, ArrayList<String>> overlapComponents =new HashMap<>();
+        for(int i = 0; i< nVertices; i++){
+            String vertex = vertexForIndex[i];
+            int componentNr = overlapComponentNumbers.get(i);
+            if(overlapComponents.containsKey(componentNr)){
+                overlapComponents.get(componentNr).add(vertex);
+            } else {
+                ArrayList<String> vertices = new ArrayList<>();
+                vertices.add(vertex);
+                overlapComponents.put(componentNr, vertices);
+            }
+        }
 
         // 3.) Lemma 11: compute the inclusion tree of σ(T_a, T_b)
 
@@ -124,6 +208,36 @@ public class DirectedMD {
         } else {
             throw new IllegalStateException("Error: illegal state in H for edge (" + u + ":" + v + ")");
         }
+    }
+
+    public static ArrayList<Integer> dahlhausProcessDelegator(String input, Logger log)
+            throws InterruptedException,IOException
+    {
+        List<String> command = new ArrayList<>();
+        command.add("./OverlapComponentProg/main");
+        command.add(input);
+        ArrayList<Integer> ret = new ArrayList<>();
+
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        processBuilder.environment();
+
+        Process process = processBuilder.start();
+        InputStream inputStream = process.getInputStream();
+        InputStreamReader inputReader = new InputStreamReader(inputStream);
+        BufferedReader bufferedReader = new BufferedReader(inputReader);
+        String nextLine;
+        int count = 0;
+        while ((nextLine = bufferedReader.readLine()) != null) {
+            log.fine(nextLine);
+            count ++;
+            if(count == 6){
+                for(String res : nextLine.split(" ")){
+                    ret.add(Integer.valueOf(res));
+                }
+            }
+        }
+        log.info("Dahlhaus algorithm finished");
+        return ret;
     }
 
 }

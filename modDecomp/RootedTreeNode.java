@@ -1,8 +1,11 @@
 package dicograph.modDecomp;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 
 /*
  * A node in a rooted tree.
@@ -328,5 +331,35 @@ class RootedTreeNode {
         }
 
 	    return thisNodesMembers;
+    }
+
+    /**
+     * Using a BitSet for easy UNION-Computation lateron. Running Time: O(n (1 + Anzahl module))
+     * @param vertexToIndex
+     * @param modules
+     * @return
+     */
+    public BitSet getStrongModulesBool(Map<String,Integer> vertexToIndex, ArrayList<BitSet> modules){
+	    int n = vertexToIndex.size();
+        BitSet ret = new BitSet(n);
+        RootedTreeNode currentChild = firstChild;
+        if(currentChild != null){
+            while (currentChild != null){
+                if(currentChild.isALeaf()){
+                    MDTreeLeafNode leafNode = (MDTreeLeafNode) currentChild;
+                    int index = vertexToIndex.get(leafNode.getLabel());
+                    ret.set(index);
+                } else {
+                    BitSet childSet = currentChild.getStrongModulesBool(vertexToIndex, modules);
+                    currentChild = currentChild.rightSibling;
+                    ret.or(childSet);
+                }
+            }
+            if(!isRoot()){
+                modules.add(ret);
+            }
+        }
+
+        return ret;
     }
 }

@@ -2,14 +2,11 @@ package dicograph;
 
 
 import org.jgrapht.ext.ExportException;
-import org.jgrapht.ext.MatrixExporter;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.graph.SimpleGraph;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -26,6 +23,7 @@ import dicograph.ILPSolver.CplexDiCographEditingSolver;
 import dicograph.graphIO.GraphGenerator;
 import dicograph.graphIO.SimpleMatrixExporter;
 import dicograph.graphIO.SimpleMatrixImporter;
+import dicograph.modDecomp.DirectedMD;
 import dicograph.modDecomp.GraphHandle;
 import dicograph.modDecomp.MDTree;
 import ilog.concert.IloException;
@@ -50,6 +48,9 @@ public class Main {
 //        }
         //testRNG("NativePRNG");
         //testRNG("SHA1PRNG");
+        System.out.println("Working Directory = " +
+                System.getProperty("user.dir"));
+
         Double d = 0.99999999999999999 * 2; // kann echt 2 werden x)
         System.out.println("0.99 * 2 = " + d.intValue());
 
@@ -63,6 +64,7 @@ public class Main {
         log.fine( "Alles ist fein!" );
 
         mdTest();
+        DirectedMD.dahlhausProcessDelegator("OverlapComponentProg/test3_neu.txt");
 
     }
 
@@ -127,7 +129,7 @@ public class Main {
         GraphHandle g2 = new GraphHandle(filePath);
         String g2_res = g2.getMDTree().toString();
         System.out.println("\nNew Code:\n" + MDTree.beautify(g2_res));
-        System.out.print(g2.getMDTree().getSetRepresentation());
+        System.out.print(g2.getMDTree().getSetRepresentationAsStrings()+ "\n\n");
     }
 
     void cplexTest() throws ExportException, IloException, IOException{

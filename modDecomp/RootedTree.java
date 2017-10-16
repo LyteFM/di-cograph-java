@@ -1,6 +1,9 @@
 package dicograph.modDecomp;
 
 import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.HashMap;
+import java.util.Map;
 
 /*
  * A rooted tree.
@@ -47,9 +50,16 @@ class RootedTree {
     /** F.L. 16.10.17:
      * Returns a String representation of the strong members of the tree's set family, i.e. the inner nodes.
      */
-    public ArrayList<String> getSetRepresentation(){
+    public ArrayList<String> getSetRepresentationAsStrings(){
         ArrayList<String> ret = new ArrayList<String>();
         root.getSetRepresentation(ret);
+        return ret;
+    }
+
+    public ArrayList<BitSet> getStrongModulesBool(Map<String, Integer> vertexToIndex){
+        ArrayList<BitSet> ret = new ArrayList<>();
+        root.getStrongModulesBool(vertexToIndex, ret);
+
         return ret;
     }
 }
