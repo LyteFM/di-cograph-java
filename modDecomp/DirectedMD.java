@@ -84,6 +84,7 @@ public class DirectedMD {
         // F = F_a \cap F_b is family of sets which are members in both F_a and F_b.
 
         // 0.) get the sets from the tree and compute their union. (initialized bool array?)
+        // -> Iteration über die Bäume liefert die Eingabe-Daten für DH
 
         // 1.) use Dahlhaus algorithm to compute the overlap components
 

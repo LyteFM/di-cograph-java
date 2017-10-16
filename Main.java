@@ -62,7 +62,11 @@ public class Main {
         log.setLevel( Level.FINEST );
         log.fine( "Alles ist fein!" );
 
+        mdTest();
 
+    }
+
+    void cographTesting(Logger log) throws Exception{
         // Cograph Testing
         SimpleGraph<String, DefaultEdge> g = new SimpleGraph<>(DefaultEdge.class);
         GraphGenerator gen = new GraphGenerator(log);
@@ -71,7 +75,6 @@ public class Main {
         GraphHandle gHand = new GraphHandle(g);
         String g_res = gHand.getMDTree().toString();
         System.out.println("\nNew Code:\n" + MDTree.beautify(g_res));
-
         // Dicograph Testing:
         int [] parameters = {0,0}; // one solution
 
@@ -88,10 +91,7 @@ public class Main {
             }
         }
         System.out.println("\nAll graphs recognized as cographs!");
-
-
     }
-
 
 
     private static void testRNG(String prng) throws NoSuchAlgorithmException, NoSuchProviderException {
@@ -115,7 +115,7 @@ public class Main {
         }
     }
 
-    void mdTest(){
+    static void mdTest(){
         //String filePath = args[0];
         String filePath = "importFiles/tedder_test0.txt";
 
@@ -127,6 +127,7 @@ public class Main {
         GraphHandle g2 = new GraphHandle(filePath);
         String g2_res = g2.getMDTree().toString();
         System.out.println("\nNew Code:\n" + MDTree.beautify(g2_res));
+        System.out.print(g2.getMDTree().getSetRepresentation());
     }
 
     void cplexTest() throws ExportException, IloException, IOException{

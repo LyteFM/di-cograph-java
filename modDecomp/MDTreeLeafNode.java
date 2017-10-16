@@ -154,7 +154,7 @@ class MDTreeLeafNode extends MDTreeNode {
 		visited = false;
 	}
 	
-	
+	// todo: ab hier viele Änderungen
 	/*
 	 * Returns a string representation of this node.  Merely uses the string
 	 * representation of the vertex with which it is associated.
@@ -162,7 +162,7 @@ class MDTreeLeafNode extends MDTreeNode {
 	public String toString() {
 	    if(vertex != null)
 		    return vertex.toString();
-	    else{
+	    else{ // F.L.
             StringBuilder result = new StringBuilder("(label= " + label);
 
             result.append(", neighbours: ");
@@ -193,5 +193,8 @@ class MDTreeLeafNode extends MDTreeNode {
         neighbourNames.add(neighbour);
     }
 
-
+    @Override
+    public String getSetRepresentation(ArrayList<String> bla) {
+        return label;
+    }
 }

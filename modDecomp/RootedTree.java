@@ -1,6 +1,8 @@
 package dicograph.modDecomp;
 
-/* 
+import java.util.ArrayList;
+
+/*
  * A rooted tree.
  */
 class RootedTree {
@@ -41,5 +43,14 @@ class RootedTree {
 	public String toString() {
 		return root.toString();
 	}
+
+    /** F.L. 16.10.17:
+     * Returns a String representation of the strong members of the tree's set family, i.e. the inner nodes.
+     */
+    public ArrayList<String> getSetRepresentation(){
+        ArrayList<String> ret = new ArrayList<String>();
+        root.getSetRepresentation(ret);
+        return ret;
+    }
 }
 

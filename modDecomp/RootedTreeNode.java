@@ -1,5 +1,6 @@
 package dicograph.modDecomp;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 
@@ -292,4 +293,40 @@ class RootedTreeNode {
 		}
 		return result + ")";
 	}
+
+    /**
+     * This is the desired format. Separating members my " " and using -1 to end a module.
+     * 2 3 4 5 6 7 -1
+     * 1 8 9 10 11 -1
+     * 4 5 6 7 -1
+     * 1 2 3 -1
+     * 0 1 -1
+     * 3 4 -1
+     * 5 6 -1
+     * 1 7 -1
+     * 9 10 -1
+     * 10 11 -1
+     * 0 8 -1
+     * @return
+     */
+	public String getSetRepresentation(ArrayList<String> strongModules){
+
+	    String thisNodesMembers = "";
+        RootedTreeNode currentChild = firstChild;
+        if(currentChild != null){
+            thisNodesMembers = currentChild.getSetRepresentation(strongModules);
+            currentChild = currentChild.rightSibling;
+
+            while (currentChild != null){
+                    thisNodesMembers += " "+ currentChild.getSetRepresentation(strongModules);
+                    currentChild = currentChild.rightSibling;
+            }
+            //ret += "-1\n";
+            if(!isRoot()) {
+                strongModules.add(thisNodesMembers);
+            }
+        }
+
+	    return thisNodesMembers;
+    }
 }
