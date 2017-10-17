@@ -326,8 +326,8 @@ class RootedTreeNode {
             }
             //ret += "-1\n";
             if(!isRoot()) {
-                strongModules.add(thisNodesMembers);
-            }
+				strongModules.add(thisNodesMembers + " -1");
+			}
         }
 
 	    return thisNodesMembers;

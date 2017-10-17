@@ -16,6 +16,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -134,11 +135,14 @@ public class DirectedMD {
         // 0.) get the sets from the tree and compute their union. (initialized bool array???)
         // -> Iteration über die Bäume liefert die Eingabe-Daten für DH
         // todo: Das alles irgendwie in Linearzeit hinbekommen x)
+
         HashMap<BitSet,RootedTreeNode> nontrivModulesBoolA = T_a.getStrongModulesBool(vertexToIndex);
         HashMap<BitSet, RootedTreeNode> nontrivModulesBoolB = T_b.getStrongModulesBool(vertexToIndex);
         HashSet<BitSet> nontrivModulesTemp = new HashSet<>(nontrivModulesBoolA.keySet());
         nontrivModulesTemp.addAll(nontrivModulesBoolB.keySet());
+
         ArrayList<BitSet> allNontrivModules= new ArrayList<>(nontrivModulesTemp); // need a well-defined order
+        allNontrivModules.sort(new BitSetComparator());
 
         StringBuilder overlapInput = new StringBuilder();
 
