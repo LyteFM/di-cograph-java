@@ -8,6 +8,9 @@ import org.jgrapht.graph.SimpleGraph;
 import org.jgrapht.graph.UnmodifiableDirectedGraph;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -67,7 +70,7 @@ public class DirectedMD {
 
     }
 
-    void computeModularDecomposition() throws InterruptedException,IOException{
+    public void computeModularDecomposition() throws InterruptedException,IOException{
 
         log.info("Starting md of graph: " + inputGraph.toString());
 
@@ -108,6 +111,8 @@ public class DirectedMD {
 
         MDTree TreeForH = intersectPartitiveFamiliesOf(TreeForG_s, TreeForG_d);
 
+        String baum = "tree";
+
 
     }
 
@@ -128,14 +133,17 @@ public class DirectedMD {
 
         // 0.) get the sets from the tree and compute their union. (initialized bool array???)
         // -> Iteration über die Bäume liefert die Eingabe-Daten für DH
-        ArrayList<BitSet> nontrivModulesBoolA = T_a.getStrongModulesBool(vertexToIndex);
-        ArrayList<BitSet> nontrivModulesBoolB = T_b.getStrongModulesBool(vertexToIndex);
-        HashSet<BitSet> allModules = new HashSet<>(nontrivModulesBoolA);
-        allModules.addAll(nontrivModulesBoolB);
+        // todo: Das alles irgendwie in Linearzeit hinbekommen x)
+        HashMap<BitSet,RootedTreeNode> nontrivModulesBoolA = T_a.getStrongModulesBool(vertexToIndex);
+        HashMap<BitSet, RootedTreeNode> nontrivModulesBoolB = T_b.getStrongModulesBool(vertexToIndex);
+        HashSet<BitSet> nontrivModulesTemp = new HashSet<>(nontrivModulesBoolA.keySet());
+        nontrivModulesTemp.addAll(nontrivModulesBoolB.keySet());
+        ArrayList<BitSet> allNontrivModules= new ArrayList<>(nontrivModulesTemp); // need a well-defined order
 
         StringBuilder overlapInput = new StringBuilder();
 
-        // todo: kann ich die trivialen weglassen?
+        /*
+        // todo: Kann ich die trivialen weglassen? Ja!.
         StringBuilder allVertices = new StringBuilder();
         for(int i=0; i< nVertices;i++){
             overlapInput.append(i).append(" -1\n");
@@ -143,9 +151,11 @@ public class DirectedMD {
         }
         allVertices.append("-1\n");
         overlapInput.append(allVertices);
+        // todo: merken - Index 0 bis nVertices-1: die Singletons. nVertices: V.
+        */
 
-        // todo: in the end, does it even matter if I don't UNION properly (if I have doubles?)
-        for(BitSet module : allModules){
+        // todo: Indices n+1 bis n+allNontrivModules.size() -> ebendiese.
+        for(BitSet module : allNontrivModules){
             for(int i =0; i<nVertices; i++){
                 if(module.get(i)){
                     overlapInput.append(i).append(" ");
@@ -157,22 +167,49 @@ public class DirectedMD {
 
         // 1.) use Dahlhaus algorithm to compute the overlap components
         log.fine("Input for Dahlhaus algorith:\n" + overlapInput);
-        ArrayList<Integer> overlapComponentNumbers = dahlhausProcessDelegator(overlapInput.toString(), log);
+        File dahlhausFile = new File("dahlhaus.txt");
 
-        // 2.) todo: use booleanArray to compute σ(T_a,T_b) = the union of the overlap components in O(V).
-        // Nice: since the first n Elements are the vertex singletons, we can easily get the union:
-        HashMap<Integer, ArrayList<String>> overlapComponents =new HashMap<>();
-        for(int i = 0; i< nVertices; i++){
-            String vertex = vertexForIndex[i];
-            int componentNr = overlapComponentNumbers.get(i);
-            if(overlapComponents.containsKey(componentNr)){
-                overlapComponents.get(componentNr).add(vertex);
-            } else {
-                ArrayList<String> vertices = new ArrayList<>();
-                vertices.add(vertex);
-                overlapComponents.put(componentNr, vertices);
-            }
+        // Try with ressources
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(dahlhausFile))){
+            System.out.println(dahlhausFile.getCanonicalPath());
+            writer.write(overlapInput.toString());
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+
+        ArrayList<Integer> overlapComponentNumbers = dahlhausProcessDelegator("dahlhaus.txt", log);
+
+        // Moooment. Die Knoten im Overlap-Graph sind:
+        // 1. Die Singleton-Subsets
+        // 2. V
+        // 3. Die oben berechneten Module
+
+        HashMap<Integer, ArrayList<BitSet>> overlapComponents =new HashMap<>();
+        for(int i = 0; i< overlapComponentNumbers.size(); i++){
+
+            int componentNr = overlapComponentNumbers.get(i);
+            overlapComponents.putIfAbsent(componentNr, new ArrayList<>());
+
+            // add contents
+            /*
+            if(i < nVertices) {
+                BitSet singleVertex = new BitSet(nVertices);
+                singleVertex.set(i);
+                overlapComponents.get(componentNr).add(singleVertex);
+            } else if (i == nVertices){
+                BitSet allVset = new BitSet(nVertices);
+                allVset.set(0,nVertices);
+                overlapComponents.get(componentNr).add(allVset);
+            } else {
+                overlapComponents.get(componentNr).add(allNontrivModules.get(i-nVertices-1));
+            }
+            */
+            overlapComponents.get(componentNr).add(allNontrivModules.get(i));
+        }
+
+        String test = "baum";
+        // 2.) todo: use booleanArray to compute σ(T_a,T_b) = the union of the overlap components in O(V).
+
 
         // 3.) Lemma 11: compute the inclusion tree of σ(T_a, T_b)
 
@@ -210,12 +247,12 @@ public class DirectedMD {
         }
     }
 
-    public static ArrayList<Integer> dahlhausProcessDelegator(String input, Logger log)
+    public static ArrayList<Integer> dahlhausProcessDelegator(String inputFile, Logger log)
             throws InterruptedException,IOException
     {
         List<String> command = new ArrayList<>();
-        command.add("./OverlapComponentProg/main");
-        command.add(input);
+        command.add("./dahlhaus"); // ./OverlapComponentProg/main
+        command.add(inputFile);
         ArrayList<Integer> ret = new ArrayList<>();
 
         ProcessBuilder processBuilder = new ProcessBuilder(command);
@@ -230,7 +267,7 @@ public class DirectedMD {
         while ((nextLine = bufferedReader.readLine()) != null) {
             log.fine(nextLine);
             count ++;
-            if(count == 6){
+            if(count == 7){
                 for(String res : nextLine.split(" ")){
                     ret.add(Integer.valueOf(res));
                 }

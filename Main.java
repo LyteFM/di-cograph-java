@@ -63,8 +63,20 @@ public class Main {
         log.setLevel( Level.FINEST );
         log.fine( "Alles ist fein!" );
 
-        mdTest();
-        DirectedMD.dahlhausProcessDelegator("OverlapComponentProg/test3_neu.txt");
+        //mdTest();
+        //DirectedMD.dahlhausProcessDelegator("OverlapComponentProg/test3_neu.txt");
+        directedMDTesting(log);
+
+    }
+
+    static void directedMDTesting(Logger log) throws Exception{
+        GraphGenerator gen = new GraphGenerator(log);
+        SimpleDirectedGraph<String, DefaultEdge> g_d = new SimpleDirectedGraph<>(DefaultEdge.class);
+        gen.generateRandomDirectedCograph(g_d, 20);
+        gen.disturbDicograph(g_d,5);
+
+        DirectedMD testMD = new DirectedMD(g_d, log, true);
+        testMD.computeModularDecomposition();
 
     }
 
@@ -78,7 +90,9 @@ public class Main {
         String g_res = gHand.getMDTree().toString();
         System.out.println("\nNew Code:\n" + MDTree.beautify(g_res));
         // Dicograph Testing:
+
         int [] parameters = {0,0}; // one solution
+
 
         for( int i = 10; i< 50; i++) {
             SimpleDirectedGraph<String, DefaultEdge> g_d = new SimpleDirectedGraph<>(DefaultEdge.class);
@@ -93,6 +107,7 @@ public class Main {
             }
         }
         System.out.println("\nAll graphs recognized as cographs!");
+
     }
 
 

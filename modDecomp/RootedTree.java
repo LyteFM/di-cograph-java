@@ -56,8 +56,8 @@ class RootedTree {
         return ret;
     }
 
-    public ArrayList<BitSet> getStrongModulesBool(Map<String, Integer> vertexToIndex){
-        ArrayList<BitSet> ret = new ArrayList<>();
+    public HashMap<BitSet,RootedTreeNode> getStrongModulesBool(Map<String, Integer> vertexToIndex){
+        HashMap<BitSet, RootedTreeNode> ret = new HashMap<>();
         root.getStrongModulesBool(vertexToIndex, ret);
 
         return ret;

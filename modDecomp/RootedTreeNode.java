@@ -339,7 +339,7 @@ class RootedTreeNode {
      * @param modules
      * @return
      */
-    public BitSet getStrongModulesBool(Map<String,Integer> vertexToIndex, ArrayList<BitSet> modules){
+    public BitSet getStrongModulesBool(Map<String,Integer> vertexToIndex, HashMap<BitSet,RootedTreeNode> modules){
 	    int n = vertexToIndex.size();
         BitSet ret = new BitSet(n);
         RootedTreeNode currentChild = firstChild;
@@ -351,12 +351,12 @@ class RootedTreeNode {
                     ret.set(index);
                 } else {
                     BitSet childSet = currentChild.getStrongModulesBool(vertexToIndex, modules);
-                    currentChild = currentChild.rightSibling;
                     ret.or(childSet);
                 }
-            }
+				currentChild = currentChild.rightSibling;
+			}
             if(!isRoot()){
-                modules.add(ret);
+                modules.put(ret, this);
             }
         }
 
