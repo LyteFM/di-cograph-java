@@ -1,4 +1,4 @@
-package dicograph.modDecomp;
+package dicograph.tools;
 
 import java.util.BitSet;
 import java.util.Comparator;
@@ -8,7 +8,7 @@ import java.util.Comparator;
  */
 public class BitSetComparator implements Comparator<BitSet> {
 
-    // want the arraylist in descending size.
+    // want the arraylist in descending size, thus the -1
     public int compare(BitSet bs1, BitSet bs2) {
         return Integer.compare(bs1.cardinality(), bs2.cardinality()) * -1;
     }

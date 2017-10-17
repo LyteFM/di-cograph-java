@@ -1,6 +1,5 @@
 package dicograph.modDecomp;
 
-import org.jgrapht.UndirectedGraph;
 import org.jgrapht.graph.AsUndirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
@@ -16,13 +15,14 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.logging.Logger;
+
+import dicograph.tools.BitSetComparator;
 
 /**
  * Created by Fynn Leitow on 11.10.17.
@@ -208,14 +208,25 @@ public class DirectedMD {
                 overlapComponents.get(componentNr).add(allNontrivModules.get(i-nVertices-1));
             }
             */
-            overlapComponents.get(componentNr).add(allNontrivModules.get(i));
+            overlapComponents.get(componentNr).add(allNontrivModules.get(i)); // jetzt passt das auch
         }
 
         String test = "baum";
         // 2.) todo: use booleanArray to compute σ(T_a,T_b) = the union of the overlap components in O(V).
+        // According to paper, V and the singleton subsets must be in σ(T_a, T_b). Excluded them as they
+        // Don't contribute to computing the overlap components. Let's add them now.
 
+
+        // Assuming now: Array with the singletons, V and the overlapComponents
 
         // 3.) Lemma 11: compute the inclusion tree of σ(T_a, T_b)
+        // V trivially at root, singletons as leaves? -> singletons are below the components anyways.
+        // Might be able to re-use the MDTreeNodes
+
+        // Step 1: Sort the array by size, using bucket sort todo: add V (last) and singletons (front) :)
+        // Sorting.bucketSortBySize()
+
+        // Step 2: Create a List for each v ∈ V of the members of F (the sets) containing v in ascending order of their size
 
         // 4.) Algorithm 1: compute Ü(T_a,T_b) and number its members
 
