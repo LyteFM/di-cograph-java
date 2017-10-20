@@ -6,7 +6,9 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.graph.SimpleGraph;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -65,7 +67,8 @@ public class Main {
 
         //mdTest();
         //DirectedMD.dahlhausProcessDelegator("OverlapComponentProg/test3_neu.txt");
-        directedMDTesting(log);
+        // directedMDTesting(log);
+        primeTest();
 
     }
 
@@ -130,6 +133,47 @@ public class Main {
         } else {
             System.out.println(prng + " does not produce the same values with the same seed");
         }
+    }
+
+    static Long[] primeTest() throws Exception {
+        String filePath = "primes.txt";
+        Long[] primes = new Long[1000];
+        Long product = 1L;
+        int index = 0;
+
+
+        try (BufferedReader inputStream = new BufferedReader(new FileReader(filePath))) {
+
+            String line;
+
+            while ((line = inputStream.readLine()) != null) {
+                String[] numbers = line.split("\\s+"); // any whitespace
+                for (String num : numbers) {
+                    if (num.equals(""))
+                        continue;
+                    primes[index] = Long.valueOf(num);
+                    product *= primes[index];
+                    if (product < 0) {
+                        // overflow
+                        break;
+                    }
+
+                    index++;
+
+                }
+                System.out.println(line + " : " + product);
+
+
+            }
+        } catch (IOException e) {
+            System.out.println(e.toString());
+        }
+
+        System.out.println("Read " + index + 1 + " primes before overflow\n last primes: \n");
+        System.out.println(primes[index - 2] + "   " + primes[index - 1] + "  " + primes[index] + "\n");
+        System.out.println(Long.MAX_VALUE);
+
+        return primes;
     }
 
     static void mdTest(){

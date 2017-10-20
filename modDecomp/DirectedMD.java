@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.TreeSet;
 import java.util.logging.Logger;
 
-import dicograph.tools.BitSetComparator;
+import dicograph.utils.BitSetComparator;
 
 /**
  * Created by Fynn Leitow on 11.10.17.
@@ -136,11 +136,22 @@ public class DirectedMD {
         // -> Iteration über die Bäume liefert die Eingabe-Daten für DH
         // todo: Das alles irgendwie in Linearzeit hinbekommen x)
 
+        // Not a problem according to Th 22. Just retrieve the vertices unsorted as arraylist -> |M| < 2m + 3n
+        // 1. bucket sort the array lists by size (bound met)
+        // 2. bucket sort the array lists of same size;
+        //    2.a) sort them at the same time and keep an "equals" boolean-flag OR
+        //    2.b) iterate again, setting checking for equality
+        // -> Create the String at the same time.
+        // much better than my current approach with BitSets of size n :)
+
+        // todo: hier direkt Arrays mit Integers bekommen!
         HashMap<BitSet,RootedTreeNode> nontrivModulesBoolA = T_a.getStrongModulesBool(vertexToIndex);
         HashMap<BitSet, RootedTreeNode> nontrivModulesBoolB = T_b.getStrongModulesBool(vertexToIndex);
+
         HashSet<BitSet> nontrivModulesTemp = new HashSet<>(nontrivModulesBoolA.keySet());
         nontrivModulesTemp.addAll(nontrivModulesBoolB.keySet());
 
+        // todo: hier BucketSortBySize
         ArrayList<BitSet> allNontrivModules= new ArrayList<>(nontrivModulesTemp); // need a well-defined order
         allNontrivModules.sort(new BitSetComparator());
 
@@ -155,7 +166,6 @@ public class DirectedMD {
         }
         allVertices.append("-1\n");
         overlapInput.append(allVertices);
-        // todo: merken - Index 0 bis nVertices-1: die Singletons. nVertices: V.
         */
 
         // todo: Indices n+1 bis n+allNontrivModules.size() -> ebendiese.
@@ -169,7 +179,7 @@ public class DirectedMD {
         }
 
 
-        // 1.) use Dahlhaus algorithm to compute the overlap components
+        // 1.) use Dahlhaus algorithm to compute the overlap components (Bound: |M| <= 4m + 6n)
         log.fine("Input for Dahlhaus algorith:\n" + overlapInput);
         File dahlhausFile = new File("dahlhaus.txt");
 
@@ -210,35 +220,58 @@ public class DirectedMD {
             */
             overlapComponents.get(componentNr).add(allNontrivModules.get(i)); // jetzt passt das auch
         }
+        // What exacty _are_ the overlap Components now? number -> module
+        // what do I want: number -> set with all vertices. therefore:
+        //   I. Put them all in one ArrayList
+        //  II. unionSort the ArrayList
 
         String test = "baum";
         // 2.) todo: use booleanArray to compute σ(T_a,T_b) = the union of the overlap components in O(V).
-        // According to paper, V and the singleton subsets must be in σ(T_a, T_b). Excluded them as they
-        // Don't contribute to computing the overlap components. Let's add them now.
+        // not even necessary - σ is obtained by simply joining the components, no need to check for equality
+
+        // According to paper, V and the singleton subsets must be in σ(T_a, T_b) = { U ς | ς is overlap components of S(T_a) \cup S(T_b)
+        // Excluded them as they Don't contribute to computing the overlap components. Let's add them now.
 
 
         // Assuming now: Array with the singletons, V and the overlapComponents
 
-        // 3.) Lemma 11: compute the inclusion tree of σ(T_a, T_b)
+        // 3.) @Lemma 11: compute the inclusion tree of σ(T_a, T_b)
         // V trivially at root, singletons as leaves? -> singletons are below the components anyways.
         // Might be able to re-use the MDTreeNodes
 
         // Step 1: Sort the array by size, using bucket sort todo: add V (last) and singletons (front) :)
-        // Sorting.bucketSortBySize()
+        // Sorting.bucketSortBySize() // todo: Das brauche ich häufiger! Abstrakt mit Generics machen!
 
-        // Step 2: Create a List for each v ∈ V of the members of F (the sets) containing v in ascending order of their size
+        // Step 2: Create a List for each v ∈ V of the members of F (i.e. the elements of σ) containing v in ascending order of their size:
+        // - visit each Y ∈ F in descending order of size. For each x ∈ Y, insert pointer to Y to front of x's list. [O(sz(F)]
+        // - visit each x ∈ V, put a parent pointer from each member of x's list to its successor in x's list (if not already done)
+        //      -> these are chains of ancestors of {x} // todo: impl über RootedTreeNode. Wer ist root?
 
-        // 4.) Algorithm 1: compute Ü(T_a,T_b) and number its members
 
-        // 5.) Algorithm 1: compute P_a(X) and P_b(X) ∀ X ⊂ Ü(T_a,T_b)
+        // 4.) Algorithm 1: compute Ü(T_a,T_b) = A* \cap B*; A = {X | X ∈ σ(T_a, T_b) AND X node in T_a OR P_a not prime in T_a}, B analog
+        //     and number its members according to the number pairs from P_a, P_b
 
-        // 6.) Bucket sort members of Ü(T_a,T_b) according to number pairs given by P_a, P_b
+        // Step 1: Initialize the inclusion tree, i.e. each node must have:
+        //         - a parent pointer (ok)
+        //         - a list of pointers to its children (atm: firstChild, then iterate rightSibling)
+        //         - record of how many children it has (numChildren, ok)
+        //         - how many children are marked (hmm...)
+        // use alg. 1 to mark the maximal members of F that are subsets of any Node X \in V.
+        // i.e.: compute P_a(X) and P_b(X) for all X in the tree of σ(T_a,T_b)
+        // P_a(X): smallest (size) node of T_a containing X as proper subset.
+        // If X is union of siblings in T_a -> P_a(X) is their parent!
+        // todo: I'll do that for every (inner?) node of the inclusion tree of σ(T_a,T_b)
+
+        // Step 2: Take the initialized inclusion tree and test its nodes for membership in A* and B*,
+        // using Algorithm 1. This yields Ü(T_a,T_b).
+
+
+        // 5.) Bucket sort members of Ü(T_a,T_b) according to number pairs given by P_a, P_b
         //     to get equivalence classes of R_U (Lem 9)
 
-        // 7.) union of each eq. class via boolean array (to get result from Th. 10)
+        // 6.) union of each eq. class via boolean array (to get result from Th. 10)
 
-        // now we have the Tree T = T_a Λ T_b
-
+        // now we have the Tree T(H) = T_a Λ T_b
 
 
         // Th. 15: T(F) =T_a Λ T_b in O(sz(S(F_a)) + sz(S(F_b))

@@ -1,4 +1,4 @@
-package dicograph.tools;
+package dicograph.utils;
 
 import java.util.ArrayList;
 import java.util.Set;
