@@ -362,4 +362,30 @@ class RootedTreeNode {
 
         return ret;
     }
+
+    protected ArrayList<Integer> getStrongModulesIntList(Map<String, Integer> vertexToIndex, ArrayList<ArrayList<Integer>> modules) {
+        ArrayList<Integer> ret = new ArrayList<>();
+        RootedTreeNode currentChild = firstChild;
+        if (currentChild != null) {
+            while (currentChild != null) {
+                if (currentChild.isALeaf()) {
+                    MDTreeLeafNode leafNode = (MDTreeLeafNode) currentChild;
+                    int index = vertexToIndex.get(leafNode.getLabel());
+                    ret.add(index);
+                } else {
+                    ArrayList<Integer> childSet = currentChild.getStrongModulesIntList(vertexToIndex, modules);
+                    // todo:
+                    ret.addAll(childSet);
+                }
+                currentChild = currentChild.rightSibling;
+            }
+            if (!isRoot()) {
+                modules.add(ret);
+            }
+        }
+
+
+        return ret;
+
+    }
 }

@@ -6,7 +6,7 @@ import java.util.Comparator;
 /**
  * Created by Fynn Leitow on 17.10.17.
  */
-public class BitSetComparator implements Comparator<BitSet> {
+public class BitSetComparatorDesc implements Comparator<BitSet> {
 
     // want the arraylist in descending size, thus the -1
     public int compare(BitSet bs1, BitSet bs2) {

@@ -62,5 +62,12 @@ class RootedTree {
 
         return ret;
     }
+
+    protected ArrayList<ArrayList<Integer>> getStrongModulesIntList(Map<String, Integer> vertexToIndex) {
+        ArrayList<ArrayList<Integer>> ret = new ArrayList<>();
+        root.getStrongModulesIntList(vertexToIndex, ret);
+
+        return ret;
+    }
 }
 

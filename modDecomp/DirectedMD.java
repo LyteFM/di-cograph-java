@@ -22,7 +22,8 @@ import java.util.Map;
 import java.util.TreeSet;
 import java.util.logging.Logger;
 
-import dicograph.utils.BitSetComparator;
+import dicograph.utils.BitSetComparatorAsc;
+import dicograph.utils.BitSetComparatorDesc;
 
 /**
  * Created by Fynn Leitow on 11.10.17.
@@ -144,7 +145,8 @@ public class DirectedMD {
         // -> Create the String at the same time.
         // much better than my current approach with BitSets of size n :)
 
-        // todo: hier direkt Arrays mit Integers bekommen!
+        // todo: hier direkt ArraysList mit Integers bekommen!
+        // Brauche ich die corresp. TreeNode irgendwann?
         HashMap<BitSet,RootedTreeNode> nontrivModulesBoolA = T_a.getStrongModulesBool(vertexToIndex);
         HashMap<BitSet, RootedTreeNode> nontrivModulesBoolB = T_b.getStrongModulesBool(vertexToIndex);
 
@@ -153,7 +155,7 @@ public class DirectedMD {
 
         // todo: hier BucketSortBySize
         ArrayList<BitSet> allNontrivModules= new ArrayList<>(nontrivModulesTemp); // need a well-defined order
-        allNontrivModules.sort(new BitSetComparator());
+        allNontrivModules.sort(new BitSetComparatorDesc()); // descending size
 
         StringBuilder overlapInput = new StringBuilder();
 
@@ -168,13 +170,16 @@ public class DirectedMD {
         overlapInput.append(allVertices);
         */
 
-        // todo: Indices n+1 bis n+allNontrivModules.size() -> ebendiese.
         for(BitSet module : allNontrivModules){
-            for(int i =0; i<nVertices; i++){
-                if(module.get(i)){
-                    overlapInput.append(i).append(" ");
-                }
+            for (int i = module.nextSetBit(0); i >= 0; i = module.nextSetBit(i + 1)) {
+                overlapInput.append(i).append(" ");
             }
+
+//            for(int i =0; i<nVertices; i++){
+//                if(module.get(i)){
+//                    overlapInput.append(i).append(" ");
+//                }
+//            }
             overlapInput.append("-1\n");
         }
 
@@ -198,13 +203,19 @@ public class DirectedMD {
         // 2. V
         // 3. Die oben berechneten Module
 
-        HashMap<Integer, ArrayList<BitSet>> overlapComponents =new HashMap<>();
+        HashMap<Integer, BitSet> overlapComponents = new HashMap<>();
         for(int i = 0; i< overlapComponentNumbers.size(); i++){
 
             int componentNr = overlapComponentNumbers.get(i);
-            overlapComponents.putIfAbsent(componentNr, new ArrayList<>());
+            if (overlapComponents.containsKey(componentNr)) {
+                overlapComponents.get(componentNr).or(allNontrivModules.get(i));
+            } else {
+                overlapComponents.put(componentNr, allNontrivModules.get(i));
+            }
 
-            // add contents
+            //overlapComponents.putIfAbsent(componentNr, new ArrayList<>());
+
+            // add contents - but don't need trivial
             /*
             if(i < nVertices) {
                 BitSet singleVertex = new BitSet(nVertices);
@@ -218,12 +229,13 @@ public class DirectedMD {
                 overlapComponents.get(componentNr).add(allNontrivModules.get(i-nVertices-1));
             }
             */
-            overlapComponents.get(componentNr).add(allNontrivModules.get(i)); // jetzt passt das auch
+            //overlapComponents.get(componentNr).add(allNontrivModules.get(i)); // jetzt passt das auch
         }
         // What exacty _are_ the overlap Components now? number -> module
         // what do I want: number -> set with all vertices. therefore:
         //   I. Put them all in one ArrayList
         //  II. unionSort the ArrayList
+        // currently with BitSets
 
         String test = "baum";
         // 2.) todo: use booleanArray to compute σ(T_a,T_b) = the union of the overlap components in O(V).
@@ -233,19 +245,89 @@ public class DirectedMD {
         // Excluded them as they Don't contribute to computing the overlap components. Let's add them now.
 
 
-        // Assuming now: Array with the singletons, V and the overlapComponents
+        // Assuming now: ArrayList of ArrayList<Int> with the singletons, V and the overlapComponents
+        // currently: BitSets
 
         // 3.) @Lemma 11: compute the inclusion tree of σ(T_a, T_b)
         // V trivially at root, singletons as leaves? -> singletons are below the components anyways.
-        // Might be able to re-use the MDTreeNodes
+        // Might be able to re-use the RootedTreeNodes
+
+
 
         // Step 1: Sort the array by size, using bucket sort todo: add V (last) and singletons (front) :)
         // Sorting.bucketSortBySize() // todo: Das brauche ich häufiger! Abstrakt mit Generics machen!
+        ArrayList<BitSet> nontrivOverlapComponents = new ArrayList<>(overlapComponents.values());
+        nontrivOverlapComponents.sort(new BitSetComparatorDesc());
 
         // Step 2: Create a List for each v ∈ V of the members of F (i.e. the elements of σ) containing v in ascending order of their size:
+
+
+        // init empty
+        ArrayList<ArrayList<BitSet>> xLists = new ArrayList<>(nVertices);
+        for (int i = 0; i < nVertices; i++) {
+            xLists.add(i, new ArrayList<>());
+        }
+        // add root
+        BitSet rootSet = new BitSet(nVertices);
+        rootSet.set(0, nVertices - 1);
+        nontrivOverlapComponents.add(0, rootSet);
+
         // - visit each Y ∈ F in descending order of size. For each x ∈ Y, insert pointer to Y to front of x's list. [O(sz(F)]
+        for (BitSet ySet : nontrivOverlapComponents) {
+            for (int i = ySet.nextSetBit(0); i >= 0; i = ySet.nextSetBit(i + 1)) {
+                ArrayList<BitSet> currList = xLists.get(i);
+                currList.add(0, ySet);
+                // root is now in every xList
+            }
+        }
+
+        RootedTree rootedTree = new RootedTree();
+        RootedTreeNode root = new RootedTreeNode();
+        rootedTree.setRoot(root);
+        HashMap<BitSet, RootedTreeNode> bitsetToTreenode = new HashMap<>(nontrivOverlapComponents.size() * 4 / 3);
+        HashMap<RootedTreeNode, BitSet> nodesWithLeavesOnly = new HashMap<>();
+        bitsetToTreenode.put(rootSet, root);
+        // Brauche noch ein Set, das die unteren Treenodes verwaltet...
+        int nodeCount = 0;
         // - visit each x ∈ V, put a parent pointer from each member of x's list to its successor in x's list (if not already done)
-        //      -> these are chains of ancestors of {x} // todo: impl über RootedTreeNode. Wer ist root?
+        //      -> these are chains of ancestors of {x}
+        for (int vertexNr = 0; vertexNr < nVertices; vertexNr++) {
+            // I can stop once all are in the tree. todo: why even use vertexNr?
+            while (nodeCount < nontrivOverlapComponents.size()) {
+                ArrayList<BitSet> currVertexList = xLists.get(vertexNr);
+                for (int bIndex = 0; bIndex < currVertexList.size() - 1; bIndex++) {
+
+                    BitSet currModule = currVertexList.get(bIndex);
+                    RootedTreeNode currTreenode = bitsetToTreenode.get(currModule);
+                    // current node already has a parent -> nothing to do. No child gets added twice.
+
+                    if (currTreenode == null) {
+                        currTreenode = new RootedTreeNode();
+                        bitsetToTreenode.put(currModule, currTreenode);
+                        nodesWithLeavesOnly.put(currTreenode, currModule); // assuming this at first
+
+                        BitSet parentModule = currVertexList.get(bIndex + 1);
+                        RootedTreeNode parentTreeNode = bitsetToTreenode.get(parentModule);
+                        if (parentTreeNode == null) {
+                            // todo: does that ever happen? yes, we go bottom-up. Are the 1st always...?
+                            parentTreeNode = new RootedTreeNode();
+                            bitsetToTreenode.put(parentModule, parentTreeNode);
+                        }
+                        nodesWithLeavesOnly.remove(parentTreeNode);
+                        parentTreeNode.addChild(currTreenode);
+                    }
+
+                }
+            }
+        }
+        // adds the leaf-entries
+        for (Map.Entry<RootedTreeNode, BitSet> nodeEntry : nodesWithLeavesOnly.entrySet()) {
+            BitSet bits = nodeEntry.getValue();
+            for (int i = bits.nextSetBit(0); i >= 0; i = bits.nextSetBit(i + 1)) {
+                nodeEntry.getKey().addChild(new MDTreeLeafNode(vertexForIndex[i]));
+            }
+        }
+
 
 
         // 4.) Algorithm 1: compute Ü(T_a,T_b) = A* \cap B*; A = {X | X ∈ σ(T_a, T_b) AND X node in T_a OR P_a not prime in T_a}, B analog
