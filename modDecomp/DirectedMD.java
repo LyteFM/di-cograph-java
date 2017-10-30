@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,8 @@ public class DirectedMD {
     final boolean debugMode; // false for max speed, true for nicely sorted vertices etc.
     final String[] vertexForIndex;
     Map<String, Integer> vertexToIndex;
+    ArrayList<MDTreeLeafNode> leavesOfT_a;
+    ArrayList<MDTreeLeafNode> leavesOfT_b;
 
 
 
@@ -50,6 +53,8 @@ public class DirectedMD {
         nVertices = input.vertexSet().size();
         vertexForIndex = new String[nVertices];
         vertexToIndex = new HashMap<>(nVertices*4/3);
+        leavesOfT_a = new ArrayList<>(nVertices);
+        leavesOfT_b = new ArrayList<>(nVertices);
         this.debugMode = debugMode;
 
         // Initialize Index-Vertex-BiMap
@@ -147,9 +152,9 @@ public class DirectedMD {
         // much better than my current approach with BitSets of size n :)
 
         // todo: hier direkt ArraysList mit Integers bekommen!
-        // Brauche ich die corresp. TreeNode irgendwann?
-        HashMap<BitSet,RootedTreeNode> nontrivModulesBoolA = T_a.getStrongModulesBool(vertexToIndex);
-        HashMap<BitSet, RootedTreeNode> nontrivModulesBoolB = T_b.getStrongModulesBool(vertexToIndex);
+        // Brauche ich die corresp. TreeNode irgendwann? Muss hier auch die leaves mit Index abfragen.
+        HashMap<BitSet, RootedTreeNode> nontrivModulesBoolA = T_a.getStrongModulesBool(vertexToIndex, leavesOfT_a);
+        HashMap<BitSet, RootedTreeNode> nontrivModulesBoolB = T_b.getStrongModulesBool(vertexToIndex, leavesOfT_b);
 
         HashSet<BitSet> nontrivModulesTemp = new HashSet<>(nontrivModulesBoolA.keySet());
         nontrivModulesTemp.addAll(nontrivModulesBoolB.keySet());
@@ -285,9 +290,9 @@ public class DirectedMD {
         RootedTree rootedTree = new RootedTree();
         PartitiveFamilyTreeNode root = new PartitiveFamilyTreeNode();
         rootedTree.setRoot(root);
-        HashMap<BitSet, PartitiveFamilyTreeNode> bitsetToTreenode = new HashMap<>(nontrivOverlapComponents.size() * 4 / 3);
+        HashMap<BitSet, PartitiveFamilyTreeNode> bitsetToOverlapTreenNode = new HashMap<>(nontrivOverlapComponents.size() * 4 / 3);
         HashMap<PartitiveFamilyTreeNode, BitSet> nodesWithLeavesOnly = new HashMap<>();
-        bitsetToTreenode.put(rootSet, root);
+        bitsetToOverlapTreenNode.put(rootSet, root);
         // Brauche noch ein Set, das die unteren Treenodes verwaltet...
         int nodeCount = 0;
         // - visit each x ∈ V, put a parent pointer from each member of x's list to its successor in x's list (if not already done)
@@ -299,20 +304,20 @@ public class DirectedMD {
                 for (int bIndex = 0; bIndex < currVertexList.size() - 1; bIndex++) {
 
                     BitSet currModule = currVertexList.get(bIndex);
-                    PartitiveFamilyTreeNode currTreenode = bitsetToTreenode.get(currModule);
+                    PartitiveFamilyTreeNode currTreenode = bitsetToOverlapTreenNode.get(currModule);
                     // current node already has a parent -> nothing to do. No child gets added twice.
 
                     if (currTreenode == null) {
                         currTreenode = new PartitiveFamilyTreeNode();
-                        bitsetToTreenode.put(currModule, currTreenode);
+                        bitsetToOverlapTreenNode.put(currModule, currTreenode);
                         nodesWithLeavesOnly.put(currTreenode, currModule); // assuming this at first
 
                         BitSet parentModule = currVertexList.get(bIndex + 1);
-                        PartitiveFamilyTreeNode parentTreeNode = bitsetToTreenode.get(parentModule);
+                        PartitiveFamilyTreeNode parentTreeNode = bitsetToOverlapTreenNode.get(parentModule);
                         if (parentTreeNode == null) {
                             // todo: does that ever happen? yes, we go bottom-up. Are the 1st always...?
                             parentTreeNode = new PartitiveFamilyTreeNode();
-                            bitsetToTreenode.put(parentModule, parentTreeNode);
+                            bitsetToOverlapTreenNode.put(parentModule, parentTreeNode);
                         }
                         nodesWithLeavesOnly.remove(parentTreeNode);
                         parentTreeNode.addChild(currTreenode);
@@ -339,8 +344,7 @@ public class DirectedMD {
         // todo: P_a(X): smallest (size) node of T_a containing X as proper subset.
         // If X is union of siblings in T_a -> P_a(X) is their parent!
         // todo: I'll do that for every (inner?) node of the inclusion tree of σ(T_a,T_b)
-        HashMap<PartitiveFamilyTreeNode, MDTreeNode> P_a = new HashMap<>();
-        HashMap<PartitiveFamilyTreeNode, MDTreeNode> P_b = new HashMap<>();
+
 
         // or is that easier with BitSets??? A ⊂ B means e.g.
         // A = 0001 0010 1011
@@ -348,33 +352,73 @@ public class DirectedMD {
         // -> A  OR B == B. If A had elements not contained in B, the result wouldn't be B.
         //    note: this would yield true if A was empty.
 
-        // adds the leaf-entries
-        // And mark them!
+        // adds the leaf-entries to the trees and saves them in a List
+        ArrayList<PartitiveFamilyLeafNode> allLeafs = new ArrayList<>(nVertices);
         for (Map.Entry<PartitiveFamilyTreeNode, BitSet> nodeEntry : nodesWithLeavesOnly.entrySet()) {
             BitSet bits = nodeEntry.getValue();
             for (int i = bits.nextSetBit(0); i >= 0; i = bits.nextSetBit(i + 1)) {
                 PartitiveFamilyLeafNode child = new PartitiveFamilyLeafNode(i, vertexForIndex[i]);
                 nodeEntry.getKey().addChild(child);
-                child.mark();
+                allLeafs.add(i, child);
             }
         }
+        // todo: verify that the List is full!
+        System.out.println(allLeafs);
+
         LinkedList<Integer> test2 = new LinkedList<>();
 
-        // Compute P_a with alg 1.
-        boolean allChildrenMarked = true;
-        HashSet<PartitiveFamilyTreeNode> innerNodes = new HashSet<>(bitsetToTreenode.size() * 4 / 3);
-        while (allChildrenMarked) {
-            // Start with the nodes that only have leaves -> there, all children are marked
-            for (PartitiveFamilyTreeNode node : nodesWithLeavesOnly.keySet()) {
-                node.unmarkAllChildren();
-                node.mark();
-                innerNodes.add(node);
-            }
-            // process inner nodes with marked children bottom-up
+        // Compute P_a(S) for every S \in σ with alg 1. -> nope, I'll compute A* and B* directly
+        // "P_a(S) is the smallest node of T_a that contains S as proper subset"
+        // HashMap<PartitiveFamilyTreeNode, MDTreeNode> P_a = new HashMap<>();
+        // HashMap<PartitiveFamilyTreeNode, MDTreeNode> P_b = new HashMap<>();
 
+        // nodes of σ:
+        HashSet<PartitiveFamilyTreeNode> innerNodes = new HashSet<>(bitsetToOverlapTreenNode.size() * 4 / 3);
+
+        // outer loop: iterate over all inner nodes of σ(T_a,T_b)
+        // todo: other way round... want to get the P_a for every node S in σ!!!
+        for (Map.Entry<BitSet, PartitiveFamilyTreeNode> setEntryOfSigma : bitsetToOverlapTreenNode.entrySet()) {
+
+            innerNodes.clear();
+            BitSet bits = setEntryOfSigma.getKey();
+            // Init: Mark the leaf entries of T_a corresponding to the current set of σ(T_a,T_b)
+            for (int i = bits.nextSetBit(0); i >= 0; i = bits.nextSetBit(i + 1)) {
+                leavesOfT_b.get(i).addMark(); // todo: for T_b, and can I re-use?
+            }
+            // Now, iterate bottom-up through σ.
+            for (PartitiveFamilyTreeNode node : nodesWithLeavesOnly.keySet()) {
+                if (node.getNumChildren() == node.getNumMarkedChildren()) {
+                    node.unmarkAllChildren();
+                    node.mark();
+                    innerNodes.add((PartitiveFamilyTreeNode) node.getParent());
+                    // nodes can have same parent, HashSet keeps us safe
+                }
+            }
+            // I might need to start at root top-down, then go bottom-up
+            // Now simply loop, until no parents are fully marked anymore
+            boolean completed = false;
+            while (!completed) {
+                // holds the parents - to be processed in the next iteration
+                HashSet<PartitiveFamilyTreeNode> tmpSet = new HashSet<>();
+                for (PartitiveFamilyTreeNode node : innerNodes) {
+                    if (node.getNumMarkedChildren() == node.getNumChildren()) {
+                        node.unmarkAllChildren();
+                        node.mark();
+                        tmpSet.add((PartitiveFamilyTreeNode) node.getParent());
+                    }
+                }
+                completed = tmpSet.isEmpty();
+                innerNodes = tmpSet;
+            }
         }
 
+
         // Reinitialize and Compute P_b with alg 1
+
+        // IMPORTANT: before step to, I need to compute P_a and P_b to compute A* and B*!!!
+        // unfortunately, no algorithm was given to compute P_a and P_b...
+        // No Problem: I can directly compute A* and B*!!!
+
 
 
         // Step 2: Take the initialized inclusion tree of σ(T_a, T_b) and test its nodes for membership in A* and B*,

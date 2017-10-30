@@ -41,4 +41,11 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             System.err.println("Illegal number of marked children after unmarking!!!");
     }
 
+    public int getNumMarkedChildren() {
+        return numMarkedChildren;
+    }
+
+    public boolean isMarked() {
+        return marked;
+    }
 }
