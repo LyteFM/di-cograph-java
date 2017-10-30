@@ -339,7 +339,7 @@ class RootedTreeNode {
      * @param modules
      * @return
      */
-    public BitSet getStrongModulesBool(Map<String, Integer> vertexToIndex, ArrayList<MDTreeLeafNode> leaves, HashMap<BitSet, RootedTreeNode> modules) {
+    public BitSet getStrongModulesBool(Map<String, Integer> vertexToIndex, MDTreeLeafNode[] leaves, HashMap<BitSet, RootedTreeNode> modules) {
         int n = vertexToIndex.size();
         BitSet ret = new BitSet(n);
         RootedTreeNode currentChild = firstChild;
@@ -349,7 +349,7 @@ class RootedTreeNode {
                     MDTreeLeafNode leafNode = (MDTreeLeafNode) currentChild;
                     int index = vertexToIndex.get(leafNode.getLabel());
                     ret.set(index);
-                    leaves.add(index, leafNode);
+                    leaves[index] = leafNode;
                 } else {
                     BitSet childSet = currentChild.getStrongModulesBool(vertexToIndex, leaves, modules);
                     ret.or(childSet);

@@ -67,16 +67,16 @@ public class Main {
 
         //mdTest();
         //DirectedMD.dahlhausProcessDelegator("OverlapComponentProg/test3_neu.txt");
-        // directedMDTesting(log);
-        primeTest();
+        directedMDTesting(log);
+        // primeTest();
 
     }
 
     static void directedMDTesting(Logger log) throws Exception{
         GraphGenerator gen = new GraphGenerator(log);
         SimpleDirectedGraph<String, DefaultEdge> g_d = new SimpleDirectedGraph<>(DefaultEdge.class);
-        gen.generateRandomDirectedCograph(g_d, 20);
-        gen.disturbDicograph(g_d,5);
+        gen.generateRandomDirectedCograph(g_d, 50);
+        gen.disturbDicograph(g_d, 9);
 
         DirectedMD testMD = new DirectedMD(g_d, log, true);
         testMD.computeModularDecomposition();

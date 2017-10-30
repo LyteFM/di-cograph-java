@@ -41,8 +41,8 @@ public class DirectedMD {
     final boolean debugMode; // false for max speed, true for nicely sorted vertices etc.
     final String[] vertexForIndex;
     Map<String, Integer> vertexToIndex;
-    ArrayList<MDTreeLeafNode> leavesOfT_a;
-    ArrayList<MDTreeLeafNode> leavesOfT_b;
+    final MDTreeLeafNode[] leavesOfT_a;
+    final MDTreeLeafNode[] leavesOfT_b;
 
 
 
@@ -53,8 +53,8 @@ public class DirectedMD {
         nVertices = input.vertexSet().size();
         vertexForIndex = new String[nVertices];
         vertexToIndex = new HashMap<>(nVertices*4/3);
-        leavesOfT_a = new ArrayList<>(nVertices);
-        leavesOfT_b = new ArrayList<>(nVertices);
+        leavesOfT_a = new MDTreeLeafNode[nVertices];
+        leavesOfT_b = new MDTreeLeafNode[nVertices];
         this.debugMode = debugMode;
 
         // Initialize Index-Vertex-BiMap
@@ -122,6 +122,55 @@ public class DirectedMD {
         String baum = "tree";
 
 
+    }
+
+    // Note: Parameters are:
+    // printgraph - 0
+    // printcc    - 1
+    // check      - 0
+    public static ArrayList<Integer> dahlhausProcessDelegator(String inputFile, Logger log)
+            throws InterruptedException, IOException {
+        List<String> command = new ArrayList<>();
+        command.add("./dahlhaus"); // ./OverlapComponentProg/main
+        command.add(inputFile);
+        ArrayList<Integer> ret = new ArrayList<>();
+
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        processBuilder.environment();
+
+        Process process = processBuilder.start();
+        InputStream inputStream = process.getInputStream();
+        InputStreamReader inputReader = new InputStreamReader(inputStream);
+        BufferedReader bufferedReader = new BufferedReader(inputReader);
+        String nextLine;
+        int count = 0;
+        while ((nextLine = bufferedReader.readLine()) != null) {
+            log.fine(nextLine);
+            count++;
+            if (count == 7) {
+                for (String res : nextLine.split(" ")) {
+                    ret.add(Integer.valueOf(res));
+                }
+            }
+        }
+        log.info("Dahlhaus algorithm finished");
+        return ret;
+    }
+
+    int getEdgeValueForH(String u, String v) {
+
+        boolean inG_s = G_s.containsEdge(u, v);
+        boolean inG_d = G_d.containsEdge(u, v);
+
+        if (!inG_d && !inG_s) {
+            return 0;
+        } else if (inG_d && inG_s) {
+            return 1;
+        } else if (!inG_d && inG_s) {
+            return 2;
+        } else {
+            throw new IllegalStateException("Error: illegal state in H for edge (" + u + ":" + v + ")");
+        }
     }
 
     MDTree intersectPartitiveFamiliesOf(MDTree T_a, MDTree T_b) throws InterruptedException,IOException{
@@ -214,7 +263,7 @@ public class DirectedMD {
 
             int componentNr = overlapComponentNumbers.get(i);
             if (overlapComponents.containsKey(componentNr)) {
-                overlapComponents.get(componentNr).or(allNontrivModules.get(i));
+                overlapComponents.get(componentNr).or(allNontrivModules.get(i)); // todo: hier passiert was dämilches. Lieber erstmal mit Listen arbeiten.
             } else {
                 overlapComponents.put(componentNr, allNontrivModules.get(i));
             }
@@ -275,7 +324,7 @@ public class DirectedMD {
         }
         // add root
         BitSet rootSet = new BitSet(nVertices);
-        rootSet.set(0, nVertices - 1);
+        rootSet.set(0, nVertices); // toIndex must be n
         nontrivOverlapComponents.add(0, rootSet);
 
         // - visit each Y ∈ F in descending order of size. For each x ∈ Y, insert pointer to Y to front of x's list. [O(sz(F)]
@@ -297,14 +346,15 @@ public class DirectedMD {
         int nodeCount = 0;
         // - visit each x ∈ V, put a parent pointer from each member of x's list to its successor in x's list (if not already done)
         //      -> these are chains of ancestors of {x}
-        for (int vertexNr = 0; vertexNr < nVertices; vertexNr++) {
-            // I can stop once all are in the tree. todo: why even use vertexNr?
-            while (nodeCount < nontrivOverlapComponents.size()) {
+        while (nodeCount < nontrivOverlapComponents.size()) {
+            for (int vertexNr = 0; vertexNr < nVertices; vertexNr++) {
+                // I can stop once all are in the tree. todo: why even use vertexNr?
+
                 ArrayList<BitSet> currVertexList = xLists.get(vertexNr);
                 for (int bIndex = 0; bIndex < currVertexList.size() - 1; bIndex++) {
 
                     BitSet currModule = currVertexList.get(bIndex);
-                    PartitiveFamilyTreeNode currTreenode = bitsetToOverlapTreenNode.get(currModule);
+                    PartitiveFamilyTreeNode currTreenode = bitsetToOverlapTreenNode.getOrDefault(currModule, null);
                     // current node already has a parent -> nothing to do. No child gets added twice.
 
                     if (currTreenode == null) {
@@ -318,12 +368,15 @@ public class DirectedMD {
                             // todo: does that ever happen? yes, we go bottom-up. Are the 1st always...?
                             parentTreeNode = new PartitiveFamilyTreeNode();
                             bitsetToOverlapTreenNode.put(parentModule, parentTreeNode);
+                            nodeCount++; // todo: Baum stimmt noch nicht ganz :/ muss die parent-pointer richtiger machen.
                         }
                         nodesWithLeavesOnly.remove(parentTreeNode);
                         parentTreeNode.addChild(currTreenode);
+                        nodeCount++;
                     }
 
                 }
+
             }
         }
 
@@ -383,7 +436,7 @@ public class DirectedMD {
             BitSet bits = setEntryOfSigma.getKey();
             // Init: Mark the leaf entries of T_a corresponding to the current set of σ(T_a,T_b)
             for (int i = bits.nextSetBit(0); i >= 0; i = bits.nextSetBit(i + 1)) {
-                leavesOfT_b.get(i).addMark(); // todo: for T_b, and can I re-use?
+                leavesOfT_a[i].addMark(); // todo: for T_b, and can I re-use?
             }
             // Now, iterate bottom-up through σ.
             for (PartitiveFamilyTreeNode node : nodesWithLeavesOnly.keySet()) {
@@ -435,52 +488,6 @@ public class DirectedMD {
 
         // Th. 15: T(F) =T_a Λ T_b in O(sz(S(F_a)) + sz(S(F_b))
 
-        return ret;
-    }
-
-    int getEdgeValueForH(String u, String v){
-
-        boolean inG_s = G_s.containsEdge(u,v);
-        boolean inG_d = G_d.containsEdge(u,v);
-
-        if(!inG_d && !inG_s){
-            return 0;
-        } else if (inG_d && inG_s){
-            return 1;
-        } else if (!inG_d && inG_s){
-            return 2;
-        } else {
-            throw new IllegalStateException("Error: illegal state in H for edge (" + u + ":" + v + ")");
-        }
-    }
-
-    public static ArrayList<Integer> dahlhausProcessDelegator(String inputFile, Logger log)
-            throws InterruptedException,IOException
-    {
-        List<String> command = new ArrayList<>();
-        command.add("./dahlhaus"); // ./OverlapComponentProg/main
-        command.add(inputFile);
-        ArrayList<Integer> ret = new ArrayList<>();
-
-        ProcessBuilder processBuilder = new ProcessBuilder(command);
-        processBuilder.environment();
-
-        Process process = processBuilder.start();
-        InputStream inputStream = process.getInputStream();
-        InputStreamReader inputReader = new InputStreamReader(inputStream);
-        BufferedReader bufferedReader = new BufferedReader(inputReader);
-        String nextLine;
-        int count = 0;
-        while ((nextLine = bufferedReader.readLine()) != null) {
-            log.fine(nextLine);
-            count ++;
-            if(count == 7){
-                for(String res : nextLine.split(" ")){
-                    ret.add(Integer.valueOf(res));
-                }
-            }
-        }
-        log.info("Dahlhaus algorithm finished");
         return ret;
     }
 
