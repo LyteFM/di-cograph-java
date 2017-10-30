@@ -173,6 +173,63 @@ public class DirectedMD {
         }
     }
 
+    RootedTreeNode computeLCA(List<RootedTreeNode> lowerNodes, Logger log) {
+
+        boolean alreadyReachedRoot = false;
+        // init
+        HashMap<Integer, LinkedList<RootedTreeNode>> inputNodeToAncestor = new HashMap<>(lowerNodes.size() * 4 / 3);
+        HashMap<RootedTreeNode, Integer> allTraversedNodes = new HashMap<>();
+        HashSet<Integer> lastNodeRemaining = new HashSet<>();
+
+        for (int i = 0; i < lowerNodes.size(); i++) {
+            LinkedList<RootedTreeNode> list = new LinkedList<>();
+            list.add(lowerNodes.get(i));
+            allTraversedNodes.put(lowerNodes.get(i), i);
+            inputNodeToAncestor.put(i, list);
+            lastNodeRemaining.add(i);
+        }
+        int currDistance = 0;
+        // Traverse the Tree bottom-up
+
+        while (lastNodeRemaining.size() > 1) {
+            Iterator<Map.Entry<Integer, LinkedList<RootedTreeNode>>> nodesIter = inputNodeToAncestor.entrySet().iterator();
+            while (nodesIter.hasNext()) {
+                Map.Entry<Integer, LinkedList<RootedTreeNode>> currEntry = nodesIter.next();
+                RootedTreeNode parent = currEntry.getValue().peekLast().getParent();
+                if (allTraversedNodes.containsKey(parent)) {
+
+                    // already present: close this list.
+                    lastNodeRemaining.remove(currEntry.getKey());
+                    if (parent.isRoot()) {
+                        log.fine("Reached root: " + currEntry.toString());
+                        // No problem if just one went up to root.
+                        if (alreadyReachedRoot) {
+                            log.fine("Root is LCA.");
+                            return parent;
+                        }
+                        alreadyReachedRoot = true;
+                    } else {
+                        log.fine("Closing: " + currEntry.toString());
+                    }
+                    nodesIter.remove();
+                    // We're done if this was the last.
+                    if (lastNodeRemaining.size() == 1) {
+                        return parent;
+                    }
+
+                } else {
+                    // add the parent
+                    currEntry.getValue().addLast(parent);
+                    allTraversedNodes.put(parent, currEntry.getKey());
+                }
+            }
+            currDistance++;
+
+        }
+        log.warning("Error: Unexpected Exit!");
+        return null;
+    }
+
     MDTree intersectPartitiveFamiliesOf(MDTree T_a, MDTree T_b) throws InterruptedException,IOException{
         MDTree ret = new MDTree();
 
@@ -411,7 +468,7 @@ public class DirectedMD {
         //         - record of how many children it has (numChildren, ok)
         //         - an initialized field for marking
         //         - how many children are marked (hmm...)
-        // -> ok, RootedTreeNode 
+        // -> ok, RootedTreeNode
 
         // use alg. 1 to compute P_a(X) and P_b(X) for all X in the tree of σ(T_a,T_b)
         // todo: P_a(X): smallest (size) node of T_a containing X as proper subset.
@@ -447,8 +504,8 @@ public class DirectedMD {
         HashSet<Map.Entry<BitSet, RootedTreeNode>> elementsOfA = new HashSet<>();
         // nodes of T_a:
         HashSet<RootedTreeNode> innerNodes = new HashSet<>(bitsetToOverlapTreenNode.size() * 4 / 3);
-        HashMap<MDTreeNode, BitSet> nodesOfT_aWithLeaves = new HashMap<>();
-        HashSet<MDTreeNode> maximumMembers = new HashSet<>();
+        HashMap<RootedTreeNode, BitSet> nodesOfT_aWithLeaves = new HashMap<>();
+        HashSet<RootedTreeNode> maximumMembers = new HashSet<>();
 
         // outer loop: iterate over all inner nodes of σ(T_a,T_b)
         // want to get the P_a for every node S in σ!!!
@@ -462,7 +519,7 @@ public class DirectedMD {
             for (int i = bits.nextSetBit(0); i >= 0; i = bits.nextSetBit(i + 1)) {
                 leavesOfT_a[i].addMark(); // todo: for T_b, and can I re-use?
                 maximumMembers.add(leavesOfT_a[i]);
-                MDTreeNode parent = (MDTreeNode) leavesOfT_a[i].getParent();
+                RootedTreeNode parent = leavesOfT_a[i].getParent(); //MDTreeNode. brauche ich nicht typ?
                 BitSet bitSet = modulesAToBitset.get(parent);
                 // NodesWithLeaves setzen.
                 nodesOfT_aWithLeaves.put(parent, bitSet); // todo: ok this way?
@@ -475,11 +532,11 @@ public class DirectedMD {
                     // nodes can have same parent, HashSet keeps us safe
                     innerNodes.add(node.getParent());
                     // update maximum members:
-                    maximumMembers.add((MDTreeNode) node.getParent());
-                    MDTreeNode child = (MDTreeNode) node.getFirstChild();
+                    maximumMembers.add(node.getParent());
+                    RootedTreeNode child = node.getFirstChild();
                     while (child != null) {
                         maximumMembers.remove(child);
-                        child = (MDTreeNode) child.getRightSibling();
+                        child = child.getRightSibling();
                     }
                 }
                 // else: not completely marked - ignore.
@@ -497,11 +554,11 @@ public class DirectedMD {
                         node.mark();
                         tmpSet.add(node.getParent());
                         // update maximum members:
-                        maximumMembers.add((MDTreeNode) node.getParent());
-                        MDTreeNode child = (MDTreeNode) node.getFirstChild();
+                        maximumMembers.add(node.getParent());
+                        RootedTreeNode child = node.getFirstChild();
                         while (child != null) {
                             maximumMembers.remove(child); // todo: does this work?
-                            child = (MDTreeNode) child.getRightSibling();
+                            child = child.getRightSibling();
                         }
                     }
                 }
@@ -518,11 +575,15 @@ public class DirectedMD {
             } else {
                 // compute the LCA of all maximum members and check if it is root. Note: one entry itself could be that.
                 // LCA can be found in O(h), h height of the tree, at least.
+                ArrayList<RootedTreeNode> maxMembersList = new ArrayList<>(maximumMembers);
+                RootedTreeNode lca = computeLCA(maxMembersList, log); // indices are useful
 
 
             }
 
         }
+
+        // todo: Gefährlich mit dem ganzen Klassen-casten. ggf noch eine Modules-List erstellen für T_a, T_b, um indizes zu haben.
 
 
         // Reinitialize and Compute P_b with alg 1
