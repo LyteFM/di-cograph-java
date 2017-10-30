@@ -5,7 +5,6 @@ package dicograph.modDecomp;
  */
 public class PartitiveFamilyLeafNode extends PartitiveFamilyTreeNode {
 
-    boolean marked;
     int vertex;
     // Debug: Corresponding String in JGraphT
     private String label;

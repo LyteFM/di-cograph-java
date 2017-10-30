@@ -11,6 +11,9 @@ import java.util.Map;
  * A node in a rooted tree.
  */
 class RootedTreeNode {
+    // F.L. 30.10. Flags for Algorithm 1:
+    boolean marked;
+    int numMarkedChildren;
 
 	// The parent of this node.
 	private RootedTreeNode parent;
@@ -35,12 +38,52 @@ class RootedTreeNode {
 		leftSibling = null;
 		rightSibling = null;
 		numChildren = 0;
-	}
-		
-	/* 
-	 * Creates a node with a single child.
-	 * @param child The child of this node.
-	 */ 
+
+        // F.L. 30.10. Flags for Algorithm 1:
+        marked = false;
+        numMarkedChildren = 0;
+    }
+
+    public int getNumMarkedChildren() {
+        return numMarkedChildren;
+    }
+
+    public boolean isMarked() {
+        return marked;
+    }
+
+    // F.L. 30.10. Flags for Algorithm 1:
+    protected void mark() {
+        marked = true;
+        // todo: what if root?
+        PartitiveFamilyTreeNode parent = (PartitiveFamilyTreeNode) getParent();
+        parent.numMarkedChildren++;
+    }
+    // end
+
+    protected void unmark() {
+        marked = false;
+        PartitiveFamilyTreeNode parent = (PartitiveFamilyTreeNode) getParent();
+        parent.numMarkedChildren--;
+    }
+
+    void unmarkAllChildren() {
+        PartitiveFamilyTreeNode currentChild = (PartitiveFamilyTreeNode) this.getFirstChild();
+
+        while (currentChild != null) {
+            currentChild.unmark();
+            currentChild = (PartitiveFamilyTreeNode) currentChild.getRightSibling();
+        }
+
+        // todo: assert numMarkedChildren == 0
+        if (numMarkedChildren != 0)
+            System.err.println("Illegal number of marked children after unmarking!!!");
+    }
+
+    /*
+     * Creates a node with a single child.
+     * @param child The child of this node.
+     */
 	protected void addChild(RootedTreeNode child) {
 		child.removeSubtree();
 		if (firstChild != null) {

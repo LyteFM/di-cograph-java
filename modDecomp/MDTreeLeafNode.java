@@ -10,12 +10,15 @@ import java.util.ListIterator;
  */
 class MDTreeLeafNode extends MDTreeNode {
 
+    int vertexNo;
+    // F.L.
+    private String label;
+
+
 	// The vertex to which this leaf node is in one-to-one correspondance.
 	private Vertex vertex;
-    // To be replaced by this String in the JGraph
-    private String label;
-	
-	// The leaf node representation of the neighbours of the vertex 
+
+    // The leaf node representation of the neighbours of the vertex
 	// associated with this leaf node.
 	private LinkedList<MDTreeLeafNode> neighbours;
 

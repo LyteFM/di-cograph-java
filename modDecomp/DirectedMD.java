@@ -263,7 +263,7 @@ public class DirectedMD {
 
             int componentNr = overlapComponentNumbers.get(i);
             if (overlapComponents.containsKey(componentNr)) {
-                overlapComponents.get(componentNr).or(allNontrivModules.get(i)); // todo: hier passiert was dämilches. Lieber erstmal mit Listen arbeiten.
+                overlapComponents.get(componentNr).or(allNontrivModules.get(i)); // todo: hier passiert was dämilches. Lieber erstmal mit Listen arbeiten?
             } else {
                 overlapComponents.put(componentNr, allNontrivModules.get(i));
             }
@@ -311,7 +311,9 @@ public class DirectedMD {
 
         // Step 1: Sort the array by size, using bucket sort todo: add V (last) and singletons (front) :)
         // Sorting.bucketSortBySize() // todo: Das brauche ich häufiger! Abstrakt mit Generics machen!
-        ArrayList<BitSet> nontrivOverlapComponents = new ArrayList<>(overlapComponents.values());
+        HashSet<BitSet> overlapComponentsNoDoubles = new HashSet<>(overlapComponents.values());
+        // todo: hier ärgerlicher Fehler für gespeicherten Dahlhaus-input
+        ArrayList<BitSet> nontrivOverlapComponents = new ArrayList<>(overlapComponentsNoDoubles);
         nontrivOverlapComponents.sort(new BitSetComparatorDesc());
 
         // Step 2: Create a List for each v ∈ V of the members of F (i.e. the elements of σ) containing v in ascending order of their size:
@@ -343,7 +345,7 @@ public class DirectedMD {
         HashMap<PartitiveFamilyTreeNode, BitSet> nodesWithLeavesOnly = new HashMap<>();
         bitsetToOverlapTreenNode.put(rootSet, root);
         // Brauche noch ein Set, das die unteren Treenodes verwaltet...
-        int nodeCount = 0;
+        int nodeCount = 1; // root ist bereits drin.
         // - visit each x ∈ V, put a parent pointer from each member of x's list to its successor in x's list (if not already done)
         //      -> these are chains of ancestors of {x}
         while (nodeCount < nontrivOverlapComponents.size()) {
@@ -361,6 +363,7 @@ public class DirectedMD {
                         currTreenode = new PartitiveFamilyTreeNode();
                         bitsetToOverlapTreenNode.put(currModule, currTreenode);
                         nodesWithLeavesOnly.put(currTreenode, currModule); // assuming this at first
+                        nodeCount++;
 
                         BitSet parentModule = currVertexList.get(bIndex + 1);
                         PartitiveFamilyTreeNode parentTreeNode = bitsetToOverlapTreenNode.get(parentModule);
@@ -372,7 +375,6 @@ public class DirectedMD {
                         }
                         nodesWithLeavesOnly.remove(parentTreeNode);
                         parentTreeNode.addChild(currTreenode);
-                        nodeCount++;
                     }
 
                 }
@@ -437,8 +439,9 @@ public class DirectedMD {
             // Init: Mark the leaf entries of T_a corresponding to the current set of σ(T_a,T_b)
             for (int i = bits.nextSetBit(0); i >= 0; i = bits.nextSetBit(i + 1)) {
                 leavesOfT_a[i].addMark(); // todo: for T_b, and can I re-use?
+                // hier könnte ich auch die nodesWithLeaves setzen.
             }
-            // Now, iterate bottom-up through σ.
+            // Now, iterate bottom-up through T_a, not through σ!!!
             for (PartitiveFamilyTreeNode node : nodesWithLeavesOnly.keySet()) {
                 if (node.getNumChildren() == node.getNumMarkedChildren()) {
                     node.unmarkAllChildren();
