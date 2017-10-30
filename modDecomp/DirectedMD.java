@@ -204,6 +204,17 @@ public class DirectedMD {
         // Brauche ich die corresp. TreeNode irgendwann? Muss hier auch die leaves mit Index abfragen.
         HashMap<BitSet, RootedTreeNode> nontrivModulesBoolA = T_a.getStrongModulesBool(vertexToIndex, leavesOfT_a);
         HashMap<BitSet, RootedTreeNode> nontrivModulesBoolB = T_b.getStrongModulesBool(vertexToIndex, leavesOfT_b);
+        // other way round for later
+        HashMap<RootedTreeNode, BitSet> modulesAToBitset = new HashMap<>(nontrivModulesBoolA.size() * 4 / 3);
+        for (Map.Entry<BitSet, RootedTreeNode> entry : nontrivModulesBoolA.entrySet()) {
+            modulesAToBitset.put(entry.getValue(), entry.getKey());
+        }
+        HashMap<RootedTreeNode, BitSet> modulesBToBitset = new HashMap<>(nontrivModulesBoolB.size() * 4 / 3);
+        for (Map.Entry<BitSet, RootedTreeNode> entry : nontrivModulesBoolB.entrySet()) {
+            modulesBToBitset.put(entry.getValue(), entry.getKey());
+        }
+
+
 
         HashSet<BitSet> nontrivModulesTemp = new HashSet<>(nontrivModulesBoolA.keySet());
         nontrivModulesTemp.addAll(nontrivModulesBoolB.keySet());
@@ -305,7 +316,7 @@ public class DirectedMD {
 
         // 3.) @Lemma 11: compute the inclusion tree of σ(T_a, T_b)
         // V trivially at root, singletons as leaves? -> singletons are below the components anyways.
-        // Might be able to re-use the PartitiveFamilyTreeNodes
+        // Might be able to re-use the RootedTreeNode s
 
 
 
@@ -313,8 +324,14 @@ public class DirectedMD {
         // Sorting.bucketSortBySize() // todo: Das brauche ich häufiger! Abstrakt mit Generics machen!
         HashSet<BitSet> overlapComponentsNoDoubles = new HashSet<>(overlapComponents.values());
         // todo: hier ärgerlicher Fehler für gespeicherten Dahlhaus-input
+        if (debugMode && overlapComponentsNoDoubles.size() != overlapComponents.size()) {
+            log.warning("Overlap compenents were merged into an already existing compontent!");
+        }
         ArrayList<BitSet> nontrivOverlapComponents = new ArrayList<>(overlapComponentsNoDoubles);
+
         nontrivOverlapComponents.sort(new BitSetComparatorDesc());
+        log.fine("Overlap components: " + nontrivOverlapComponents);
+
 
         // Step 2: Create a List for each v ∈ V of the members of F (i.e. the elements of σ) containing v in ascending order of their size:
 
@@ -339,10 +356,10 @@ public class DirectedMD {
         }
 
         RootedTree rootedTree = new RootedTree();
-        PartitiveFamilyTreeNode root = new PartitiveFamilyTreeNode();
+        RootedTreeNode root = new RootedTreeNode();
         rootedTree.setRoot(root);
-        HashMap<BitSet, PartitiveFamilyTreeNode> bitsetToOverlapTreenNode = new HashMap<>(nontrivOverlapComponents.size() * 4 / 3);
-        HashMap<PartitiveFamilyTreeNode, BitSet> nodesWithLeavesOnly = new HashMap<>();
+        HashMap<BitSet, RootedTreeNode> bitsetToOverlapTreenNode = new HashMap<>(nontrivOverlapComponents.size() * 4 / 3);
+        HashMap<RootedTreeNode, BitSet> nodesWithLeavesOnly = new HashMap<>();
         bitsetToOverlapTreenNode.put(rootSet, root);
         // Brauche noch ein Set, das die unteren Treenodes verwaltet...
         int nodeCount = 1; // root ist bereits drin.
@@ -356,20 +373,20 @@ public class DirectedMD {
                 for (int bIndex = 0; bIndex < currVertexList.size() - 1; bIndex++) {
 
                     BitSet currModule = currVertexList.get(bIndex);
-                    PartitiveFamilyTreeNode currTreenode = bitsetToOverlapTreenNode.getOrDefault(currModule, null);
+                    RootedTreeNode currTreenode = bitsetToOverlapTreenNode.getOrDefault(currModule, null);
                     // current node already has a parent -> nothing to do. No child gets added twice.
 
                     if (currTreenode == null) {
-                        currTreenode = new PartitiveFamilyTreeNode();
+                        currTreenode = new RootedTreeNode();
                         bitsetToOverlapTreenNode.put(currModule, currTreenode);
                         nodesWithLeavesOnly.put(currTreenode, currModule); // assuming this at first
                         nodeCount++;
 
                         BitSet parentModule = currVertexList.get(bIndex + 1);
-                        PartitiveFamilyTreeNode parentTreeNode = bitsetToOverlapTreenNode.get(parentModule);
+                        RootedTreeNode parentTreeNode = bitsetToOverlapTreenNode.get(parentModule);
                         if (parentTreeNode == null) {
                             // todo: does that ever happen? yes, we go bottom-up. Are the 1st always...?
-                            parentTreeNode = new PartitiveFamilyTreeNode();
+                            parentTreeNode = new RootedTreeNode();
                             bitsetToOverlapTreenNode.put(parentModule, parentTreeNode);
                             nodeCount++; // todo: Baum stimmt noch nicht ganz :/ muss die parent-pointer richtiger machen.
                         }
@@ -381,6 +398,7 @@ public class DirectedMD {
 
             }
         }
+        log.fine("Inclusion Tree of overlap components: " + rootedTree.toString());
 
 
         // 4.) Algorithm 1: compute Ü(T_a,T_b) = A* \cap B*;
@@ -393,7 +411,7 @@ public class DirectedMD {
         //         - record of how many children it has (numChildren, ok)
         //         - an initialized field for marking
         //         - how many children are marked (hmm...)
-        // -> ok, PartitiveFamilyTreeNode
+        // -> ok, RootedTreeNode 
 
         // use alg. 1 to compute P_a(X) and P_b(X) for all X in the tree of σ(T_a,T_b)
         // todo: P_a(X): smallest (size) node of T_a containing X as proper subset.
@@ -408,64 +426,102 @@ public class DirectedMD {
         //    note: this would yield true if A was empty.
 
         // adds the leaf-entries to the trees and saves them in a List
-        ArrayList<PartitiveFamilyLeafNode> allLeafs = new ArrayList<>(nVertices);
-        for (Map.Entry<PartitiveFamilyTreeNode, BitSet> nodeEntry : nodesWithLeavesOnly.entrySet()) {
+        // todo: brauch das eigentlich nicht.
+        PartitiveFamilyLeafNode[] allLeafs = new PartitiveFamilyLeafNode[nVertices];
+        for (Map.Entry<RootedTreeNode, BitSet> nodeEntry : nodesWithLeavesOnly.entrySet()) {
             BitSet bits = nodeEntry.getValue();
             for (int i = bits.nextSetBit(0); i >= 0; i = bits.nextSetBit(i + 1)) {
                 PartitiveFamilyLeafNode child = new PartitiveFamilyLeafNode(i, vertexForIndex[i]);
                 nodeEntry.getKey().addChild(child);
-                allLeafs.add(i, child);
+                allLeafs[i] = child;
             }
         }
-        // todo: verify that the List is full!
-        System.out.println(allLeafs);
 
         LinkedList<Integer> test2 = new LinkedList<>();
 
         // Compute P_a(S) for every S \in σ with alg 1. -> nope, I'll compute A* and B* directly
         // "P_a(S) is the smallest node of T_a that contains S as proper subset"
-        // HashMap<PartitiveFamilyTreeNode, MDTreeNode> P_a = new HashMap<>();
-        // HashMap<PartitiveFamilyTreeNode, MDTreeNode> P_b = new HashMap<>();
+        // HashMap<RootedTreeNode , MDTreeNode> P_a = new HashMap<>();
+        // HashMap<RootedTreeNode , MDTreeNode> P_b = new HashMap<>();
 
-        // nodes of σ:
-        HashSet<PartitiveFamilyTreeNode> innerNodes = new HashSet<>(bitsetToOverlapTreenNode.size() * 4 / 3);
+        HashSet<Map.Entry<BitSet, RootedTreeNode>> elementsOfA = new HashSet<>();
+        // nodes of T_a:
+        HashSet<RootedTreeNode> innerNodes = new HashSet<>(bitsetToOverlapTreenNode.size() * 4 / 3);
+        HashMap<MDTreeNode, BitSet> nodesOfT_aWithLeaves = new HashMap<>();
+        HashSet<MDTreeNode> maximumMembers = new HashSet<>();
 
         // outer loop: iterate over all inner nodes of σ(T_a,T_b)
-        // todo: other way round... want to get the P_a for every node S in σ!!!
-        for (Map.Entry<BitSet, PartitiveFamilyTreeNode> setEntryOfSigma : bitsetToOverlapTreenNode.entrySet()) {
+        // want to get the P_a for every node S in σ!!!
+        for (Map.Entry<BitSet, RootedTreeNode> setEntryOfSigma : bitsetToOverlapTreenNode.entrySet()) {
 
+            nodesOfT_aWithLeaves.clear();
+            maximumMembers.clear();
             innerNodes.clear();
             BitSet bits = setEntryOfSigma.getKey();
             // Init: Mark the leaf entries of T_a corresponding to the current set of σ(T_a,T_b)
             for (int i = bits.nextSetBit(0); i >= 0; i = bits.nextSetBit(i + 1)) {
                 leavesOfT_a[i].addMark(); // todo: for T_b, and can I re-use?
-                // hier könnte ich auch die nodesWithLeaves setzen.
+                maximumMembers.add(leavesOfT_a[i]);
+                MDTreeNode parent = (MDTreeNode) leavesOfT_a[i].getParent();
+                BitSet bitSet = modulesAToBitset.get(parent);
+                // NodesWithLeaves setzen.
+                nodesOfT_aWithLeaves.put(parent, bitSet); // todo: ok this way?
             }
             // Now, iterate bottom-up through T_a, not through σ!!!
-            for (PartitiveFamilyTreeNode node : nodesWithLeavesOnly.keySet()) {
+            for (RootedTreeNode node : nodesOfT_aWithLeaves.keySet()) {
                 if (node.getNumChildren() == node.getNumMarkedChildren()) {
                     node.unmarkAllChildren();
                     node.mark();
-                    innerNodes.add((PartitiveFamilyTreeNode) node.getParent());
                     // nodes can have same parent, HashSet keeps us safe
+                    innerNodes.add(node.getParent());
+                    // update maximum members:
+                    maximumMembers.add((MDTreeNode) node.getParent());
+                    MDTreeNode child = (MDTreeNode) node.getFirstChild();
+                    while (child != null) {
+                        maximumMembers.remove(child);
+                        child = (MDTreeNode) child.getRightSibling();
+                    }
                 }
+                // else: not completely marked - ignore.
             }
             // I might need to start at root top-down, then go bottom-up
             // Now simply loop, until no parents are fully marked anymore
+            // todo: do the map-operations
             boolean completed = false;
             while (!completed) {
                 // holds the parents - to be processed in the next iteration
-                HashSet<PartitiveFamilyTreeNode> tmpSet = new HashSet<>();
-                for (PartitiveFamilyTreeNode node : innerNodes) {
+                HashSet<RootedTreeNode> tmpSet = new HashSet<>();
+                for (RootedTreeNode node : innerNodes) {
                     if (node.getNumMarkedChildren() == node.getNumChildren()) {
                         node.unmarkAllChildren();
                         node.mark();
-                        tmpSet.add((PartitiveFamilyTreeNode) node.getParent());
+                        tmpSet.add(node.getParent());
+                        // update maximum members:
+                        maximumMembers.add((MDTreeNode) node.getParent());
+                        MDTreeNode child = (MDTreeNode) node.getFirstChild();
+                        while (child != null) {
+                            maximumMembers.remove(child); // todo: does this work?
+                            child = (MDTreeNode) child.getRightSibling();
+                        }
                     }
                 }
                 completed = tmpSet.isEmpty();
                 innerNodes = tmpSet;
             }
+            // now, we have the maximal members of T_a marked that are subsets of an S ⊂ σ.
+            // to determine if S \in A*, check if maximumMembers has only one entry OR their first shared parent is complete.
+            if (maximumMembers.size() == 1) {
+                elementsOfA.add(setEntryOfSigma);
+                log.fine("Added: " + setEntryOfSigma.toString());
+            } else if (maximumMembers.size() == 0) {
+                log.warning("Strange: no max member for " + setEntryOfSigma.toString());
+            } else {
+                // compute the LCA of all maximum members and check if it is root. Note: one entry itself could be that.
+                // LCA can be found in O(h), h height of the tree, at least.
+
+
+            }
+
         }
 
 

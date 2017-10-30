@@ -15,4 +15,9 @@ public class PartitiveFamilyLeafNode extends PartitiveFamilyTreeNode {
         vertex = vertexNo;
     }
 
+    @Override
+    public String toString() {
+
+        return "(Leaf: " + label + ")";
+    }
 }

@@ -44,15 +44,17 @@ class RootedTreeNode {
         numMarkedChildren = 0;
     }
 
+    // F.L. 30.10. Flags for Algorithm 1:
+
     public int getNumMarkedChildren() {
         return numMarkedChildren;
     }
 
-    public boolean isMarked() {
-        return marked;
-    }
+    // not necessary and dangerous
+    //protected boolean isMarked() {
+    //    return marked;
+    //}
 
-    // F.L. 30.10. Flags for Algorithm 1:
     protected void mark() {
         marked = true;
         // todo: what if root?
@@ -79,6 +81,7 @@ class RootedTreeNode {
         if (numMarkedChildren != 0)
             System.err.println("Illegal number of marked children after unmarking!!!");
     }
+    // end
 
     /*
      * Creates a node with a single child.

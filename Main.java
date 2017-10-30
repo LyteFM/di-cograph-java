@@ -20,6 +20,7 @@ import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 import dicograph.ILPSolver.CplexDiCographEditingSolver;
 import dicograph.graphIO.GraphGenerator;
@@ -28,6 +29,7 @@ import dicograph.graphIO.SimpleMatrixImporter;
 import dicograph.modDecomp.DirectedMD;
 import dicograph.modDecomp.GraphHandle;
 import dicograph.modDecomp.MDTree;
+import dicograph.utils.VerySimpleFormatter;
 import ilog.concert.IloException;
 
 /**
@@ -59,7 +61,12 @@ public class Main {
         System.out.println("The default PRNG on this system is " + new SecureRandom().getAlgorithm());
 
         Logger log = Logger.getLogger( "TestLogger" );
+        for (Handler iHandler : log.getParent().getHandlers()) {
+            log.getParent().removeHandler(iHandler);
+        }
         Handler handler = new ConsoleHandler();
+        VerySimpleFormatter myFormatter = new VerySimpleFormatter();
+        handler.setFormatter(myFormatter);
         handler.setLevel( Level.FINEST );
         log.addHandler( handler );
         log.setLevel( Level.FINEST );
