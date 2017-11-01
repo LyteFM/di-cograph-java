@@ -124,6 +124,7 @@ public class DirectedMD {
 
     }
 
+
     // Note: Parameters are:
     // printgraph - 0
     // printcc    - 1
@@ -155,22 +156,6 @@ public class DirectedMD {
         }
         log.info("Dahlhaus algorithm finished");
         return ret;
-    }
-
-    int getEdgeValueForH(String u, String v) {
-
-        boolean inG_s = G_s.containsEdge(u, v);
-        boolean inG_d = G_d.containsEdge(u, v);
-
-        if (!inG_d && !inG_s) {
-            return 0;
-        } else if (inG_d && inG_s) {
-            return 1;
-        } else if (!inG_d && inG_s) {
-            return 2;
-        } else {
-            throw new IllegalStateException("Error: illegal state in H for edge (" + u + ":" + v + ")");
-        }
     }
 
     RootedTreeNode computeLCA(List<RootedTreeNode> lowerNodes, Logger log) {
@@ -230,6 +215,22 @@ public class DirectedMD {
         return null;
     }
 
+    int getEdgeValueForH(String u, String v) {
+
+        boolean inG_s = G_s.containsEdge(u, v);
+        boolean inG_d = G_d.containsEdge(u, v);
+
+        if (!inG_d && !inG_s) {
+            return 0;
+        } else if (inG_d && inG_s) {
+            return 1;
+        } else if (!inG_d && inG_s) {
+            return 2;
+        } else {
+            throw new IllegalStateException("Error: illegal state in H for edge (" + u + ":" + v + ")");
+        }
+    }
+
     MDTree intersectPartitiveFamiliesOf(MDTree T_a, MDTree T_b) throws InterruptedException,IOException{
         MDTree ret = new MDTree();
 
@@ -257,7 +258,6 @@ public class DirectedMD {
         // -> Create the String at the same time.
         // much better than my current approach with BitSets of size n :)
 
-        // todo: hier direkt ArraysList mit Integers bekommen!
         // Brauche ich die corresp. TreeNode irgendwann? Muss hier auch die leaves mit Index abfragen.
         HashMap<BitSet, RootedTreeNode> nontrivModulesBoolA = T_a.getStrongModulesBool(vertexToIndex, leavesOfT_a);
         HashMap<BitSet, RootedTreeNode> nontrivModulesBoolB = T_b.getStrongModulesBool(vertexToIndex, leavesOfT_b);
@@ -282,27 +282,12 @@ public class DirectedMD {
 
         StringBuilder overlapInput = new StringBuilder();
 
-        /*
-        // todo: Kann ich die trivialen weglassen? Ja!.
-        StringBuilder allVertices = new StringBuilder();
-        for(int i=0; i< nVertices;i++){
-            overlapInput.append(i).append(" -1\n");
-            allVertices.append(i).append(" ");
-        }
-        allVertices.append("-1\n");
-        overlapInput.append(allVertices);
-        */
 
+        // Since the singletons and V itself will never overlap another module, I can exclude them here and only consider the nontrivial modules
         for(BitSet module : allNontrivModules){
             for (int i = module.nextSetBit(0); i >= 0; i = module.nextSetBit(i + 1)) {
                 overlapInput.append(i).append(" ");
             }
-
-//            for(int i =0; i<nVertices; i++){
-//                if(module.get(i)){
-//                    overlapInput.append(i).append(" ");
-//                }
-//            }
             overlapInput.append("-1\n");
         }
 
@@ -331,28 +316,10 @@ public class DirectedMD {
 
             int componentNr = overlapComponentNumbers.get(i);
             if (overlapComponents.containsKey(componentNr)) {
-                overlapComponents.get(componentNr).or(allNontrivModules.get(i)); // todo: hier passiert was dämilches. Lieber erstmal mit Listen arbeiten?
+                overlapComponents.get(componentNr).or(allNontrivModules.get(i)); // todo: Lieber erstmal mit Listen arbeiten?
             } else {
                 overlapComponents.put(componentNr, allNontrivModules.get(i));
             }
-
-            //overlapComponents.putIfAbsent(componentNr, new ArrayList<>());
-
-            // add contents - but don't need trivial
-            /*
-            if(i < nVertices) {
-                BitSet singleVertex = new BitSet(nVertices);
-                singleVertex.set(i);
-                overlapComponents.get(componentNr).add(singleVertex);
-            } else if (i == nVertices){
-                BitSet allVset = new BitSet(nVertices);
-                allVset.set(0,nVertices);
-                overlapComponents.get(componentNr).add(allVset);
-            } else {
-                overlapComponents.get(componentNr).add(allNontrivModules.get(i-nVertices-1));
-            }
-            */
-            //overlapComponents.get(componentNr).add(allNontrivModules.get(i)); // jetzt passt das auch
         }
         // What exacty _are_ the overlap Components now? number -> module
         // what do I want: number -> set with all vertices. therefore:
@@ -360,8 +327,7 @@ public class DirectedMD {
         //  II. unionSort the ArrayList
         // currently with BitSets
 
-        String test = "baum";
-        // 2.) todo: use booleanArray to compute σ(T_a,T_b) = the union of the overlap components in O(V).
+        // 2.) use booleanArray to compute σ(T_a,T_b) = the union of the overlap components in O(V).
         // not even necessary - σ is obtained by simply joining the components, no need to check for equality
 
         // According to paper, V and the singleton subsets must be in σ(T_a, T_b) = { U ς | ς is overlap components of S(T_a) \cup S(T_b)
@@ -376,16 +342,15 @@ public class DirectedMD {
         // Might be able to re-use the RootedTreeNode s
 
 
-
-        // Step 1: Sort the array by size, using bucket sort todo: add V (last) and singletons (front) :)
-        // Sorting.bucketSortBySize() // todo: Das brauche ich häufiger! Abstrakt mit Generics machen!
+        // Step 0: eleminate doubles
         HashSet<BitSet> overlapComponentsNoDoubles = new HashSet<>(overlapComponents.values());
-        // todo: hier ärgerlicher Fehler für gespeicherten Dahlhaus-input
         if (debugMode && overlapComponentsNoDoubles.size() != overlapComponents.size()) {
             log.warning("Overlap compenents were merged into an already existing compontent!");
         }
         ArrayList<BitSet> nontrivOverlapComponents = new ArrayList<>(overlapComponentsNoDoubles);
 
+        // Step 1: Sort the array by size, using bucket sort
+        // todo: Das brauche ich häufiger! Abstrakt mit Generics machen! Nicht einfach mit Comparator!
         nontrivOverlapComponents.sort(new BitSetComparatorDesc());
         log.fine("Overlap components: " + nontrivOverlapComponents);
 
@@ -416,17 +381,26 @@ public class DirectedMD {
         RootedTreeNode root = new RootedTreeNode();
         rootedTree.setRoot(root);
         HashMap<BitSet, RootedTreeNode> bitsetToOverlapTreenNode = new HashMap<>(nontrivOverlapComponents.size() * 4 / 3);
-        HashMap<RootedTreeNode, BitSet> nodesWithLeavesOnly = new HashMap<>();
         bitsetToOverlapTreenNode.put(rootSet, root);
-        // Brauche noch ein Set, das die unteren Treenodes verwaltet...
-        int nodeCount = 1; // root ist bereits drin.
+
+        // This creates the inclusion tree from the x's lists
         // - visit each x ∈ V, put a parent pointer from each member of x's list to its successor in x's list (if not already done)
         //      -> these are chains of ancestors of {x}
-        while (nodeCount < nontrivOverlapComponents.size()) {
-            for (int vertexNr = 0; vertexNr < nVertices; vertexNr++) {
-                // I can stop once all are in the tree. todo: why even use vertexNr?
 
-                ArrayList<BitSet> currVertexList = xLists.get(vertexNr);
+        PartitiveFamilyLeafNode[] allLeafs = new PartitiveFamilyLeafNode[nVertices];
+        int relationCount = 0;
+        for (int vertexNr = 0; vertexNr < nVertices; vertexNr++) {
+
+            // retrieve List and create leafNode
+            ArrayList<BitSet> currVertexList = xLists.get(vertexNr);
+            PartitiveFamilyLeafNode leafNode = new PartitiveFamilyLeafNode(vertexNr, vertexForIndex[vertexNr]);
+
+
+            // Root is skipped by size-1, but I need to add these leafs directly to root.
+            if (currVertexList.size() == 1) {
+                root.addChild(leafNode);
+                allLeafs[vertexNr] = leafNode;
+            } else {
                 for (int bIndex = 0; bIndex < currVertexList.size() - 1; bIndex++) {
 
                     BitSet currModule = currVertexList.get(bIndex);
@@ -436,26 +410,39 @@ public class DirectedMD {
                     if (currTreenode == null) {
                         currTreenode = new RootedTreeNode();
                         bitsetToOverlapTreenNode.put(currModule, currTreenode);
-                        nodesWithLeavesOnly.put(currTreenode, currModule); // assuming this at first
-                        nodeCount++;
-
-                        BitSet parentModule = currVertexList.get(bIndex + 1);
-                        RootedTreeNode parentTreeNode = bitsetToOverlapTreenNode.get(parentModule);
-                        if (parentTreeNode == null) {
-                            // todo: does that ever happen? yes, we go bottom-up. Are the 1st always...?
-                            parentTreeNode = new RootedTreeNode();
-                            bitsetToOverlapTreenNode.put(parentModule, parentTreeNode);
-                            nodeCount++; // todo: Baum stimmt noch nicht ganz :/ muss die parent-pointer richtiger machen.
-                        }
-                        nodesWithLeavesOnly.remove(parentTreeNode);
-                        parentTreeNode.addChild(currTreenode);
                     }
 
-                }
+                    // Note: currTreenode.equals(root) never occurs due to index choice (size -1)
 
+                    // add as child to the next element of xList
+                    BitSet parentModule = currVertexList.get(bIndex + 1);
+                    RootedTreeNode parentTreeNode = bitsetToOverlapTreenNode.get(parentModule);
+
+                    // create parent if not yet present
+                    if (parentTreeNode == null) {
+                        parentTreeNode = new RootedTreeNode();
+                        bitsetToOverlapTreenNode.put(parentModule, parentTreeNode);
+                        log.fine("Vertex " + vertexNr + ": Created Parent " + parentModule);
+                    }
+
+                    // add parent if current treenode has no parent
+                    if (currTreenode.isRoot()) {
+                        parentTreeNode.addChild(currTreenode);
+                        relationCount++;
+                        log.fine("Vertex " + vertexNr + ": Rel " + relationCount + ": child " + currModule + " to parent " + parentModule);
+                    }
+
+                    // the smallest entry of the list always gets the leaf attached.
+                    if (bIndex == 0) {
+                        currTreenode.addChild(leafNode);
+                        allLeafs[vertexNr] = leafNode;
+                    }
+                }
             }
+
         }
-        log.fine("Inclusion Tree of overlap components: " + rootedTree.toString());
+
+        log.info("Inclusion Tree of overlap components: " + rootedTree.toString());
 
 
         // 4.) Algorithm 1: compute Ü(T_a,T_b) = A* \cap B*;
@@ -470,29 +457,12 @@ public class DirectedMD {
         //         - how many children are marked (hmm...)
         // -> ok, RootedTreeNode
 
-        // use alg. 1 to compute P_a(X) and P_b(X) for all X in the tree of σ(T_a,T_b)
-        // todo: P_a(X): smallest (size) node of T_a containing X as proper subset.
-        // If X is union of siblings in T_a -> P_a(X) is their parent!
-        // todo: I'll do that for every (inner?) node of the inclusion tree of σ(T_a,T_b)
-
-
         // or is that easier with BitSets??? A ⊂ B means e.g.
         // A = 0001 0010 1011
         // B = 1011 0011 1011
         // -> A  OR B == B. If A had elements not contained in B, the result wouldn't be B.
         //    note: this would yield true if A was empty.
 
-        // adds the leaf-entries to the trees and saves them in a List
-        // todo: brauch das eigentlich nicht.
-        PartitiveFamilyLeafNode[] allLeafs = new PartitiveFamilyLeafNode[nVertices];
-        for (Map.Entry<RootedTreeNode, BitSet> nodeEntry : nodesWithLeavesOnly.entrySet()) {
-            BitSet bits = nodeEntry.getValue();
-            for (int i = bits.nextSetBit(0); i >= 0; i = bits.nextSetBit(i + 1)) {
-                PartitiveFamilyLeafNode child = new PartitiveFamilyLeafNode(i, vertexForIndex[i]);
-                nodeEntry.getKey().addChild(child);
-                allLeafs[i] = child;
-            }
-        }
 
         LinkedList<Integer> test2 = new LinkedList<>();
 
@@ -569,17 +539,23 @@ public class DirectedMD {
             // to determine if S \in A*, check if maximumMembers has only one entry OR their first shared parent is complete.
             if (maximumMembers.size() == 1) {
                 elementsOfA.add(setEntryOfSigma);
-                log.fine("Added: " + setEntryOfSigma.toString());
+                log.fine("Added: " + setEntryOfSigma.toString() + " directly");
             } else if (maximumMembers.size() == 0) {
                 log.warning("Strange: no max member for " + setEntryOfSigma.toString());
             } else {
                 // compute the LCA of all maximum members and check if it is root. Note: one entry itself could be that.
                 // LCA can be found in O(h), h height of the tree, at least.
                 ArrayList<RootedTreeNode> maxMembersList = new ArrayList<>(maximumMembers);
-                RootedTreeNode lca = computeLCA(maxMembersList, log); // indices are useful
-
-
+                // todo: does that really work or do i need true MDTreeNodes -> move getStrongModules there?
+                MDTreeNode lca = (MDTreeNode) computeLCA(maxMembersList, log);
+                if (lca.getType().isDegenerate()) {
+                    elementsOfA.add(setEntryOfSigma);
+                }
+                log.fine("Added: " + setEntryOfSigma.toString() + " after lca computation.");
             }
+
+            // now, I need to unmark everything. todo: besser eine Map nehmen und die clearen???
+            // einfach map... put and remove...
 
         }
 

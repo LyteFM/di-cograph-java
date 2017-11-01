@@ -50,12 +50,10 @@ public class Main {
 //            usage();
 //            return;
 //        }
-        //testRNG("NativePRNG");
-        //testRNG("SHA1PRNG");
         System.out.println("Working Directory = " +
                 System.getProperty("user.dir"));
 
-        Double d = 0.99999999999999999 * 2; // kann echt 2 werden x)
+        Double d = 0.99999999999999999 * 2; // todo: kann echt 2 werden x)
         System.out.println("0.99 * 2 = " + d.intValue());
 
         System.out.println("The default PRNG on this system is " + new SecureRandom().getAlgorithm());
@@ -74,16 +72,40 @@ public class Main {
 
         //mdTest();
         //DirectedMD.dahlhausProcessDelegator("OverlapComponentProg/test3_neu.txt");
-        directedMDTesting(log);
-        // primeTest();
+
+        //directedMDTesting(log);
+
+        String folder = "testGraphs/";
+        String file = folder + "randDigraph_n_50_edits_10_1031_16:37:01.txt";
+        MDtestFromFile(log, file);
+
+    }
+
+    static void MDtestFromFile(Logger log, String importFilePath) throws Exception {
+
+        File importFile = new File(importFilePath);
+        SimpleDirectedGraph<String, DefaultEdge> importGraph = SimpleMatrixImporter.importGraph(importFile);
+
+        DirectedMD testMD = new DirectedMD(importGraph, log, true);
+        testMD.computeModularDecomposition();
 
     }
 
     static void directedMDTesting(Logger log) throws Exception{
+        int nVertices = 50;
+        int nDisturb = 10;
+        String timeStamp = new SimpleDateFormat("MMdd_HH:mm:ss").format(Calendar.getInstance().getTime());
+
         GraphGenerator gen = new GraphGenerator(log);
         SimpleDirectedGraph<String, DefaultEdge> g_d = new SimpleDirectedGraph<>(DefaultEdge.class);
-        gen.generateRandomDirectedCograph(g_d, 50);
-        gen.disturbDicograph(g_d, 9);
+        gen.generateRandomDirectedCograph(g_d, nVertices);
+        gen.disturbDicograph(g_d, nDisturb);
+
+        // export for debug purposes
+        String filePath = "testGraphs/randDigraph_n_" + nVertices + "_edits_" + nDisturb + "_" + timeStamp + ".txt";
+        File expfile = new File(filePath);
+        SimpleMatrixExporter<String, DefaultEdge> myExporter = new SimpleMatrixExporter<>();
+        myExporter.exportGraph(g_d, expfile);
 
         DirectedMD testMD = new DirectedMD(g_d, log, true);
         testMD.computeModularDecomposition();
@@ -142,46 +164,6 @@ public class Main {
         }
     }
 
-    static Long[] primeTest() throws Exception {
-        String filePath = "primes.txt";
-        Long[] primes = new Long[1000];
-        Long product = 1L;
-        int index = 0;
-
-
-        try (BufferedReader inputStream = new BufferedReader(new FileReader(filePath))) {
-
-            String line;
-
-            while ((line = inputStream.readLine()) != null) {
-                String[] numbers = line.split("\\s+"); // any whitespace
-                for (String num : numbers) {
-                    if (num.equals(""))
-                        continue;
-                    primes[index] = Long.valueOf(num);
-                    product *= primes[index];
-                    if (product < 0) {
-                        // overflow
-                        break;
-                    }
-
-                    index++;
-
-                }
-                System.out.println(line + " : " + product);
-
-
-            }
-        } catch (IOException e) {
-            System.out.println(e.toString());
-        }
-
-        System.out.println("Read " + index + 1 + " primes before overflow\n last primes: \n");
-        System.out.println(primes[index - 2] + "   " + primes[index - 1] + "  " + primes[index] + "\n");
-        System.out.println(Long.MAX_VALUE);
-
-        return primes;
-    }
 
     static void mdTest(){
         //String filePath = args[0];

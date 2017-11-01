@@ -58,24 +58,23 @@ class RootedTreeNode {
     protected void mark() {
         marked = true;
         // todo: what if root?
-        PartitiveFamilyTreeNode parent = (PartitiveFamilyTreeNode) getParent();
-        parent.numMarkedChildren++;
+		RootedTreeNode parent = getParent();
+		parent.numMarkedChildren++;
     }
-    // end
 
     protected void unmark() {
         marked = false;
-        PartitiveFamilyTreeNode parent = (PartitiveFamilyTreeNode) getParent();
-        parent.numMarkedChildren--;
+		RootedTreeNode parent = getParent();
+		parent.numMarkedChildren--;
     }
 
     void unmarkAllChildren() {
-        PartitiveFamilyTreeNode currentChild = (PartitiveFamilyTreeNode) this.getFirstChild();
+		RootedTreeNode currentChild = this.getFirstChild();
 
         while (currentChild != null) {
             currentChild.unmark();
-            currentChild = (PartitiveFamilyTreeNode) currentChild.getRightSibling();
-        }
+			currentChild = currentChild.getRightSibling();
+		}
 
         // todo: assert numMarkedChildren == 0
         if (numMarkedChildren != 0)
