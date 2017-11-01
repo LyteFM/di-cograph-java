@@ -50,11 +50,6 @@ class RootedTreeNode {
         return numMarkedChildren;
     }
 
-    // not necessary and dangerous
-    //protected boolean isMarked() {
-    //    return marked;
-    //}
-
     protected void mark() {
         marked = true;
         // todo: what if root?
@@ -63,10 +58,13 @@ class RootedTreeNode {
     }
 
     protected void unmark() {
-        marked = false;
-		RootedTreeNode parent = getParent();
-		parent.numMarkedChildren--;
-    }
+		// only unmark marked nodes...
+		if (marked) {
+			marked = false;
+			RootedTreeNode parent = getParent();
+			parent.numMarkedChildren--;
+		}
+	}
 
     void unmarkAllChildren() {
 		RootedTreeNode currentChild = this.getFirstChild();
@@ -75,7 +73,6 @@ class RootedTreeNode {
             currentChild.unmark();
 			currentChild = currentChild.getRightSibling();
 		}
-
         // todo: assert numMarkedChildren == 0
         if (numMarkedChildren != 0)
             System.err.println("Illegal number of marked children after unmarking!!!");

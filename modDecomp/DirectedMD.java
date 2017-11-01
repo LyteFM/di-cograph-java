@@ -15,11 +15,14 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.logging.Logger;
@@ -278,18 +281,19 @@ public class DirectedMD {
 
         // todo: hier BucketSortBySize
         ArrayList<BitSet> allNontrivModules= new ArrayList<>(nontrivModulesTemp); // need a well-defined order
-        allNontrivModules.sort(new BitSetComparatorDesc()); // descending size
+        // allNontrivModules.sort(new BitSetComparatorDesc()); // descending size
+        allNontrivModules.sort( // descending size. let's try with lamdas!
+                (b1, b2) -> Integer.compare(b2.cardinality(), b1.cardinality()));
 
         StringBuilder overlapInput = new StringBuilder();
 
 
         // Since the singletons and V itself will never overlap another module, I can exclude them here and only consider the nontrivial modules
-        for(BitSet module : allNontrivModules){
-            for (int i = module.nextSetBit(0); i >= 0; i = module.nextSetBit(i + 1)) {
-                overlapInput.append(i).append(" ");
-            }
+        allNontrivModules.forEach(module -> {
+            module.stream().forEach(vertexNo ->
+                    overlapInput.append(vertexNo).append(" "));
             overlapInput.append("-1\n");
-        }
+        });
 
 
         // 1.) use Dahlhaus algorithm to compute the overlap components (Bound: |M| <= 4m + 6n)
@@ -316,7 +320,8 @@ public class DirectedMD {
 
             int componentNr = overlapComponentNumbers.get(i);
             if (overlapComponents.containsKey(componentNr)) {
-                overlapComponents.get(componentNr).or(allNontrivModules.get(i)); // todo: Lieber erstmal mit Listen arbeiten?
+                // the UNION is computed here already
+                overlapComponents.get(componentNr).or(allNontrivModules.get(i));
             } else {
                 overlapComponents.put(componentNr, allNontrivModules.get(i));
             }
@@ -350,8 +355,9 @@ public class DirectedMD {
         ArrayList<BitSet> nontrivOverlapComponents = new ArrayList<>(overlapComponentsNoDoubles);
 
         // Step 1: Sort the array by size, using bucket sort
-        // todo: Das brauche ich häufiger! Abstrakt mit Generics machen! Nicht einfach mit Comparator!
-        nontrivOverlapComponents.sort(new BitSetComparatorDesc());
+        // todo: Das brauche ich häufiger! Auch hier mit BucketSort...
+        nontrivOverlapComponents.sort( // descending size, with lamdas.
+                (b1, b2) -> Integer.compare(b2.cardinality(), b1.cardinality()));
         log.fine("Overlap components: " + nontrivOverlapComponents);
 
 
@@ -359,23 +365,25 @@ public class DirectedMD {
 
 
         // init empty
-        ArrayList<ArrayList<BitSet>> xLists = new ArrayList<>(nVertices);
+        ArrayList<LinkedList<BitSet>> xLists = new ArrayList<>(nVertices);
         for (int i = 0; i < nVertices; i++) {
-            xLists.add(i, new ArrayList<>());
+            xLists.add(i, new LinkedList<>());
         }
+
         // add root
         BitSet rootSet = new BitSet(nVertices);
         rootSet.set(0, nVertices); // toIndex must be n
         nontrivOverlapComponents.add(0, rootSet);
 
         // - visit each Y ∈ F in descending order of size. For each x ∈ Y, insert pointer to Y to front of x's list. [O(sz(F)]
-        for (BitSet ySet : nontrivOverlapComponents) {
-            for (int i = ySet.nextSetBit(0); i >= 0; i = ySet.nextSetBit(i + 1)) {
-                ArrayList<BitSet> currList = xLists.get(i);
-                currList.add(0, ySet);
-                // root is now in every xList
-            }
-        }
+        nontrivOverlapComponents.forEach(ySet ->
+                ySet.stream().forEach(i ->
+                        xLists.get(i).addFirst(ySet)
+                )
+        );
+        // root is now the last element in every xList
+
+
 
         RootedTree rootedTree = new RootedTree();
         RootedTreeNode root = new RootedTreeNode();
@@ -392,30 +400,33 @@ public class DirectedMD {
         for (int vertexNr = 0; vertexNr < nVertices; vertexNr++) {
 
             // retrieve List and create leafNode
-            ArrayList<BitSet> currVertexList = xLists.get(vertexNr);
+            LinkedList<BitSet> currVertexList = xLists.get(vertexNr);
             PartitiveFamilyLeafNode leafNode = new PartitiveFamilyLeafNode(vertexNr, vertexForIndex[vertexNr]);
 
+            boolean firstEntry = true;
+            ListIterator<BitSet> vListIter = currVertexList.listIterator(0);
+            while (vListIter.hasNext()) {
 
-            // Root is skipped by size-1, but I need to add these leafs directly to root.
-            if (currVertexList.size() == 1) {
-                root.addChild(leafNode);
-                allLeafs[vertexNr] = leafNode;
-            } else {
-                for (int bIndex = 0; bIndex < currVertexList.size() - 1; bIndex++) {
+                BitSet currModule = vListIter.next();
+                // create Trenode if not yet present
+                RootedTreeNode currTreenode = bitsetToOverlapTreenNode.getOrDefault(currModule, null);
+                if (currTreenode == null) {
+                    currTreenode = new RootedTreeNode();
+                    bitsetToOverlapTreenNode.put(currModule, currTreenode);
+                }
 
-                    BitSet currModule = currVertexList.get(bIndex);
-                    RootedTreeNode currTreenode = bitsetToOverlapTreenNode.getOrDefault(currModule, null);
-                    // current node already has a parent -> nothing to do. No child gets added twice.
+                // the first entry of the list always gets the leaf attached.
+                if (firstEntry) {
+                    currTreenode.addChild(leafNode);
+                    allLeafs[vertexNr] = leafNode;
+                    firstEntry = false;
+                }
 
-                    if (currTreenode == null) {
-                        currTreenode = new RootedTreeNode();
-                        bitsetToOverlapTreenNode.put(currModule, currTreenode);
-                    }
-
-                    // Note: currTreenode.equals(root) never occurs due to index choice (size -1)
-
-                    // add as child to the next element of xList
-                    BitSet parentModule = currVertexList.get(bIndex + 1);
+                // add as child to the next element of xList
+                // Note: currTreenode.equals(root) occurs when we're at the end of the list
+                // Don't check for parent of root, of course.
+                if (vListIter.hasNext()) {
+                    BitSet parentModule = vListIter.next();
                     RootedTreeNode parentTreeNode = bitsetToOverlapTreenNode.get(parentModule);
 
                     // create parent if not yet present
@@ -431,13 +442,10 @@ public class DirectedMD {
                         relationCount++;
                         log.fine("Vertex " + vertexNr + ": Rel " + relationCount + ": child " + currModule + " to parent " + parentModule);
                     }
-
-                    // the smallest entry of the list always gets the leaf attached.
-                    if (bIndex == 0) {
-                        currTreenode.addChild(leafNode);
-                        allLeafs[vertexNr] = leafNode;
-                    }
+                    // go one element back in list
+                    vListIter.previous();
                 }
+
             }
 
         }
@@ -465,38 +473,39 @@ public class DirectedMD {
 
 
         LinkedList<Integer> test2 = new LinkedList<>();
+        Object test3;
 
         // Compute P_a(S) for every S \in σ with alg 1. -> nope, I'll compute A* and B* directly
         // "P_a(S) is the smallest node of T_a that contains S as proper subset"
-        // HashMap<RootedTreeNode , MDTreeNode> P_a = new HashMap<>();
-        // HashMap<RootedTreeNode , MDTreeNode> P_b = new HashMap<>();
 
-        HashSet<Map.Entry<BitSet, RootedTreeNode>> elementsOfA = new HashSet<>();
+        HashMap<BitSet, RootedTreeNode> elementsOfA = new HashMap<>();
+        HashMap<BitSet, RootedTreeNode> elementsOfB = new HashMap<>();
+
         // nodes of T_a:
         HashSet<RootedTreeNode> innerNodes = new HashSet<>(bitsetToOverlapTreenNode.size() * 4 / 3);
         HashMap<RootedTreeNode, BitSet> nodesOfT_aWithLeaves = new HashMap<>();
         HashSet<RootedTreeNode> maximumMembers = new HashSet<>();
+        // while an object-oriented implementation for marking/unmarking is
 
         // outer loop: iterate over all inner nodes of σ(T_a,T_b)
-        // want to get the P_a for every node S in σ!!!
+        // need to get the P_a for every node S in σ that is not directly in T_a -> lca and check if not prime.
         for (Map.Entry<BitSet, RootedTreeNode> setEntryOfSigma : bitsetToOverlapTreenNode.entrySet()) {
 
-            nodesOfT_aWithLeaves.clear();
-            maximumMembers.clear();
-            innerNodes.clear();
-            BitSet bits = setEntryOfSigma.getKey();
             // Init: Mark the leaf entries of T_a corresponding to the current set of σ(T_a,T_b)
+            BitSet bits = setEntryOfSigma.getKey();
             for (int i = bits.nextSetBit(0); i >= 0; i = bits.nextSetBit(i + 1)) {
                 leavesOfT_a[i].addMark(); // todo: for T_b, and can I re-use?
                 maximumMembers.add(leavesOfT_a[i]);
-                RootedTreeNode parent = leavesOfT_a[i].getParent(); //MDTreeNode. brauche ich nicht typ?
+                RootedTreeNode parent = leavesOfT_a[i].getParent();
                 BitSet bitSet = modulesAToBitset.get(parent);
                 // NodesWithLeaves setzen.
                 nodesOfT_aWithLeaves.put(parent, bitSet); // todo: ok this way?
             }
-            // Now, iterate bottom-up through T_a, not through σ!!!
+
+            // Iterate bottom-up through T_a
+            ///
             for (RootedTreeNode node : nodesOfT_aWithLeaves.keySet()) {
-                if (node.getNumChildren() == node.getNumMarkedChildren()) {
+                if (node.getNumChildren() == node.getNumMarkedChildren()) { // todo: hier mal mit Lamdas filtern?
                     node.unmarkAllChildren();
                     node.mark();
                     // nodes can have same parent, HashSet keeps us safe
@@ -511,13 +520,14 @@ public class DirectedMD {
                 }
                 // else: not completely marked - ignore.
             }
-            // I might need to start at root top-down, then go bottom-up
-            // Now simply loop, until no parents are fully marked anymore
-            // todo: do the map-operations
+            /// todo: reuseable code!
+
+            // Loop, until no parents are fully marked anymore
             boolean completed = false;
             while (!completed) {
                 // holds the parents - to be processed in the next iteration
                 HashSet<RootedTreeNode> tmpSet = new HashSet<>();
+                ///
                 for (RootedTreeNode node : innerNodes) {
                     if (node.getNumMarkedChildren() == node.getNumChildren()) {
                         node.unmarkAllChildren();
@@ -532,13 +542,21 @@ public class DirectedMD {
                         }
                     }
                 }
+                ///
+
                 completed = tmpSet.isEmpty();
                 innerNodes = tmpSet;
             }
             // now, we have the maximal members of T_a marked that are subsets of an S ⊂ σ.
             // to determine if S \in A*, check if maximumMembers has only one entry OR their first shared parent is complete.
+
+
+            // Step 2: Take the initialized inclusion tree of σ(T_a, T_b) and test its nodes for membership in A* and B*,
+            // using Algorithm 1. This yields Ü(T_a,T_b).
+
+            // todo: HashMap from max/LCa to BitSet of σ (union of them). This directly gives the R_U-Unions!
             if (maximumMembers.size() == 1) {
-                elementsOfA.add(setEntryOfSigma);
+                elementsOfA.put(setEntryOfSigma.getKey(), setEntryOfSigma.getValue());
                 log.fine("Added: " + setEntryOfSigma.toString() + " directly");
             } else if (maximumMembers.size() == 0) {
                 log.warning("Strange: no max member for " + setEntryOfSigma.toString());
@@ -546,16 +564,21 @@ public class DirectedMD {
                 // compute the LCA of all maximum members and check if it is root. Note: one entry itself could be that.
                 // LCA can be found in O(h), h height of the tree, at least.
                 ArrayList<RootedTreeNode> maxMembersList = new ArrayList<>(maximumMembers);
-                // todo: does that really work or do i need true MDTreeNodes -> move getStrongModules there?
+                // todo: does that really work or do i need true MDTreeNodes -> getStrongModules there?
                 MDTreeNode lca = (MDTreeNode) computeLCA(maxMembersList, log);
                 if (lca.getType().isDegenerate()) {
-                    elementsOfA.add(setEntryOfSigma);
+                    elementsOfA.put(setEntryOfSigma.getKey(), setEntryOfSigma.getValue());
                 }
                 log.fine("Added: " + setEntryOfSigma.toString() + " after lca computation.");
             }
 
-            // now, I need to unmark everything. todo: besser eine Map nehmen und die clearen???
-            // einfach map... put and remove...
+            // Cleaup. I need to unmark all nodes. Marked nodes are now only among children of the maximum Members!
+            for (RootedTreeNode node : maximumMembers) {
+                node.unmarkAllChildren();
+            }
+            nodesOfT_aWithLeaves.clear();
+            maximumMembers.clear();
+            innerNodes.clear();
 
         }
 
@@ -568,14 +591,40 @@ public class DirectedMD {
         // unfortunately, no algorithm was given to compute P_a and P_b...
         // No Problem: I can directly compute A* and B*!!!
 
+        // Ü(T_a,T_b) is now simply the intersection of A* and B*
+        // todo: benötige möglicherweise nur die values bzw das Mapping node -> BitSet!!!
+        HashMap<RootedTreeNode, BitSet> intersectionOfAandB = new HashMap<>();
+        HashSet<RootedTreeNode> onlyVals = new HashSet<>(elementsOfB.values());
+        for (Map.Entry<BitSet, RootedTreeNode> entry : elementsOfA.entrySet()) {
+            RootedTreeNode node = entry.getValue();
+            if (onlyVals.contains(node)) {
+                intersectionOfAandB.put(node, entry.getKey());
+            }
+        }
+
+        // Now, the paper suggests computing P_a and P_b for each element X \in Ü.
+        // However, this has already been done in the previous step. It is either:
+        // - if there is only one maximum member: it's this node
+        // - if there are several maximum members: it's the computed (necessarily nonprime) lca
+        // so I simply need to keep a HashMap from X to the corresponding P_a and P_b :)
 
 
-        // Step 2: Take the initialized inclusion tree of σ(T_a, T_b) and test its nodes for membership in A* and B*,
-        // using Algorithm 1. This yields Ü(T_a,T_b).
+        // todo: don't need number pairs. Already have the eqiv classes.
+        // no idea what these number pairs are. So let's just try to find out to get
+        // the equivalence classes, which are also needed in step4!
 
 
+        // then, the set \mathcal S(T_a, T_b) - which is the set Family of H's MD-Tree - is computed. Simply join the BitSets!
+        // From that set Family, The Inclusion Tree can be constructed by Lem 11 - if needed. Maybe BitSet-Family is enough...
+        // Assuming, BitSet-Family is enough for now
+        // But: Cor 19 requires a permutation of the leaves -> which will yield a fact perm.
+
+
+        //
+        //
         // 5.) Bucket sort members of Ü(T_a,T_b) according to number pairs given by P_a, P_b
         //     to get equivalence classes of R_U (Lem 9)
+
 
         // 6.) union of each eq. class via boolean array (to get result from Th. 10)
 
