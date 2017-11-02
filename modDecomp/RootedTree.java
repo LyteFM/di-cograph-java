@@ -10,6 +10,10 @@ import java.util.Map;
  */
 class RootedTree {
 
+    // F.L. 02.11.17: added
+    private HashMap<BitSet, RootedTreeNode> moduleToTreenode;
+    //
+
 	// The root of the tree.
 	private RootedTreeNode root;
 	
@@ -47,8 +51,27 @@ class RootedTree {
 		return root.toString();
 	}
 
+    // F.L. 02.11.17
+    public HashMap<BitSet, RootedTreeNode> getModuleToTreenode() {
+        return moduleToTreenode;
+    }
+
+    public void setModuleToTreenode(HashMap<BitSet, RootedTreeNode> moduleToTreenode) {
+        this.moduleToTreenode = moduleToTreenode;
+    }
+
+    /*
+    protected ArrayList<ArrayList<Integer>> getStrongModulesIntList(Map<String, Integer> vertexToIndex) {
+        ArrayList<ArrayList<Integer>> ret = new ArrayList<>();
+        root.getStrongModulesIntList(vertexToIndex, ret);
+
+        return ret;
+    }
+    */
+
     /** F.L. 16.10.17:
      * Returns a String representation of the strong members of the tree's set family, i.e. the inner nodes.
+     * todo: ggf das zu PartitiveFamilyTreeNode extends MDTreeNode...
      */
     public ArrayList<String> getSetRepresentationAsStrings(){
         ArrayList<String> ret = new ArrayList<String>();
@@ -59,13 +82,7 @@ class RootedTree {
     public HashMap<BitSet, RootedTreeNode> getStrongModulesBool(Map<String, Integer> vertexToIndex, MDTreeLeafNode[] leaves) {
         HashMap<BitSet, RootedTreeNode> ret = new HashMap<>();
         root.getStrongModulesBool(vertexToIndex, leaves, ret);
-
-        return ret;
-    }
-
-    protected ArrayList<ArrayList<Integer>> getStrongModulesIntList(Map<String, Integer> vertexToIndex) {
-        ArrayList<ArrayList<Integer>> ret = new ArrayList<>();
-        root.getStrongModulesIntList(vertexToIndex, ret);
+        moduleToTreenode = ret;
 
         return ret;
     }

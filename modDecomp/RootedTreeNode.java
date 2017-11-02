@@ -409,6 +409,7 @@ class RootedTreeNode {
         return ret;
     }
 
+    /*
     protected ArrayList<Integer> getStrongModulesIntList(Map<String, Integer> vertexToIndex, ArrayList<ArrayList<Integer>> modules) {
         ArrayList<Integer> ret = new ArrayList<>();
         RootedTreeNode currentChild = firstChild;
@@ -434,4 +435,5 @@ class RootedTreeNode {
         return ret;
 
     }
+    */
 }
