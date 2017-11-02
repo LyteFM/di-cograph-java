@@ -11,9 +11,11 @@ import java.util.Map;
  * A node in a rooted tree.
  */
 class RootedTreeNode {
-    // F.L. 30.10. Flags for Algorithm 1:
+    // F.L. 30.10. Flags for directedMD:
     boolean marked;
     int numMarkedChildren;
+    int nodeNumber;
+    // end
 
 	// The parent of this node.
 	private RootedTreeNode parent;
@@ -42,6 +44,7 @@ class RootedTreeNode {
         // F.L. 30.10. Flags for Algorithm 1:
         marked = false;
         numMarkedChildren = 0;
+        nodeNumber = 0;
     }
 
     // F.L. 30.10. Flags for Algorithm 1:
