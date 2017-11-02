@@ -168,16 +168,17 @@ class MDTreeLeafNode extends MDTreeNode {
 	    else{ // F.L.
             StringBuilder result = new StringBuilder("(label= " + label);
 
-            result.append(", neighbours: ");
-            boolean firstRun = true;
+//            result.append(", neighbours: ");
+//            boolean firstRun = true;
+//
+//            for(String name : neighbourNames){
+//                if(!firstRun) {
+//                    result.append(",");
+//                }
+//                result.append(name);
+//                firstRun = false;
+//            }
 
-            for(String name : neighbourNames){
-                if(!firstRun) {
-                    result.append(",");
-                }
-                result.append(name);
-                firstRun = false;
-            }
             result.append(")");
 
             return result.toString();

@@ -403,27 +403,17 @@ public class DirectedMD {
         HashMap<BitSet, RootedTreeNode> nontrivModulesBoolA = T_a.getStrongModulesBool(vertexToIndex, leavesOfT_a);
         HashMap<BitSet, RootedTreeNode> nontrivModulesBoolB = T_b.getStrongModulesBool(vertexToIndex, leavesOfT_b);
         // other way round for later
-        HashMap<RootedTreeNode, BitSet> modulesAToBitset = new HashMap<>(nontrivModulesBoolA.size() * 4 / 3);
-        for (Map.Entry<BitSet, RootedTreeNode> entry : nontrivModulesBoolA.entrySet()) {
-            modulesAToBitset.put(entry.getValue(), entry.getKey());
-        }
-        HashMap<RootedTreeNode, BitSet> modulesBToBitset = new HashMap<>(nontrivModulesBoolB.size() * 4 / 3);
-        for (Map.Entry<BitSet, RootedTreeNode> entry : nontrivModulesBoolB.entrySet()) {
-            modulesBToBitset.put(entry.getValue(), entry.getKey());
-        }
 
-        // get an arbitrary Index for each of the Treenodes in order to process them later
-        ArrayList<RootedTreeNode> treeNodesOfA = new ArrayList<>(nontrivModulesBoolA.values());
-        ArrayList<RootedTreeNode> treeNodesOfB = new ArrayList<>(nontrivModulesBoolB.values());
-        // Also Map the TreeNode to its index
-        HashMap<RootedTreeNode, Integer> modulesAToTreeIndex = new HashMap<>(treeNodesOfA.size() * 4 / 3);
-        HashMap<RootedTreeNode, Integer> modulesBToTreeIndex = new HashMap<>(treeNodesOfB.size() * 4 / 3);
-        for (int i = 0; i < treeNodesOfA.size(); i++) {
-            modulesAToTreeIndex.put(treeNodesOfA.get(i), i);
-        }
-        for (int i = 0; i < treeNodesOfB.size(); i++) {
-            modulesBToTreeIndex.put(treeNodesOfB.get(i), i);
-        }
+//        HashMap<RootedTreeNode, BitSet> modulesAToBitset = new HashMap<>(nontrivModulesBoolA.size() * 4 / 3);
+//        for (Map.Entry<BitSet, RootedTreeNode> entry : nontrivModulesBoolA.entrySet()) {
+//            modulesAToBitset.put(entry.getValue(), entry.getKey());
+//        }
+//        HashMap<RootedTreeNode, BitSet> modulesBToBitset = new HashMap<>(nontrivModulesBoolB.size() * 4 / 3);
+//        for (Map.Entry<BitSet, RootedTreeNode> entry : nontrivModulesBoolB.entrySet()) {
+//            modulesBToBitset.put(entry.getValue(), entry.getKey());
+//        }
+
+
         // todo: Statt dieser ganzen Maps das alles sauber direkt and die (MD)TreeNodes oder 'ne erweiterte Klasse hängen.
 
 
@@ -512,11 +502,11 @@ public class DirectedMD {
         HashMap<RootedTreeNode, RootedTreeNode> elementOfBToP_b = new HashMap<>();
 
         HashMap<RootedTreeNode, BitSet> elementsOfA = computeNodesWithCompleteParent(
-                bitsetToOverlapTreenNode, modulesAToBitset, true, elementOfAToP_a);
+                bitsetToOverlapTreenNode, true, elementOfAToP_a);
 
         // Reinitialize and Compute P_b
         HashMap<RootedTreeNode, BitSet> elementsOfB = computeNodesWithCompleteParent(
-                bitsetToOverlapTreenNode, modulesBToBitset, false, elementOfBToP_b);
+                bitsetToOverlapTreenNode,false, elementOfBToP_b);
 
 
 
@@ -541,7 +531,20 @@ public class DirectedMD {
         //     -> I use a HashMap instead of Bucketsorting by the sortKey.
         //     union of each eq. class via boolean array (BitSet) to get result from Th. 10
 
-        // Next, compute the equivalence classes.
+        // get an arbitrary Index for each of the Treenodes // todo: if needed, init at start
+        ArrayList<RootedTreeNode> treeNodesOfA = new ArrayList<>(nontrivModulesBoolA.values());
+        ArrayList<RootedTreeNode> treeNodesOfB = new ArrayList<>(nontrivModulesBoolB.values());
+        // Also Map the TreeNode to its index
+        HashMap<RootedTreeNode, Integer> modulesAToTreeIndex = new HashMap<>(treeNodesOfA.size() * 4 / 3);
+        HashMap<RootedTreeNode, Integer> modulesBToTreeIndex = new HashMap<>(treeNodesOfB.size() * 4 / 3);
+        for (int i = 0; i < treeNodesOfA.size(); i++) {
+            modulesAToTreeIndex.put(treeNodesOfA.get(i), i);
+        }
+        for (int i = 0; i < treeNodesOfB.size(); i++) {
+            modulesBToTreeIndex.put(treeNodesOfB.get(i), i);
+        }
+
+        // Compute the equivalence classes.
         HashMap<String,BitSet > equivalenceClassesR_U = new HashMap<>((elementOfAToP_a.size() + elementOfBToP_b.size()) * 2/3);
 
         for( Map.Entry<RootedTreeNode, BitSet> entry : intersectionOfAandB.entrySet()){
@@ -567,11 +570,10 @@ public class DirectedMD {
         strongModulesOfH.addAll(intersectionOfAandB.values());
 
         // 7. ) From that set Family, The Inclusion Tree can be constructed by Lem 11.
-        // Cor 19 requires a permutation of the leaves, which will yield the fact perm.
+        // (Cor 19 requires a permutation of the leaves, which will yield the fact perm. So I need the Tree)
 
-        // now we have the Tree T(H) = T_a Λ T_b
-        // Th. 15: T(F) =T_a Λ T_b in O(sz(S(F_a)) + sz(S(F_b))
         RootedTree ret = getInclusionTreeFromBitsets(strongModulesOfH);
+        // now we have the Tree T(H) = T_a Λ T_b
 
         String debugg = "ND";
 
@@ -579,7 +581,7 @@ public class DirectedMD {
     }
 
     /**
-     * Let A* := {X | X ∈ σ(T_a, T_b) AND X node in T_a OR P_a not prime in T_a}, B* analog. // todo: wo ist hier die Klammer???
+     * Let A* := {X | X ∈ σ(T_a, T_b) AND X node in T_a OR P_a not prime in T_a}, B* analog.
      * So these are the entries of σ(T_a,T_b) that also appear in T_a [T_b] or share a complete parent in T_a [T_b].
      *
      * This method use Alg 1 in order to get the desired result of Cor. 13: Testing each node
@@ -588,10 +590,8 @@ public class DirectedMD {
      * Ü(T_a,T_b) = A* \cap B*;
      *
      * @param bitsetToOverlapTreenNode the entries of σ(T_a,T_b)
-     * @param modulesAToBitset         the modules of the MDTree T_a [T_b, respectively]
      */
-    private HashMap<RootedTreeNode, BitSet> computeNodesWithCompleteParent(Map<BitSet, RootedTreeNode> bitsetToOverlapTreenNode,
-                                                                           Map<RootedTreeNode, BitSet> modulesAToBitset, boolean isA,
+    private HashMap<RootedTreeNode, BitSet> computeNodesWithCompleteParent(Map<BitSet, RootedTreeNode> bitsetToOverlapTreenNode, boolean isA,
                                                                            Map<RootedTreeNode, RootedTreeNode> elementOfAToP_a) {
 
         // todo: note - usually only use the nodes not Bitsets: Except for the leavesOf...
@@ -689,8 +689,10 @@ public class DirectedMD {
                 elementsOfA.put(setEntryOfSigma.getValue(), setEntryOfSigma.getKey());
                 elementOfAToP_a.put(setEntryOfSigma.getValue(), maximumMembers.stream().findFirst().get() );
                 log.fine(logPrefix + "Added: " + setEntryOfSigma.toString() + " directly");
+
             } else if (maximumMembers.size() == 0) {
                 log.warning(logPrefix + "Strange: no max member for " + setEntryOfSigma.toString());
+
             } else {
                 // compute the LCA of all maximum members and check if it is root. Note: one entry itself could be that.
                 // LCA can be found in O(h), h height of the tree, at least.
