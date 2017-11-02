@@ -603,9 +603,6 @@ public class DirectedMD {
         HashMap<RootedTreeNode, BitSet> elementsOfA = new HashMap<>();
 
         // nodes of T_a:
-        HashSet<RootedTreeNode> innerNodes = new HashSet<>(bitsetToOverlapTreenNode.size() * 4 / 3);
-        HashMap<RootedTreeNode, BitSet> nodesOfT_aWithLeaves = new HashMap<>();
-        HashSet<RootedTreeNode> maximumMembers = new HashSet<>();
         MDTreeLeafNode[] leaves;
         String logPrefix;
         if (isA) {
@@ -627,25 +624,48 @@ public class DirectedMD {
             //         - an initialized field for marking (marked)
             //         - how many children are marked (numChildrenMarked)
 
-            // Init: Mark the leaf entries of T_a corresponding to the current set of σ(T_a,T_b)
             BitSet bits = setEntryOfSigma.getKey();
+            HashSet<RootedTreeNode> innerNodes = new HashSet<>(bits.cardinality()*4/3);
+            HashSet<RootedTreeNode> maximumMembers = new HashSet<>();
+
+            // Init: Mark the leaf entries of T_a corresponding to the current set of σ(T_a,T_b)
             for (int i = bits.nextSetBit(0); i >= 0; i = bits.nextSetBit(i + 1)) {
                 leaves[i].addMark();
                 maximumMembers.add(leaves[i]);
                 RootedTreeNode parent = leaves[i].getParent();
-                BitSet bitSet = modulesAToBitset.get(parent);
-                // NodesWithLeaves setzen.
-                nodesOfT_aWithLeaves.put(parent, bitSet);
+                innerNodes.add(parent);
             }
 
-            // Iterate bottom-up through T_a
-            ///
-            for (RootedTreeNode node : nodesOfT_aWithLeaves.keySet()) {
-                if (node.getNumChildren() == node.getNumMarkedChildren()) { // todo: hier mal mit Lamdas filtern?
+            // Iterate bottom-up through T_a and loop, until no parents are fully marked anymore
+            boolean completed = false;
+            while (!completed) {
+                // holds the parents - to be processed in the next iteration
+                HashSet<RootedTreeNode> tmpSet = new HashSet<>(innerNodes.size());
+
+//                ///
+//                for (RootedTreeNode node : innerNodes) {
+//                    if (node.getNumMarkedChildren() == node.getNumChildren()) {
+//                        node.unmarkAllChildren();
+//                        node.mark();
+//                        // nodes can have same parent, HashSet keeps us safe
+//                        tmpSet.add(node.getParent());
+//                        // update maximum members:
+//                        currLCA = node.getParent();
+//                        maximumMembers.add(currLCA);
+//                        RootedTreeNode child = node.getFirstChild();
+//                        while (child != null) {
+//                            maximumMembers.remove(child);
+//                            child = child.getRightSibling();
+//                        }
+//                    }
+//                }
+//                ///
+
+                innerNodes.stream().filter( tnode -> tnode.getNumChildren() == tnode.getNumMarkedChildren() ).forEach(node ->{
                     node.unmarkAllChildren();
                     node.mark();
-                    // nodes can have same parent, HashSet keeps us safe
-                    innerNodes.add(node.getParent());
+                    // nodes might have same parent.
+                    tmpSet.add(node.getParent());
                     // update maximum members:
                     maximumMembers.add(node.getParent());
                     RootedTreeNode child = node.getFirstChild();
@@ -653,34 +673,7 @@ public class DirectedMD {
                         maximumMembers.remove(child);
                         child = child.getRightSibling();
                     }
-                }
-                // else: not completely marked - ignore.
-            }
-            /// todo: reuseable code!
-
-            // Loop, until no parents are fully marked anymore
-            boolean completed = false;
-            RootedTreeNode currLCA = null;
-            while (!completed) {
-                // holds the parents - to be processed in the next iteration
-                HashSet<RootedTreeNode> tmpSet = new HashSet<>();
-                ///
-                for (RootedTreeNode node : innerNodes) {
-                    if (node.getNumMarkedChildren() == node.getNumChildren()) {
-                        node.unmarkAllChildren();
-                        node.mark();
-                        tmpSet.add(node.getParent());
-                        // update maximum members:
-                        currLCA = node.getParent();
-                        maximumMembers.add(currLCA);
-                        RootedTreeNode child = node.getFirstChild();
-                        while (child != null) {
-                            maximumMembers.remove(child); // todo: does this work?
-                            child = child.getRightSibling();
-                        }
-                    }
-                }
-                ///
+                });
 
                 completed = tmpSet.isEmpty();
                 innerNodes = tmpSet;
@@ -690,11 +683,11 @@ public class DirectedMD {
 
 
             // Step 2: Take the initialized inclusion tree of σ(T_a, T_b) and test its nodes for membership in A* and B*
-            // Saving a HashMap from element of σ to P_a allows us to compute the R_U-equivalence classes easily.
+            // Saving a HashMap from element of σ to P_a allows us to compute the R_U-equivalence classes.
 
             if (maximumMembers.size() == 1) {
                 elementsOfA.put(setEntryOfSigma.getValue(), setEntryOfSigma.getKey());
-                elementOfAToP_a.put(setEntryOfSigma.getValue(), currLCA);
+                elementOfAToP_a.put(setEntryOfSigma.getValue(), maximumMembers.stream().findFirst().get() );
                 log.fine(logPrefix + "Added: " + setEntryOfSigma.toString() + " directly");
             } else if (maximumMembers.size() == 0) {
                 log.warning(logPrefix + "Strange: no max member for " + setEntryOfSigma.toString());
@@ -715,10 +708,6 @@ public class DirectedMD {
             for (RootedTreeNode node : maximumMembers) {
                 node.unmarkAllChildren();
             }
-            nodesOfT_aWithLeaves.clear();
-            maximumMembers.clear();
-            innerNodes.clear();
-
         }
 
         return elementsOfA;
