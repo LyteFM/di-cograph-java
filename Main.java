@@ -17,6 +17,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
 import java.util.logging.ConsoleHandler;
+import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -52,32 +53,38 @@ public class Main {
 //        }
         System.out.println("Working Directory = " +
                 System.getProperty("user.dir"));
-
-        Double d = 0.99999999999999999 * 2; // todo: kann echt 2 werden x)
-        System.out.println("0.99 * 2 = " + d.intValue());
+//
+//        Double d = 0.99999999999999999 * 2; // todo: kann echt 2 werden x)
+//        System.out.println("0.99 * 2 = " + d.intValue());
 
         System.out.println("The default PRNG on this system is " + new SecureRandom().getAlgorithm());
 
+        // remove defaults
         Logger log = Logger.getLogger( "TestLogger" );
         for (Handler iHandler : log.getParent().getHandlers()) {
             log.getParent().removeHandler(iHandler);
         }
-        Handler handler = new ConsoleHandler();
+        // add and configure console output
+        Handler consoleHandler = new ConsoleHandler();
         VerySimpleFormatter myFormatter = new VerySimpleFormatter();
-        handler.setFormatter(myFormatter);
-        handler.setLevel( Level.FINEST );
-        log.addHandler( handler );
+        consoleHandler.setFormatter(myFormatter);
+        consoleHandler.setLevel( Level.FINEST );
+
+        // log.addHandler( consoleHandler );
         log.setLevel( Level.FINEST );
-        log.fine( "Alles ist fein!" );
+        // log.fine( "Alles ist fein!" );
 
         //mdTest();
         //DirectedMD.dahlhausProcessDelegator("OverlapComponentProg/test3_neu.txt");
 
-        //directedMDTesting(log);
+        for( int i = 15; i <= 20; i ++) {
+            directedMDTesting(log, consoleHandler, i, i/2);
+        }
 
         String folder = "testGraphs/";
-        String file = folder + "randDigraph_n_50_edits_10_1031_16:37:01.txt";
-        MDtestFromFile(log, file);
+        String oftenUsedFile = folder + "randDigraph_n_50_edits_10_1031_16:37:01.txt";
+        String smallStackoverflowFile = folder + "randDigraph_n_10_edits_2_11-03_11:35:47:010_original.txt";
+        //MDtestFromFile(log, smallStackoverflowFile);
 
     }
 
@@ -91,24 +98,55 @@ public class Main {
 
     }
 
-    static void directedMDTesting(Logger log) throws Exception{
-        int nVertices = 50;
-        int nDisturb = 10;
-        String timeStamp = new SimpleDateFormat("MMdd_HH:mm:ss").format(Calendar.getInstance().getTime());
+    static SimpleDirectedGraph<String, DefaultEdge> directedMDTesting(Logger log, Handler baseHandler, int nVertices, int nDisturb) throws Exception{
+
+        String timeStamp = new SimpleDateFormat("MM-dd_HH:mm:ss:SSS").format(Calendar.getInstance().getTime());
 
         GraphGenerator gen = new GraphGenerator(log);
         SimpleDirectedGraph<String, DefaultEdge> g_d = new SimpleDirectedGraph<>(DefaultEdge.class);
         gen.generateRandomDirectedCograph(g_d, nVertices);
         gen.disturbDicograph(g_d, nDisturb);
 
-        // export for debug purposes
-        String filePath = "testGraphs/randDigraph_n_" + nVertices + "_edits_" + nDisturb + "_" + timeStamp + ".txt";
-        File expfile = new File(filePath);
+        // export the graph for debug purposes
+        String filePath = "testGraphs/randDigraph_n_" + nVertices + "_edits_" + nDisturb + "_" + timeStamp;
+        File expfile = new File(filePath + "_original.txt");
         SimpleMatrixExporter<String, DefaultEdge> myExporter = new SimpleMatrixExporter<>();
         myExporter.exportGraph(g_d, expfile);
+        System.out.println(String.format("Generated random Dicograph with %s vertices and %s random edge-edits.", nVertices, nDisturb));
+        System.out.println("Exported Matrix to :" + filePath + "_original.txt");
 
+        // writes the log
+        File logFile = new File(filePath +".log");
+        FileHandler fileHandler = new FileHandler(logFile.getPath());
+        fileHandler.setFormatter(baseHandler.getFormatter());
+        fileHandler.setLevel( baseHandler.getLevel() );
+        log.addHandler(fileHandler);
+
+        System.out.println("Started modular decomposition");
         DirectedMD testMD = new DirectedMD(g_d, log, true);
         testMD.computeModularDecomposition();
+        System.out.println("Finished modular decomposition. Log written to:");
+        System.out.println(filePath+ ".log");
+
+        if(nVertices + nDisturb <= 50){
+            // compute the solution via ILP
+            System.out.println("*** Starting ILP-Solver ***");
+            int [] parameters = {0,0}; // one solution
+            CplexDiCographEditingSolver mySolver = new CplexDiCographEditingSolver(g_d, parameters);
+            List<SimpleDirectedGraph<String, DefaultEdge>> solutions = mySolver.solve();
+            System.out.println("Saving solution for n = " + nVertices + " to:");
+            System.out.println(filePath + "_edited.txt");
+            File solFile = new File(filePath + "_edited.txt");
+            myExporter.exportGraph(solutions.get(0), solFile);
+
+
+        }
+
+        // clear this handler, I want separate logfiles.
+        fileHandler.close();
+        log.removeHandler(fileHandler);
+
+        return g_d;
 
     }
 
@@ -124,6 +162,7 @@ public class Main {
         // Dicograph Testing:
 
         int [] parameters = {0,0}; // one solution
+
 
 
         for( int i = 10; i< 50; i++) {

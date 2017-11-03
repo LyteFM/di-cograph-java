@@ -157,7 +157,7 @@ class MDTreeLeafNode extends MDTreeNode {
 		visited = false;
 	}
 	
-	// todo: ab hier viele Änderungen
+	// todo: Änderungen dokumentieren
 	/*
 	 * Returns a string representation of this node.  Merely uses the string
 	 * representation of the vertex with which it is associated.

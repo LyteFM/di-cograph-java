@@ -212,8 +212,8 @@ public class DirectedMD {
 
         MDTree TreeForG_d = new MDTree(G_d);
         MDTree TreeForG_s = new MDTree(G_s);
-        log.info("md for G_d:\n" + TreeForG_d.toString());
-        log.info("md for G_s:\n" + TreeForG_s.toString());
+        log.info("md for G_d:\n" + MDTree.beautify(TreeForG_d.toString()));
+        log.info("md for G_s:\n" + MDTree.beautify(TreeForG_s.toString()));
 
         // Step 3: Find T(H) = T(G_s) Λ T(G_d)
 
@@ -250,7 +250,7 @@ public class DirectedMD {
 
         HashMap<BitSet, RootedTreeNode> bitsetToInclusionTreenNode = new HashMap<>(inputSet.size()*4/3);
 
-        // Step 0: eliminate doubles from input
+        // Step 0: eliminate doubles from input and add root, if not yet present.
         HashSet<BitSet> inputSetNoDoubles = new HashSet<>(inputSet);
         if (debugMode && inputSetNoDoubles.size() != inputSet.size()) {
             log.warning("Double entry in input for inclusion tree - possible merge in overlap components.");
@@ -263,9 +263,15 @@ public class DirectedMD {
                 (b1, b2) -> Integer.compare(b2.cardinality(), b1.cardinality()));
         log.fine("Input sorted by size: " + inputNodeList);
 
+        // add root, if not yet included
+        BitSet rootSet = new BitSet(nVertices);
+        rootSet.set(0, nVertices); // toIndex must be n
+        if(!inputSetNoDoubles.contains(rootSet)) {
+            inputNodeList.add(0, rootSet);
+        }
+
 
         // Create a List for each v ∈ V of the members of F (i.e. the elements of σ) containing v in ascending order of their size:
-
 
         // init empty
         ArrayList<LinkedList<BitSet>> xLists = new ArrayList<>(nVertices);
@@ -273,10 +279,7 @@ public class DirectedMD {
             xLists.add(i, new LinkedList<>());
         }
 
-        // add root
-        BitSet rootSet = new BitSet(nVertices);
-        rootSet.set(0, nVertices); // toIndex must be n
-        inputNodeList.add(0, rootSet);
+
 
         // - visit each Y ∈ F in descending order of size. For each x ∈ Y, insert pointer to Y to front of x's list. [O(sz(F)]
         inputNodeList.forEach(ySet ->
@@ -352,7 +355,6 @@ public class DirectedMD {
 
         }
         ret.setModuleToTreenode(bitsetToInclusionTreenNode);
-        log.info("Inclusion Tree: " + ret.toString());
 
         return ret;
     }
@@ -486,6 +488,7 @@ public class DirectedMD {
         // 3.) @Lemma 11: compute the inclusion tree of σ(T_a, T_b)
         // The previously ommitted V and the singleton sets are also added to the tree.
         RootedTree overlapInclusionTree = getInclusionTreeFromBitsets(overlapComponents.values());
+        log.info("Inclusion tree of overlap components: " + MDTree.beautify(overlapInclusionTree.toString()));
         HashMap<BitSet, RootedTreeNode> bitsetToOverlapTreenNode = overlapInclusionTree.getModuleToTreenode();
 
 
@@ -574,6 +577,8 @@ public class DirectedMD {
 
         RootedTree ret = getInclusionTreeFromBitsets(strongModulesOfH);
         // now we have the Tree T(H) = T_a Λ T_b
+        log.info("Inclusion Tree: " + ret.toString());
+
 
         String debugg = "ND";
 
@@ -700,9 +705,11 @@ public class DirectedMD {
                 if (lca.getType().isDegenerate()) {
                     elementsOfA.put(setEntryOfSigma.getValue(), setEntryOfSigma.getKey());
                     elementOfAToP_a.put(setEntryOfSigma.getValue(), lca);
-                    log.fine(logPrefix + "Added: " + setEntryOfSigma.toString() + " with complete LCA: " + lca.toString());
+                    log.fine(logPrefix + "Added: " + setEntryOfSigma.toString());
+                    log.fine("    with complete LCA: " + lca.toString());
                 } else {
-                    log.fine(logPrefix + "Discarded: " + setEntryOfSigma.toString() + " with prime LCA: " + lca.toString());
+                    log.fine(logPrefix + "Discarded: " + setEntryOfSigma.toString());
+                    log.fine("    with prime LCA: " + lca.toString());
                 }
             }
 
