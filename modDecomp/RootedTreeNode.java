@@ -380,23 +380,23 @@ class RootedTreeNode {
 
     /**
      * Using a BitSet for easy UNION-Computation lateron. Running Time: O(n (1 + Anzahl module))
-     * @param vertexToIndex
+     * @param leaves the empty but size-initialized array for storing all leafs
      * @param modules
      * @return
      */
-    public BitSet getStrongModulesBool(Map<String, Integer> vertexToIndex, MDTreeLeafNode[] leaves, HashMap<BitSet, RootedTreeNode> modules) {
-        int n = vertexToIndex.size();
-        BitSet ret = new BitSet(n);
+    public BitSet getStrongModulesBool(MDTreeLeafNode[] leaves, HashMap<BitSet, RootedTreeNode> modules) {
+
+        BitSet ret = new BitSet(leaves.length);
         RootedTreeNode currentChild = firstChild;
         if(currentChild != null){
             while (currentChild != null){
                 if(currentChild.isALeaf()){
                     MDTreeLeafNode leafNode = (MDTreeLeafNode) currentChild;
-                    int index = vertexToIndex.get(leafNode.getLabel());
+                    int index = leafNode.getVertexNo(); // 0 <= index  <= n-1
                     ret.set(index);
                     leaves[index] = leafNode;
                 } else {
-                    BitSet childSet = currentChild.getStrongModulesBool(vertexToIndex, leaves, modules);
+                    BitSet childSet = currentChild.getStrongModulesBool(leaves, modules);
                     ret.or(childSet);
                 }
 				currentChild = currentChild.rightSibling;
@@ -408,32 +408,4 @@ class RootedTreeNode {
 
         return ret;
     }
-
-    /*
-    protected ArrayList<Integer> getStrongModulesIntList(Map<String, Integer> vertexToIndex, ArrayList<ArrayList<Integer>> modules) {
-        ArrayList<Integer> ret = new ArrayList<>();
-        RootedTreeNode currentChild = firstChild;
-        if (currentChild != null) {
-            while (currentChild != null) {
-                if (currentChild.isALeaf()) {
-                    MDTreeLeafNode leafNode = (MDTreeLeafNode) currentChild;
-                    int index = vertexToIndex.get(leafNode.getLabel());
-                    ret.add(index);
-                } else {
-                    ArrayList<Integer> childSet = currentChild.getStrongModulesIntList(vertexToIndex, modules);
-                    // todo:
-                    ret.addAll(childSet);
-                }
-                currentChild = currentChild.rightSibling;
-            }
-            if (!isRoot()) {
-                modules.add(ret);
-            }
-        }
-
-
-        return ret;
-
-    }
-    */
 }

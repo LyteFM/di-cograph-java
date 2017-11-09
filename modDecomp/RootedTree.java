@@ -79,9 +79,9 @@ class RootedTree {
         return ret;
     }
 
-    public HashMap<BitSet, RootedTreeNode> getStrongModulesBool(Map<String, Integer> vertexToIndex, MDTreeLeafNode[] leaves) {
+    public HashMap<BitSet, RootedTreeNode> getStrongModulesBool(MDTreeLeafNode[] leaves) {
         HashMap<BitSet, RootedTreeNode> ret = new HashMap<>();
-        root.getStrongModulesBool(vertexToIndex, leaves, ret);
+        root.getStrongModulesBool(leaves, ret);
         moduleToTreenode = ret;
 
         return ret;

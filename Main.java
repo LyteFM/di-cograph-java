@@ -6,9 +6,7 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.graph.SimpleGraph;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -21,7 +19,6 @@ import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
 
 import dicograph.ILPSolver.CplexDiCographEditingSolver;
 import dicograph.graphIO.GraphGenerator;
@@ -70,47 +67,47 @@ public class Main {
         consoleHandler.setFormatter(myFormatter);
         consoleHandler.setLevel( Level.FINEST );
 
-        // log.addHandler( consoleHandler );
+        log.addHandler( consoleHandler );
         log.setLevel( Level.FINEST );
-        // log.fine( "Alles ist fein!" );
+        log.fine( "Alles ist fein!" );
 
         //mdTest();
         //DirectedMD.dahlhausProcessDelegator("OverlapComponentProg/test3_neu.txt");
 
-        for( int i = 15; i <= 20; i ++) {
-            directedMDTesting(log, consoleHandler, i, i/2);
-        }
+//        for( int i = 15; i <= 20; i ++) {
+//            directedMDTesting(log, consoleHandler, i, i/2);
+//        }
 
         String folder = "testGraphs/";
         String oftenUsedFile = folder + "randDigraph_n_50_edits_10_1031_16:37:01.txt";
         String smallStackoverflowFile = folder + "randDigraph_n_10_edits_2_11-03_11:35:47:010_original.txt";
-        //MDtestFromFile(log, smallStackoverflowFile);
+        MDtestFromFile(log, oftenUsedFile);
 
     }
 
     static void MDtestFromFile(Logger log, String importFilePath) throws Exception {
 
         File importFile = new File(importFilePath);
-        SimpleDirectedGraph<String, DefaultEdge> importGraph = SimpleMatrixImporter.importGraph(importFile);
+        SimpleDirectedGraph<Integer, DefaultEdge> importGraph = SimpleMatrixImporter.importIntGraph(importFile);
 
         DirectedMD testMD = new DirectedMD(importGraph, log, true);
         testMD.computeModularDecomposition();
 
     }
 
-    static SimpleDirectedGraph<String, DefaultEdge> directedMDTesting(Logger log, Handler baseHandler, int nVertices, int nDisturb) throws Exception{
+    static SimpleDirectedGraph<Integer, DefaultEdge> directedMDTesting(Logger log, Handler baseHandler, int nVertices, int nDisturb) throws Exception{
 
         String timeStamp = new SimpleDateFormat("MM-dd_HH:mm:ss:SSS").format(Calendar.getInstance().getTime());
 
         GraphGenerator gen = new GraphGenerator(log);
-        SimpleDirectedGraph<String, DefaultEdge> g_d = new SimpleDirectedGraph<>(DefaultEdge.class);
+        SimpleDirectedGraph<Integer, DefaultEdge> g_d = new SimpleDirectedGraph<>(DefaultEdge.class);
         gen.generateRandomDirectedCograph(g_d, nVertices);
         gen.disturbDicograph(g_d, nDisturb);
 
         // export the graph for debug purposes
         String filePath = "testGraphs/randDigraph_n_" + nVertices + "_edits_" + nDisturb + "_" + timeStamp;
         File expfile = new File(filePath + "_original.txt");
-        SimpleMatrixExporter<String, DefaultEdge> myExporter = new SimpleMatrixExporter<>();
+        SimpleMatrixExporter<Integer, DefaultEdge> myExporter = new SimpleMatrixExporter<>();
         myExporter.exportGraph(g_d, expfile);
         System.out.println(String.format("Generated random Dicograph with %s vertices and %s random edge-edits.", nVertices, nDisturb));
         System.out.println("Exported Matrix to :" + filePath + "_original.txt");
@@ -133,7 +130,7 @@ public class Main {
             System.out.println("*** Starting ILP-Solver ***");
             int [] parameters = {0,0}; // one solution
             CplexDiCographEditingSolver mySolver = new CplexDiCographEditingSolver(g_d, parameters);
-            List<SimpleDirectedGraph<String, DefaultEdge>> solutions = mySolver.solve();
+            List<SimpleDirectedGraph<Integer, DefaultEdge>> solutions = mySolver.solve();
             System.out.println("Saving solution for n = " + nVertices + " to:");
             System.out.println(filePath + "_edited.txt");
             File solFile = new File(filePath + "_edited.txt");
@@ -152,7 +149,7 @@ public class Main {
 
     void cographTesting(Logger log) throws Exception{
         // Cograph Testing
-        SimpleGraph<String, DefaultEdge> g = new SimpleGraph<>(DefaultEdge.class);
+        SimpleGraph<Integer, DefaultEdge> g = new SimpleGraph<>(DefaultEdge.class);
         GraphGenerator gen = new GraphGenerator(log);
         String res = gen.generateRandomCograph(g,35);
 
@@ -166,11 +163,11 @@ public class Main {
 
 
         for( int i = 10; i< 50; i++) {
-            SimpleDirectedGraph<String, DefaultEdge> g_d = new SimpleDirectedGraph<>(DefaultEdge.class);
+            SimpleDirectedGraph<Integer, DefaultEdge> g_d = new SimpleDirectedGraph<>(DefaultEdge.class);
             gen.generateRandomDirectedCograph(g_d, i);
 
             CplexDiCographEditingSolver mySolver = new CplexDiCographEditingSolver(g_d, parameters);
-            List<SimpleDirectedGraph<String, DefaultEdge>> solutions = mySolver.solve();
+            List<SimpleDirectedGraph<Integer, DefaultEdge>> solutions = mySolver.solve();
             System.out.print(solutions.get(0));
             Double sol = mySolver.getEditingDistances().get(0);
             if(sol.intValue() > 0){
@@ -222,18 +219,18 @@ public class Main {
     void cplexTest() throws ExportException, IloException, IOException{
         String filePath = "importFiles/sz_15_pr_30";
         File importFile = new File(filePath+ ".txt");
-        SimpleDirectedGraph<String, DefaultEdge> importGraph = SimpleMatrixImporter.importGraph(importFile);
+        SimpleDirectedGraph<Integer, DefaultEdge> importGraph = SimpleMatrixImporter.importIntGraph(importFile);
 
         System.out.print(importGraph + "\n");
         int [] parameters = {0,1};
 
         CplexDiCographEditingSolver mySolver = new CplexDiCographEditingSolver(importGraph, parameters);
-        List<SimpleDirectedGraph<String,DefaultEdge>> solutions = mySolver.solve();
+        List<SimpleDirectedGraph<Integer,DefaultEdge>> solutions = mySolver.solve();
 
         int count = 1;
-        for(SimpleDirectedGraph<String,DefaultEdge> cograph : solutions){
+        for(SimpleDirectedGraph<Integer,DefaultEdge> cograph : solutions){
 
-            SimpleMatrixExporter<String, DefaultEdge> myExporter = new SimpleMatrixExporter<>();
+            SimpleMatrixExporter<Integer, DefaultEdge> myExporter = new SimpleMatrixExporter<>();
             File expfile = new File(filePath + "_solution_"+ count + ".txt");
             myExporter.exportGraph(cograph, expfile);
             count++;
@@ -258,7 +255,7 @@ public class Main {
         myExporter.exportGraph(testGraph, logFile);
 
         // try importing and exporting again:
-        SimpleDirectedGraph<String,DefaultEdge> testGraph2 = SimpleMatrixImporter.importGraph(logFile);
+        SimpleDirectedGraph<String,DefaultEdge> testGraph2 = SimpleMatrixImporter.importStringGraph(logFile);
         String exp2 = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
         File expfile = new File(exp2 + "_reimported" + ".txt");
         myExporter.exportGraph(testGraph2, expfile);

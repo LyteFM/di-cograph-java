@@ -86,7 +86,7 @@ public class MDTree extends RootedTree {
 	}
 
 	// F.L. new: use JGraph
-	private MDTreeNode buildMDTree(UndirectedGraph<String, DefaultEdge> g) {
+	private MDTreeNode buildMDTree(UndirectedGraph<Integer, DefaultEdge> g) {
 
 		if (g.vertexSet().isEmpty()){
 			return null;

@@ -23,8 +23,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.logging.Logger;
+
 
 
 /**
@@ -32,48 +35,48 @@ import java.util.logging.Logger;
  */
 public class DirectedMD {
 
-    final UnmodifiableDirectedGraph<String, DefaultEdge> inputGraph;
+    final UnmodifiableDirectedGraph<Integer, DefaultEdge> inputGraph;
     final Logger log;
     final int nVertices;
-    AsUndirectedGraph<String, DefaultEdge> G_s;
-    SimpleGraph<String, DefaultEdge> G_d;
+    AsUndirectedGraph<Integer, DefaultEdge> G_s;
+    SimpleGraph<Integer, DefaultEdge> G_d;
 
     final boolean debugMode; // false for max speed, true for nicely sorted vertices etc.
-    final String[] vertexForIndex;
-    Map<String, Integer> vertexToIndex;
+
     final MDTreeLeafNode[] leavesOfT_a;
     final MDTreeLeafNode[] leavesOfT_b;
 
 
 
-    public DirectedMD(SimpleDirectedGraph<String, DefaultEdge> input, Logger logger, boolean debugMode){
+    public DirectedMD(SimpleDirectedGraph<Integer, DefaultEdge> input, Logger logger, boolean debugMode){
 
         inputGraph = new UnmodifiableDirectedGraph<>(input);
         log = logger;
         nVertices = input.vertexSet().size();
-        vertexForIndex = new String[nVertices];
-        vertexToIndex = new HashMap<>(nVertices*4/3);
         leavesOfT_a = new MDTreeLeafNode[nVertices];
         leavesOfT_b = new MDTreeLeafNode[nVertices];
         this.debugMode = debugMode;
 
-        // Initialize Index-Vertex-BiMap
+        // Initialize Index-Vertex-Correspondence. todo: always sort, just use bucket sort :)
+        // I now simply assume: vertices have the numbers from 0 to n-1.
+        /*
         if(debugMode){
-            TreeSet<String> sortedVertices = new TreeSet<>(input.vertexSet());
+            TreeSet<Integer> sortedVertices = new TreeSet<>(input.vertexSet());
             int count = 0;
-            for(String vertex : sortedVertices){
+            for(int vertex : sortedVertices){
                 vertexForIndex[count] = vertex;
                 vertexToIndex.put(vertex, count);
                 count++;
             }
         } else {
             int count = 0;
-            for(String vertex : input.vertexSet()){
+            for(int vertex : input.vertexSet()){
                 vertexForIndex[count] = vertex;
                 vertexToIndex.put(vertex, count);
                 count++;
             }
         }
+        */
 
 
     }
@@ -151,7 +154,7 @@ public class DirectedMD {
     public static ArrayList<Integer> dahlhausProcessDelegator(String inputFile, Logger log)
             throws InterruptedException, IOException {
         List<String> command = new ArrayList<>();
-        command.add("./dahlhaus"); // ./OverlapComponentProg/main
+        command.add("./OverlapComponentProg/main"); // ./OverlapComponentProg/main
         command.add(inputFile);
         ArrayList<Integer> ret = new ArrayList<>();
 
@@ -190,12 +193,12 @@ public class DirectedMD {
 
         // G_d: undirected graph s.t. {u,v} in E_d iff both (u,v) and (v,u) in E
         G_d = new SimpleGraph<>(DefaultEdge.class);
-        for (String vertex : inputGraph.vertexSet()) {
+        for (int vertex : inputGraph.vertexSet()) {
             G_d.addVertex(vertex);
         }
         for (DefaultEdge edge : inputGraph.edgeSet()) {
-            String source = inputGraph.getEdgeSource(edge);
-            String target = inputGraph.getEdgeTarget(edge);
+            int source = inputGraph.getEdgeSource(edge);
+            int target = inputGraph.getEdgeTarget(edge);
             if (inputGraph.containsEdge(target, source)) {
                 G_d.addEdge(source, target);
             }
@@ -221,11 +224,15 @@ public class DirectedMD {
 
         // Step 4: At each O-complete and 1-complete node X of T(H), order the children s.t.
         //         each equivalence class of R_X is consecutive.
-        // todo: das mit Tedder oder genauso wie im Paper?
 
 
         // Step 5: At each  2-complete node Y, select an arbitrary set S of representatives from the children.
         //         order the children of Y according to a perfect factorizing permutation of G[S].
+
+
+//        SimpleDirectedGraph<Integer, DefaultEdge> inducedSubgraphOf2completeNode = new SimpleDirectedGraph<>(DefaultEdge.class);
+//        List<Integer> permutation = perfFactPermFromTournament.apply(inducedSubgraphOf2completeNode);
+
 
 
         // Step 6: Resulting leaf order of T(H) is a factorizing permutation of G by Lem 20,21. Use algorithm
@@ -469,7 +476,7 @@ public class DirectedMD {
 
             // retrieve List and create leafNode
             LinkedList<BitSet> currVertexList = xLists.get(vertexNr);
-            PartitiveFamilyLeafNode leafNode = new PartitiveFamilyLeafNode(vertexNr, vertexForIndex[vertexNr]);
+            PartitiveFamilyLeafNode leafNode = new PartitiveFamilyLeafNode(vertexNr);
 
             boolean firstEntry = true;
             ListIterator<BitSet> vListIter = currVertexList.listIterator(0);
@@ -522,7 +529,7 @@ public class DirectedMD {
         return ret;
     }
 
-    int getEdgeValueForH(String u, String v) {
+    int getEdgeValueForH(int u, int v) {
 
         boolean inG_s = G_s.containsEdge(u, v);
         boolean inG_d = G_d.containsEdge(u, v);
@@ -565,8 +572,8 @@ public class DirectedMD {
         // much better than my current approach with BitSets of size n :)
 
         // todo: Brauche ich die corresp. TreeNode irgendwann? Muss hier auch die leaves mit Index abfragen. Könnte das BitSet auch an die Node schreiben.
-        HashMap<BitSet, RootedTreeNode> nontrivModulesBoolA = T_a.getStrongModulesBool(vertexToIndex, leavesOfT_a);
-        HashMap<BitSet, RootedTreeNode> nontrivModulesBoolB = T_b.getStrongModulesBool(vertexToIndex, leavesOfT_b);
+        HashMap<BitSet, RootedTreeNode> nontrivModulesBoolA = T_a.getStrongModulesBool(leavesOfT_a);
+        HashMap<BitSet, RootedTreeNode> nontrivModulesBoolB = T_b.getStrongModulesBool(leavesOfT_b);
         // other way round for later
 
 //        HashMap<RootedTreeNode, BitSet> modulesAToBitset = new HashMap<>(nontrivModulesBoolA.size() * 4 / 3);

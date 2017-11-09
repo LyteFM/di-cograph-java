@@ -76,7 +76,7 @@ public class GraphGenerator {
         return graph;
     }
 
-    public String generateRandomCograph(SimpleGraph<String,DefaultEdge> graph, int nVertices){
+    public String generateRandomCograph(SimpleGraph<Integer,DefaultEdge> graph, int nVertices){
 
         return generateCograph(graph, nVertices, false);
 
@@ -85,26 +85,26 @@ public class GraphGenerator {
         // - everything else is ok!
     }
 
-    public String generateRandomDirectedCograph(SimpleDirectedGraph<String, DefaultEdge> graph, int nVertices){
+    public String generateRandomDirectedCograph(SimpleDirectedGraph<Integer, DefaultEdge> graph, int nVertices){
         return generateCograph(graph, nVertices,true);
     }
 
 
-    private String generateCograph(Graph<String,DefaultEdge> graph, int nVertices, boolean isDirected){
+    private String generateCograph(Graph<Integer,DefaultEdge> graph, int nVertices, boolean isDirected){
 
         // todo: a) rekursiv bauen b) MDTree- und LeafNodes verwenden
         StringBuilder mdTree = new StringBuilder();
 
         // adds n vertices
-        EmptyGraphGenerator<String, DefaultEdge> gen = new EmptyGraphGenerator<>(nVertices);
-        gen.generateGraph(graph, new StringVertexFactory(), null);
+        EmptyGraphGenerator<Integer, DefaultEdge> gen = new EmptyGraphGenerator<>(nVertices);
+        gen.generateGraph(graph, new IntegerVertexFactory(), null);
 
         // Idea: Save the Graph in the same MDTree-String-Format as in Tedder's Code for easy comparison
 
         // init the List of modules
-        ArrayList<HashSet<String>> modules = new ArrayList<>();
-        for(String vertex : graph.vertexSet()){
-            HashSet<String> moduleVertices = new HashSet<>();
+        ArrayList<HashSet<Integer>> modules = new ArrayList<>();
+        for(int vertex : graph.vertexSet()){
+            HashSet<Integer> moduleVertices = new HashSet<>();
             moduleVertices.add(vertex);
             modules.add(moduleVertices);
         }
@@ -175,7 +175,7 @@ public class GraphGenerator {
                 chosenIndeces[i] = realIndex;
             }
 
-            ArrayList<HashSet<String>> chosenModules = new ArrayList<>();
+            ArrayList<HashSet<Integer>> chosenModules = new ArrayList<>();
             for( int i : chosenIndeces){
                 chosenModules.add(modules.get(i));
             }
@@ -188,7 +188,7 @@ public class GraphGenerator {
                 msg.append("\"").append(module).append("\", ");
             }
             logger.fine(msg.toString());
-            HashSet<String> mergedModule = union(graph, chosenModules, mdNodeType);
+            HashSet<Integer> mergedModule = union(graph, chosenModules, mdNodeType);
 
             // remove the old modules and add the new one
             Arrays.sort(chosenIndeces);
@@ -205,10 +205,10 @@ public class GraphGenerator {
         return mdTree.toString();
     }
 
-    private HashSet<String> union(Graph<String,DefaultEdge> g, ArrayList<HashSet<String>> selectedModules, MDNodeType type){
+    private HashSet<Integer> union(Graph<Integer,DefaultEdge> g, ArrayList<HashSet<Integer>> selectedModules, MDNodeType type){
 
         // merge all vertices into the first module
-        HashSet<String> ret = new HashSet<>(selectedModules.get(0));
+        HashSet<Integer> ret = new HashSet<>(selectedModules.get(0));
 
         for( int i=1; i< selectedModules.size(); i++){
             ret.addAll(selectedModules.get(i));
@@ -224,11 +224,11 @@ public class GraphGenerator {
                         // SERIES: add edges in both directions
 
                         if(type == SERIES || i <j) {
-                            HashSet<String> firstModule = selectedModules.get(i);
-                            HashSet<String> secondModule = selectedModules.get(j);
+                            HashSet<Integer> firstModule = selectedModules.get(i);
+                            HashSet<Integer> secondModule = selectedModules.get(j);
 
-                            for(String outVertex : firstModule){
-                                for(String inVertex : secondModule){
+                            for(int outVertex : firstModule){
+                                for(int inVertex : secondModule){
                                     g.addEdge(outVertex, inVertex);
                                 }
                             }
@@ -249,24 +249,24 @@ public class GraphGenerator {
      * @param nEdgeEdits the number of edge edits
      * @return the disturbed cograph
      */
-    public SimpleDirectedGraph<String, DefaultEdge> disturbDicograph(SimpleDirectedGraph<String, DefaultEdge> g, int nEdgeEdits){
+    public SimpleDirectedGraph<Integer, DefaultEdge> disturbDicograph(SimpleDirectedGraph<Integer, DefaultEdge> g, int nEdgeEdits){
 
         HashSet<String> usedEdges = new HashSet<>(nEdgeEdits*4/3);
-        ArrayList<String> vertices = new ArrayList<>(g.vertexSet());
+        ArrayList<Integer> vertices = new ArrayList<>(g.vertexSet());
         int nVertices = vertices.size();
 
         int count = 0;
         while (count < nEdgeEdits){
 
             int uIndex = getRandomVertex(nVertices);
-            String u = vertices.get(uIndex);
+            int u = vertices.get(uIndex);
 
             int vIndex = getRandomVertex(nVertices);
-            String v = vertices.get(vIndex);
+            int v = vertices.get(vIndex);
             String edgeString = u + "->" + v;
 
             // May not be the same and may not have been altered already
-            if( ! u.equals(v) && !usedEdges.contains(edgeString) ){
+            if( ! (u==v) && !usedEdges.contains(edgeString) ){
 
                 DefaultEdge edge = g.getEdge(u,v);
                 if( edge == null){

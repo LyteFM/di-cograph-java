@@ -73,12 +73,12 @@ public class CplexDiCographEditingSolver {
 
 
     // input data. Also works, if has self-loops (will be ignored)
-    DirectedGraph<String, DefaultEdge> inputGraph;
-    TreeSet<String> sortedVertexSet;
+    DirectedGraph<Integer, DefaultEdge> inputGraph;
+    TreeSet<Integer> sortedVertexSet;
     // parameters
     int [] parameters;
 
-    List<SimpleDirectedGraph<String, DefaultEdge>> solutionGraphs;
+    List<SimpleDirectedGraph<Integer, DefaultEdge>> solutionGraphs;
     List<Double> editingDistances;
 
     // CPLEX solver
@@ -102,10 +102,10 @@ public class CplexDiCographEditingSolver {
      * @throws IloException
      */
 
-    public CplexDiCographEditingSolver(SimpleDirectedGraph<String, DefaultEdge> inputGraph, int [] parameters ) throws IloException {
+    public CplexDiCographEditingSolver(SimpleDirectedGraph<Integer, DefaultEdge> inputGraph, int [] parameters ) throws IloException {
         this.inputGraph = inputGraph;
         // want the vertex set of the graph in sorted order for easier display and to uniquely define the matrix
-        sortedVertexSet = new TreeSet<>(inputGraph.vertexSet());
+        sortedVertexSet = new TreeSet<>(inputGraph.vertexSet()); // todo: not necessary!
         vertexCount = sortedVertexSet.size();
 
         solver = new IloCplex();
@@ -117,7 +117,7 @@ public class CplexDiCographEditingSolver {
 
     }
 
-    public List<SimpleDirectedGraph<String,DefaultEdge>> solve() throws IloException{
+    public List<SimpleDirectedGraph<Integer,DefaultEdge>> solve() throws IloException{
         this.solver.setName("CplexCographSolver");
 
         // initialize boolean variables as "E_x,y"
@@ -131,7 +131,6 @@ public class CplexDiCographEditingSolver {
 
 
         DefaultEdge edge;
-        x = 0; y = 0;
         int i = 0;
 
         // No diagonal entries as self-loops are excluded:
@@ -140,20 +139,17 @@ public class CplexDiCographEditingSolver {
         IloNumExpr symDiff2Expr[] = new IloNumExpr[noOfAdjacencies];
 
         // Initializes the symmetric difference for the Cograph Computation
-        for(String sourceVertex : sortedVertexSet){
-            for(String targetVertext : sortedVertexSet) {
-                if(!sourceVertex.equals(targetVertext)) {
+        for(int sourceVertex = 0; sourceVertex < vertexCount; sourceVertex++){
+            for(int targetVertext = 0; targetVertext < vertexCount; targetVertext++) {
+                if(sourceVertex != targetVertext) {
                     edge = inputGraph.getEdge(sourceVertex, targetVertext);
                     int hasEdge =  edge == null ? 0 :1;
-                    assert x != y;
-                    symDiff1Expr[i] = solver.prod((1 - hasEdge), E[x][y]); // arrayOutOfBound!!
-                    symDiff2Expr[i] = solver.prod(hasEdge, solver.diff(1, E[x][y] ));
+                    //assert x != y;
+                    symDiff1Expr[i] = solver.prod((1 - hasEdge), E[sourceVertex][targetVertext]); // arrayOutOfBound!!
+                    symDiff2Expr[i] = solver.prod(hasEdge, solver.diff(1, E[sourceVertex][targetVertext] ));
                     i++;
                 }
-                y++;
             }
-            y = 0;
-            x++;
         }
         this.objFn = solver.sum(solver.sum(symDiff1Expr),solver.sum(symDiff2Expr));
 
@@ -265,32 +261,27 @@ public class CplexDiCographEditingSolver {
             if (solver.getObjValue(solutionId)<=bestObjectiveValue){
 
                 // initialize JGraph with same vertex-Set:
-                SimpleDirectedGraph<String, DefaultEdge> solutionGraph = new SimpleDirectedGraph<>(DefaultEdge.class);
-                for(String vertex : sortedVertexSet){
+                SimpleDirectedGraph<Integer, DefaultEdge> solutionGraph = new SimpleDirectedGraph<>(DefaultEdge.class);
+                for(int vertex = 0; vertex < vertexCount; vertex++){
                     solutionGraph.addVertex(vertex);
                 }
 
                 //Boolean[][] cograph = new Boolean[this.vertexCount][this.vertexCount];
                 solution.append("Adjacency Matrix:\n");
-                int x=0, y=0;
 
-                for (String vertex_x : sortedVertexSet ){
-                    for (String vertex_y : sortedVertexSet){
+                for (int vertex_x = 0; vertex_x < vertexCount; vertex_x++ ){
+                    for (int vertex_y = 0; vertex_y < vertexCount; vertex_y++){
                         double variable = 0;
-                        if (x!=y){
-                            variable = solver.getValue(E[x][y], solutionId);
+                        if (vertex_x!=vertex_y){
+                            variable = solver.getValue(E[vertex_x][vertex_y], solutionId);
                         }
                         boolean hasEdge = variable>0.5;
                         //cograph[x][y]=(hasEdge);
                         solution.append( hasEdge ?"1 " : "0 ");
                         if(hasEdge){
-                            assert !vertex_x.equals(vertex_y);
                             solutionGraph.addEdge(vertex_x, vertex_y);
                         }
-                        y++;
                     }
-                    y = 0;
-                    x++;
                     solution.append("\n");
                 }
                 // gf.addCograph(cograph);

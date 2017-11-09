@@ -7,17 +7,15 @@ public class PartitiveFamilyLeafNode extends PartitiveFamilyTreeNode {
 
     int vertex;
     // Debug: Corresponding String in JGraphT
-    private String label;
 
-    protected PartitiveFamilyLeafNode(int vertexNo, String vertexLabel) {
+    protected PartitiveFamilyLeafNode(int vertexNo) {
         super();
-        label = vertexLabel;
         vertex = vertexNo;
     }
 
     @Override
     public String toString() {
 
-        return "(Leaf: " + label + ")";
+        return "(Leaf: " + vertex + ")";
     }
 }

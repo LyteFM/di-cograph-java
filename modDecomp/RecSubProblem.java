@@ -103,36 +103,36 @@ class RecSubProblem extends RootedTreeNode {
 				
 	}
 
-	RecSubProblem(UndirectedGraph<String, DefaultEdge> graph){
+	RecSubProblem(UndirectedGraph<Integer, DefaultEdge> graph){
 
 	    this();
 
 	    // Initial capacity for no rehash
-        HashMap <String, MDTreeLeafNode> nodeToLeaves = new HashMap<>( graph.vertexSet().size()*4/3 );
+        HashMap <Integer, MDTreeLeafNode> nodeToLeaves = new HashMap<>( graph.vertexSet().size()*4/3 );
 
         // create a leaf for each vertex:
-        for( String currVertex : graph.vertexSet() ) {
+        for( int currVertex : graph.vertexSet() ) {
             MDTreeLeafNode currentLeaf = new MDTreeLeafNode(currVertex);
             nodeToLeaves.put(currVertex, currentLeaf);
         }
 
         // Adds the vertex neighbors of the graph as leaf neighbors of the recursion tree:
         for ( MDTreeLeafNode currLeaf : nodeToLeaves.values()){
-            String currLeafName = currLeaf.getLabel();
-            Set<DefaultEdge> edges = graph.edgesOf( currLeafName );
+            int currLeafNo = currLeaf.getVertexNo();
+            Set<DefaultEdge> edges = graph.edgesOf( currLeafNo );
             for( DefaultEdge edge : edges ) {
-                String neighbourName = graph.getEdgeTarget(edge);
+                int neighbour = graph.getEdgeTarget(edge);
                 // edges are saved uniquely with source and target!
                 // faster like this than with .getEdge != null
-                if(neighbourName.equals(currLeafName)){
-                    neighbourName = graph.getEdgeSource(edge);
+                if(neighbour == currLeafNo){
+                    neighbour = graph.getEdgeSource(edge);
                 }
 
-                MDTreeLeafNode neighbor = nodeToLeaves.get ( neighbourName );
+                MDTreeLeafNode neighbourLeaf = nodeToLeaves.get ( neighbour );
                 // Here: HashMap necessary, List not enough.
 
-                currLeaf.addNeighbour(neighbor);
-                currLeaf.addNeighbourName(neighbourName);
+                currLeaf.addNeighbour(neighbourLeaf);
+                //currLeaf.addNeighbourName(neighbour);
             }
         }
 
