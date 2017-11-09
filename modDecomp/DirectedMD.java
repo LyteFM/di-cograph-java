@@ -240,6 +240,169 @@ public class DirectedMD {
 
     }
 
+    /*
+    protected static List<Integer> perfectFactPermOfTournament(SimpleDirectedGraph<Integer, DefaultEdge> tournament, Logger log){
+
+        int n = tournament.vertexSet().size();
+        ArrayList<Integer> ret = new ArrayList<>(n);
+        HashMap<Integer, Collection<Integer>> vertexToPartition = new HashMap<>(n*4/3);
+        ArrayList<Collection<Integer>> partitions = new ArrayList<>(n);
+        // init: P_0 = V. This also defines the vertex Indices.
+        List<Integer> VList = new ArrayList<>(tournament.vertexSet());
+        partitions.add(VList);
+        for(int vertex : VList) {
+            vertexToPartition.put(vertex, VList);
+        }
+
+        for(int i = 0; i<n; i++){
+
+            int realVertexNo = VList.get(i); // unnecessary, if int-vertices from 0 to n-1. necessary, if arbitrary.
+            Collection<Integer> cPartition = vertexToPartition.get(realVertexNo);
+            int partitionsIndex = partitions.indexOf(cPartition);
+
+            // skip singletons
+            if(cPartition.size() > 1) {
+                // neighborhood N_- and N_+:
+                Set <DefaultEdge> incoming = tournament.incomingEdgesOf(realVertexNo);
+                HashSet<Integer> inNeighbors = new HashSet<>(incoming.size()*4/3);
+                for( DefaultEdge edge : incoming){
+                    int source = tournament.getEdgeSource(edge);
+                    inNeighbors.add( source );
+                }
+                inNeighbors.retainAll(cPartition); // Compute the intersection
+
+                Set <DefaultEdge> outgoing = tournament.outgoingEdgesOf(realVertexNo);
+                HashSet<Integer> outNeigbors = new HashSet<>(outgoing.size()*4/3);
+                for( DefaultEdge edge : outgoing){
+                    int source = tournament.getEdgeTarget(edge);
+                    outNeigbors.add( source );
+                }
+                outNeigbors.retainAll(cPartition);
+
+                // update partitions and update map
+                // remove the former C
+                vertexToPartition.remove(realVertexNo);
+                partitions.remove(partitionsIndex);
+
+                // add C ∩ N_{-}(v_i)
+                partitions.add(partitionsIndex, inNeighbors);
+                for( int vNo : inNeighbors){
+                    vertexToPartition.put(vNo, inNeighbors);
+                }
+
+                // add singleton {v_i}
+                ArrayList<Integer> singleton = new ArrayList<>(1);
+                singleton.add(realVertexNo);
+                partitions.add(partitionsIndex+1, singleton);
+                vertexToPartition.put(realVertexNo, singleton);
+
+                // add C ∩ N_{+}(v_i)
+                partitions.add(partitionsIndex+2, outNeigbors);
+                for(int vNo : outNeigbors){
+                    vertexToPartition.put(vNo, outNeigbors);
+                }
+
+                // done.
+                if (partitions.size() == n) {
+                    break;
+                }
+            }
+        }
+
+        for(Collection<Integer> singleton : partitions){
+            if(singleton.size() > 1){
+                log.severe(() -> "Error: invalid element " + singleton.toString());
+                log.severe(() -> "In list of partitions " + partitions.toString());
+            }
+            ret.add(singleton.stream().findFirst().get());
+        }
+
+        return ret;
+    }
+    */
+
+    /**
+     * Computes a perfect factorizing permutation of the given tournament
+     */
+    protected Function<SimpleDirectedGraph<Integer, DefaultEdge>, List<Integer>> perfFactPermFromTournament = tournament -> {
+
+        int n = tournament.vertexSet().size();
+        ArrayList<Integer> ret = new ArrayList<>(n);
+        HashMap<Integer, Collection<Integer>> vertexToPartition = new HashMap<>(n*4/3);
+        ArrayList<Collection<Integer>> partitions = new ArrayList<>(n);
+        // init: P_0 = V. This also defines the vertex Indices.
+        List<Integer> VList = new ArrayList<>(tournament.vertexSet());
+        partitions.add(VList);
+        for(int vertex : VList) {
+            vertexToPartition.put(vertex, VList);
+        }
+
+        for(int i = 0; i<n; i++){
+
+            int realVertexNo = VList.get(i); // unnecessary, if int-vertices from 0 to n-1. necessary, if arbitrary.
+            Collection<Integer> cPartition = vertexToPartition.get(realVertexNo);
+            int partitionsIndex = partitions.indexOf(cPartition);
+
+            // skip singletons
+            if(cPartition.size() > 1) {
+                // neighborhood N_- and N_+:
+                Set <DefaultEdge> incoming = tournament.incomingEdgesOf(realVertexNo);
+                Set <DefaultEdge> outgoing = tournament.outgoingEdgesOf(realVertexNo);
+
+                assert incoming.size() + outgoing.size() == n-1 : "Not a tournament: " + tournament;
+
+                HashSet<Integer> inNeighbors = new HashSet<>(incoming.size()*4/3);
+                for( DefaultEdge edge : incoming){
+                    int source = tournament.getEdgeSource(edge);
+                    inNeighbors.add( source );
+                }
+                inNeighbors.retainAll(cPartition); // Compute the intersection
+
+                HashSet<Integer> outNeigbors = new HashSet<>(outgoing.size()*4/3);
+                for( DefaultEdge edge : outgoing){
+                    int source = tournament.getEdgeTarget(edge);
+                    outNeigbors.add( source );
+                }
+                outNeigbors.retainAll(cPartition);
+
+                // update partitions and update map
+                // remove the former C
+                vertexToPartition.remove(realVertexNo);
+                partitions.remove(partitionsIndex);
+
+                // add C ∩ N_{-}(v_i)
+                partitions.add(partitionsIndex, inNeighbors);
+                for( int vNo : inNeighbors){
+                    vertexToPartition.put(vNo, inNeighbors);
+                }
+
+                // add singleton {v_i}
+                ArrayList<Integer> singleton = new ArrayList<>(1);
+                singleton.add(realVertexNo);
+                partitions.add(partitionsIndex+1, singleton);
+                vertexToPartition.put(realVertexNo, singleton);
+
+                // add C ∩ N_{+}(v_i)
+                partitions.add(partitionsIndex+2, outNeigbors);
+                for(int vNo : outNeigbors){
+                    vertexToPartition.put(vNo, outNeigbors);
+                }
+
+                // done.
+                if (partitions.size() == n) {
+                    break;
+                }
+            }
+        }
+
+        for(Collection<Integer> singleton : partitions){
+            assert singleton.size() > 1 : "Error: invalid element " + singleton.toString();
+            ret.add(singleton.stream().findFirst().get());
+        }
+
+        return ret;
+    };
+
     /**
      * Implementation of the Inclusion tree according to Lemma 11
      *
