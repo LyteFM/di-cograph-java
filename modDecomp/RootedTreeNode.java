@@ -5,7 +5,7 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map;
+import java.util.List;
 
 /*
  * A node in a rooted tree.
@@ -42,6 +42,7 @@ class RootedTreeNode {
 		numChildren = 0;
 
         // F.L. 30.10. Flags for Algorithm 1:
+        // actually used for MDTree/Leafnodes.
         marked = false;
         numMarkedChildren = 0;
         nodeNumber = 0;
@@ -378,34 +379,6 @@ class RootedTreeNode {
 	    return thisNodesMembers;
     }
 
-    /**
-     * Using a BitSet for easy UNION-Computation lateron. Running Time: O(n (1 + Anzahl module))
-     * @param leaves the empty but size-initialized array for storing all leafs
-     * @param modules
-     * @return
-     */
-    public BitSet getStrongModulesBool(MDTreeLeafNode[] leaves, HashMap<BitSet, RootedTreeNode> modules) {
 
-        BitSet ret = new BitSet(leaves.length);
-        RootedTreeNode currentChild = firstChild;
-        if(currentChild != null){
-            while (currentChild != null){
-                if(currentChild.isALeaf()){
-                    MDTreeLeafNode leafNode = (MDTreeLeafNode) currentChild;
-                    int index = leafNode.getVertexNo(); // 0 <= index  <= n-1
-                    ret.set(index);
-                    leaves[index] = leafNode;
-                } else {
-                    BitSet childSet = currentChild.getStrongModulesBool(leaves, modules);
-                    ret.or(childSet);
-                }
-				currentChild = currentChild.rightSibling;
-			}
-            if(!isRoot()){
-                modules.put(ret, this);
-            }
-        }
 
-        return ret;
-    }
 }

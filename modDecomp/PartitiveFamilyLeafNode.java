@@ -5,12 +5,15 @@ package dicograph.modDecomp;
  */
 public class PartitiveFamilyLeafNode extends PartitiveFamilyTreeNode {
 
-    int vertex;
-    // Debug: Corresponding String in JGraphT
+    private int vertex;
 
     protected PartitiveFamilyLeafNode(int vertexNo) {
         super();
         vertex = vertexNo;
+    }
+
+    public int getVertex() {
+        return vertex;
     }
 
     @Override

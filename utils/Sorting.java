@@ -1,7 +1,17 @@
 package dicograph.utils;
 
+import org.jgrapht.DirectedGraph;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.SimpleDirectedGraph;
+
 import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import dicograph.graphIO.IntegerVertexFactory;
 
 /**
  * Created by Fynn Leitow on 17.10.17.
@@ -47,6 +57,52 @@ public class Sorting {
                 ret.add(returnPos++, retSet);
             }
         }
+
+        return ret;
+    }
+
+    public static ArrayList<DefaultEdge> edgesSortedByPerm(List<Integer> permutation, DirectedGraph<Integer, DefaultEdge> g, boolean outgoing){
+
+        ArrayList<DefaultEdge> ret = new ArrayList<>(g.edgeSet().size());
+        int n = permutation.size();
+        int[] positionInPermutation = new int[n];
+        for(int i = 0; i< permutation.size(); i++){
+            positionInPermutation[permutation.get(i)] = i;
+        }
+        // this is a possibly futile attemt to stay as close to linearity as possible:
+        BitSet[] bucketSets = new BitSet[n];
+
+
+        // get edges, save in BitSet with their vertexNo in the permutation
+        for(int vertex : permutation){
+            Set<DefaultEdge> edgeSet;
+            if(outgoing)
+                edgeSet = g.outgoingEdgesOf(vertex);
+            else
+                edgeSet = g.incomingEdgesOf(vertex);
+
+            if(!edgeSet.isEmpty()) {
+                BitSet edgeTargets = new BitSet(n);
+                for (DefaultEdge e : edgeSet) {
+                    edgeTargets.set(positionInPermutation[g.getEdgeTarget(e)]);
+                }
+                bucketSets[vertex] = edgeTargets;
+            }
+        }
+
+        // saves the edges according to the permutation
+        for(int i = 0; i < bucketSets.length; i++){
+            final int u = i;
+            BitSet bucket = bucketSets[i];
+            if(bucket != null){ // (isolated vertex)
+                if(outgoing) {
+                    bucket.stream().forEach( v -> ret.add( g.getEdge(u,v) ) ); // FastLookupSpecifics use Pair internally, this is in O(1).
+                } else {
+                    bucket.stream().forEach( v -> ret.add( g.getEdge(v,u) ) );
+                }
+            }
+        }
+
 
         return ret;
     }

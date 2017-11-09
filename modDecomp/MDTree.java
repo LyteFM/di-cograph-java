@@ -4,6 +4,9 @@ import org.jgrapht.UndirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleGraph;
 
+import java.util.BitSet;
+import java.util.HashMap;
+
 /*
  * A modular decomposition tree of a simple, undirected graph.
  */
@@ -25,6 +28,15 @@ public class MDTree extends RootedTree {
 
 	protected MDTree(){
 	    super();
+    }
+
+    public HashMap<BitSet, RootedTreeNode> getStrongModulesBool(MDTreeLeafNode[] leaves) {
+        HashMap<BitSet, RootedTreeNode> ret = new HashMap<>();
+        MDTreeNode rootAsMd = (MDTreeNode) root;
+        rootAsMd.getStrongModulesBool(leaves, ret);
+        moduleToTreenode = ret;
+
+        return ret;
     }
 
     /**

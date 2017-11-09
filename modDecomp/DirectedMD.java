@@ -28,6 +28,7 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.logging.Logger;
 
+import dicograph.utils.Sorting;
 
 
 /**
@@ -57,27 +58,17 @@ public class DirectedMD {
         leavesOfT_b = new MDTreeLeafNode[nVertices];
         this.debugMode = debugMode;
 
-        // Initialize Index-Vertex-Correspondence. todo: always sort, just use bucket sort :)
-        // I now simply assume: vertices have the numbers from 0 to n-1.
-        /*
+        // Simply: vertices have the numbers from 0 to n-1. Verify that in debug mode.
         if(debugMode){
             TreeSet<Integer> sortedVertices = new TreeSet<>(input.vertexSet());
             int count = 0;
             for(int vertex : sortedVertices){
-                vertexForIndex[count] = vertex;
-                vertexToIndex.put(vertex, count);
-                count++;
-            }
-        } else {
-            int count = 0;
-            for(int vertex : input.vertexSet()){
-                vertexForIndex[count] = vertex;
-                vertexToIndex.put(vertex, count);
+                if(count != vertex){
+                    throw new IllegalArgumentException("Vertex number " + count + " is " + vertex +". Vertices strictly must numbered from 0 to n-1!");
+                }
                 count++;
             }
         }
-        */
-
 
     }
 
@@ -226,6 +217,8 @@ public class DirectedMD {
         //         each equivalence class of R_X is consecutive.
 
 
+
+
         // Step 5: At each  2-complete node Y, select an arbitrary set S of representatives from the children.
         //         order the children of Y according to a perfect factorizing permutation of G[S].
 
@@ -328,6 +321,36 @@ public class DirectedMD {
     }
     */
 
+    protected List<Integer> computeFactorizingPermutation (PartitiveFamilyTree treeForH){
+
+        // First step: order the leaves in accordance of their left-right appearance in the Tree
+        List<PartitiveFamilyLeafNode> list = new ArrayList<>(nVertices);
+        treeForH.getLeavesInLeftToRightOrder(list);
+        ArrayList<Integer> permutationAsIntegers = new ArrayList<>(nVertices);
+        for(PartitiveFamilyLeafNode leaf : list){
+            permutationAsIntegers.add(leaf.getVertex());
+        }
+
+        // now, iterate through the tree and compute for every inner node X of T_H:
+        //   - le(X), re(X): the first occurence of any vertex of X in σ.
+        //     this can be done bottom-up
+        treeForH.computeReAndLeBottomUp(list);
+
+        //   - lc(X), rc(X): the leftmost/rightmost of its cutters
+        // Therefore: "BucketSort" edges of G according to σ,
+        List<DefaultEdge> sortedOutEgdes = Sorting.edgesSortedByPerm(permutationAsIntegers, inputGraph, true); // for N_{+}
+        List<DefaultEdge> sortedInEdges = Sorting.edgesSortedByPerm(permutationAsIntegers, inputGraph, false); // for N_{-}
+
+
+
+
+
+
+
+        List<Integer> ret = new ArrayList<>(nVertices);
+        return ret;
+    }
+
     /**
      * Computes a perfect factorizing permutation of the given tournament
      */
@@ -416,7 +439,7 @@ public class DirectedMD {
      * @param inputSet a Collection of BitSets representing a partitive set family
      * @return The rooted tree of the input set
      */
-    protected RootedTree getInclusionTreeFromBitsets(Collection<BitSet> inputSet) {
+    protected PartitiveFamilyTree getInclusionTreeFromBitsets(Collection<BitSet> inputSet) {
 
         HashMap<BitSet, RootedTreeNode> bitsetToInclusionTreenNode = new HashMap<>(inputSet.size()*4/3);
 
@@ -460,8 +483,8 @@ public class DirectedMD {
         // root is now the last element in every xList
 
 
-        RootedTree ret = new RootedTree();
-        RootedTreeNode root = new RootedTreeNode();
+        PartitiveFamilyTree ret = new PartitiveFamilyTree();
+        PartitiveFamilyTreeNode root = new PartitiveFamilyTreeNode();
         ret.setRoot(root);
         //HashMap<BitSet, RootedTreeNode> bitsetToOverlapTreenNode = new HashMap<>(nontrivOverlapComponents.size() * 4 / 3);
         bitsetToInclusionTreenNode.put(rootSet, root);
@@ -470,7 +493,7 @@ public class DirectedMD {
         // - visit each x ∈ V, put a parent pointer from each member of x's list to its successor in x's list (if not already done)
         //      -> these are chains of ancestors of {x}
 
-        PartitiveFamilyLeafNode[] allLeafs = new PartitiveFamilyLeafNode[nVertices];
+        PartitiveFamilyLeafNode[] allLeafs = new PartitiveFamilyLeafNode[nVertices]; // todo: was damit? Muss ja mal bottom-up?
         int relationCount = 0;
         for (int vertexNr = 0; vertexNr < nVertices; vertexNr++) {
 
@@ -484,9 +507,9 @@ public class DirectedMD {
 
                 BitSet currModule = vListIter.next();
                 // create Trenode if not yet present
-                RootedTreeNode currTreenode = bitsetToInclusionTreenNode.getOrDefault(currModule, null);
+                PartitiveFamilyTreeNode currTreenode = (PartitiveFamilyTreeNode) bitsetToInclusionTreenNode.getOrDefault(currModule, null);
                 if (currTreenode == null) {
-                    currTreenode = new RootedTreeNode();
+                    currTreenode =  new PartitiveFamilyTreeNode();
                     bitsetToInclusionTreenNode.put(currModule, currTreenode);
                 }
 
@@ -502,11 +525,11 @@ public class DirectedMD {
                 // Don't check for parent of root, of course.
                 if (vListIter.hasNext()) {
                     BitSet parentModule = vListIter.next();
-                    RootedTreeNode parentTreeNode = bitsetToInclusionTreenNode.get(parentModule);
+                    PartitiveFamilyTreeNode parentTreeNode = (PartitiveFamilyTreeNode) bitsetToInclusionTreenNode.get(parentModule);
 
                     // create parent if not yet present
                     if (parentTreeNode == null) {
-                        parentTreeNode = new RootedTreeNode();
+                        parentTreeNode = new PartitiveFamilyTreeNode();
                         bitsetToInclusionTreenNode.put(parentModule, parentTreeNode);
                         log.fine("Vertex " + vertexNr + ": Created Parent " + parentModule);
                     }

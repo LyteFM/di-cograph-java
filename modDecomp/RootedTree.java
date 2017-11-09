@@ -3,7 +3,7 @@ package dicograph.modDecomp;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 /*
  * A rooted tree.
@@ -11,11 +11,11 @@ import java.util.Map;
 class RootedTree {
 
     // F.L. 02.11.17: added
-    private HashMap<BitSet, RootedTreeNode> moduleToTreenode;
+    protected HashMap<BitSet, RootedTreeNode> moduleToTreenode;
     //
 
 	// The root of the tree.
-	private RootedTreeNode root;
+	protected RootedTreeNode root;
 	
 	
 	/* The default constructor. */
@@ -79,12 +79,8 @@ class RootedTree {
         return ret;
     }
 
-    public HashMap<BitSet, RootedTreeNode> getStrongModulesBool(MDTreeLeafNode[] leaves) {
-        HashMap<BitSet, RootedTreeNode> ret = new HashMap<>();
-        root.getStrongModulesBool(leaves, ret);
-        moduleToTreenode = ret;
 
-        return ret;
-    }
+
+
 }
 

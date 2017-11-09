@@ -1,6 +1,8 @@
 package dicograph.modDecomp;
 
+import java.util.BitSet;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -72,6 +74,38 @@ class MDTreeNode extends RootedTreeNode {
 		this();
 		this.type = type;
 	}
+
+	// F.L. 09.11.: moved here
+    /**
+     * Using a BitSet for easy UNION-Computation lateron. Running Time: O(n (1 + Anzahl module))
+     * @param leaves the empty but size-initialized array for storing all leafs
+     * @param modules
+     * @return
+     */
+    public BitSet getStrongModulesBool(MDTreeLeafNode[] leaves, HashMap<BitSet, RootedTreeNode> modules) {
+
+        BitSet ret = new BitSet(leaves.length);
+        MDTreeNode currentChild = (MDTreeNode) getFirstChild();
+        if(currentChild != null){
+            while (currentChild != null){
+                if(currentChild.isALeaf()){
+                    MDTreeLeafNode leafNode = (MDTreeLeafNode) currentChild;
+                    int index = leafNode.getVertexNo(); // 0 <= index  <= n-1
+                    ret.set(index);
+                    leaves[index] = leafNode;
+                } else {
+                    BitSet childSet = currentChild.getStrongModulesBool(leaves, modules);
+                    ret.or(childSet);
+                }
+                currentChild = (MDTreeNode) currentChild.getRightSibling();
+            }
+            if(!isRoot()){
+                modules.put(ret, this);
+            }
+        }
+
+        return ret;
+    }
 
 	
 	/* Adds one to the number of marks this node has received. */
