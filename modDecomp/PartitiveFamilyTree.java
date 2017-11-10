@@ -1,5 +1,6 @@
 package dicograph.modDecomp;
 
+import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -33,6 +34,11 @@ public class PartitiveFamilyTree extends RootedTree {
 
         PartitiveFamilyTreeNode rootNode = (PartitiveFamilyTreeNode) root;
         rootNode.computeReAndLe();
+    }
+
+    public void computeLeftRightCutters(BitSet[] outgoing, BitSet[] incoming){
+        PartitiveFamilyTreeNode rootNode = (PartitiveFamilyTreeNode) root;
+        rootNode.computeLeftRightCutterForThis(outgoing,incoming);
     }
 
 

@@ -16,7 +16,7 @@ import dicograph.graphIO.IntegerVertexFactory;
 /**
  * Created by Fynn Leitow on 17.10.17.
  */
-public class Sorting {
+public class SortAndCompare {
 
     public static ArrayList<Set<Integer>> bucketSortBySize(ArrayList<Set<Integer>> input) {
 
@@ -106,5 +106,21 @@ public class Sorting {
         }
 
         return retSets;
+    }
+
+    /**
+     * Returns the symmetrical difference of two BitSet as a new BitSet, not modifying the incoming sets.
+     * @param A the BitSet A
+     * @param B the BitSet B
+     * @return the BitSet A ∪ B \ A ∩ B
+     */
+    public static BitSet symDiff(BitSet A, BitSet B){
+        BitSet A_cup_B = (BitSet) A.clone();
+        BitSet A_cap_B = (BitSet) A.clone();
+
+        A_cup_B.or(B); // ∪
+        A_cap_B.and(B); // ∩
+        A_cup_B.andNot(A_cap_B); // \
+        return A_cup_B;
     }
 }

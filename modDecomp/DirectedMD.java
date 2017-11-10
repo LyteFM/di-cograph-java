@@ -28,7 +28,7 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.logging.Logger;
 
-import dicograph.utils.Sorting;
+import dicograph.utils.SortAndCompare;
 
 
 /**
@@ -345,9 +345,15 @@ public class DirectedMD {
         // Therefore: "BucketSort" edges of G according to σ. BitSets guarantee easy symdiff operation.:
 
         // This is for N_{+}: 1st key is outVertex, 2nd key is destVertex
-        BitSet[] sortedOutEgdes = Sorting.edgesSortedByPerm(permutationAsIntegers, positionInPermutation, inputGraph, true);
+        BitSet[] sortedOutEgdes = SortAndCompare.edgesSortedByPerm(permutationAsIntegers, positionInPermutation, inputGraph, true);
         // This is for N_{-}: 1st key is destVertex, 2nd outVertex
-        BitSet[] sortedInEdges = Sorting.edgesSortedByPerm(permutationAsIntegers, positionInPermutation,  inputGraph, false);
+        BitSet[] sortedInEdges = SortAndCompare.edgesSortedByPerm(permutationAsIntegers, positionInPermutation,  inputGraph, false);
+
+        // now, compute the cutters:
+        treeForH.computeLeftRightCutters(sortedOutEgdes,sortedInEdges);
+
+        // remember: X is a module iff le(X) == lc(X) and re(X) == rc(X)
+        // next step: use N_{+} and N_{-} to separate the children of a 0/1-complete node into R_X-classes
 
 
 
