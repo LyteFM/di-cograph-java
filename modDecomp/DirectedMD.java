@@ -213,14 +213,14 @@ public class DirectedMD {
 
         PartitiveFamilyTree TreeForH = intersectPartitiveFamiliesOf(TreeForG_s, TreeForG_d);
 
+        // I guess I should determine which node-type there is:
+        TreeForH.computeAllNodeTypes(this);
+
         // Step 4: At each O-complete and 1-complete node X of T(H), order the children s.t.
         //         each equivalence class of R_X is consecutive.
-
-
-
-
         // Step 5: At each  2-complete node Y, select an arbitrary set S of representatives from the children.
         //         order the children of Y according to a perfect factorizing permutation of G[S].
+        computeFactorizingPermutation(TreeForH);
 
 
 //        SimpleDirectedGraph<Integer, DefaultEdge> inducedSubgraphOf2completeNode = new SimpleDirectedGraph<>(DefaultEdge.class);
@@ -324,13 +324,13 @@ public class DirectedMD {
     }
     */
 
-    protected List<Integer> computeFactorizingPermutation (PartitiveFamilyTree treeForH){
+    protected void computeFactorizingPermutation (PartitiveFamilyTree treeForH){
 
         // First step: order the leaves in accordance of their left-right appearance in the Tree
-        List<PartitiveFamilyLeafNode> list = new ArrayList<>(nVertices);
-        treeForH.getLeavesInLeftToRightOrder(list);
+        List<PartitiveFamilyLeafNode> orderedLeaves = new ArrayList<>(nVertices);
+        treeForH.getLeavesInLeftToRightOrder(orderedLeaves);
         ArrayList<Integer> permutationAsIntegers = new ArrayList<>(nVertices);
-        for(PartitiveFamilyLeafNode leaf : list){
+        for(PartitiveFamilyLeafNode leaf : orderedLeaves){
             permutationAsIntegers.add(leaf.getVertex());
         }
         // the position of every element in the permutation
@@ -339,10 +339,10 @@ public class DirectedMD {
             positionInPermutation[permutationAsIntegers.get(i)] = i;
         }
 
-        // now, iterate through the tree and compute for every inner node X of T_H: todo: or only for certain nodes?
+        // now, iterate through the tree and compute for every inner node X of T_H:
         //   - le(X), re(X): the first occurence of any vertex of X in σ.
         //     this can be done bottom-up
-        treeForH.computeReAndLeBottomUp(list);
+        treeForH.computeReAndLeBottomUp(orderedLeaves);
 
         //   - lc(X), rc(X): the leftmost/rightmost of its cutters
         // Therefore: "BucketSort" edges of G according to σ. BitSets guarantee easy symdiff operation.:
@@ -357,106 +357,13 @@ public class DirectedMD {
 
         // remember: X is a module iff le(X) == lc(X) and re(X) == rc(X)
         // next step: use N_{+} and N_{-} to separate the children of a 0/1-complete node that is a module into R_X-classes
+        // todo: according to step 5, I can select any representative of its children. Is my subgraph okay???
+        treeForH.reorderAllNodes(log, sortedOutEgdes, sortedInEdges, orderedLeaves, positionInPermutation);
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-        List<Integer> ret = new ArrayList<>(nVertices);
-        return ret;
     }
 
-    /**
-     * Computes a perfect factorizing permutation of the given tournament
-     */
-    protected Function<SimpleDirectedGraph<Integer, DefaultEdge>, List<Integer>> perfFactPermFromTournament = tournament -> {
 
-        int n = tournament.vertexSet().size();
-        ArrayList<Integer> ret = new ArrayList<>(n);
-        HashMap<Integer, Collection<Integer>> vertexToPartition = new HashMap<>(n*4/3);
-        ArrayList<Collection<Integer>> partitions = new ArrayList<>(n);
-        // init: P_0 = V. This also defines the vertex Indices.
-        List<Integer> VList = new ArrayList<>(tournament.vertexSet());
-        partitions.add(VList);
-        for(int vertex : VList) {
-            vertexToPartition.put(vertex, VList);
-        }
-
-        for(int i = 0; i<n; i++){
-
-            int realVertexNo = VList.get(i); // unnecessary, if int-vertices from 0 to n-1. necessary, if arbitrary.
-            Collection<Integer> cPartition = vertexToPartition.get(realVertexNo);
-            int partitionsIndex = partitions.indexOf(cPartition);
-
-            // skip singletons
-            if(cPartition.size() > 1) {
-                // neighborhood N_- and N_+:
-                Set <DefaultEdge> incoming = tournament.incomingEdgesOf(realVertexNo);
-                Set <DefaultEdge> outgoing = tournament.outgoingEdgesOf(realVertexNo);
-
-                assert incoming.size() + outgoing.size() == n-1 : "Not a tournament: " + tournament;
-
-                HashSet<Integer> inNeighbors = new HashSet<>(incoming.size()*4/3);
-                for( DefaultEdge edge : incoming){
-                    int source = tournament.getEdgeSource(edge);
-                    inNeighbors.add( source );
-                }
-                inNeighbors.retainAll(cPartition); // Compute the intersection
-
-                HashSet<Integer> outNeigbors = new HashSet<>(outgoing.size()*4/3);
-                for( DefaultEdge edge : outgoing){
-                    int source = tournament.getEdgeTarget(edge);
-                    outNeigbors.add( source );
-                }
-                outNeigbors.retainAll(cPartition);
-
-                // update partitions and update map
-                // remove the former C
-                vertexToPartition.remove(realVertexNo);
-                partitions.remove(partitionsIndex);
-
-                // add C ∩ N_{-}(v_i)
-                partitions.add(partitionsIndex, inNeighbors);
-                for( int vNo : inNeighbors){
-                    vertexToPartition.put(vNo, inNeighbors);
-                }
-
-                // add singleton {v_i}
-                ArrayList<Integer> singleton = new ArrayList<>(1);
-                singleton.add(realVertexNo);
-                partitions.add(partitionsIndex+1, singleton);
-                vertexToPartition.put(realVertexNo, singleton);
-
-                // add C ∩ N_{+}(v_i)
-                partitions.add(partitionsIndex+2, outNeigbors);
-                for(int vNo : outNeigbors){
-                    vertexToPartition.put(vNo, outNeigbors);
-                }
-
-                // done.
-                if (partitions.size() == n) {
-                    break;
-                }
-            }
-        }
-
-        for(Collection<Integer> singleton : partitions){
-            assert singleton.size() > 1 : "Error: invalid element " + singleton.toString();
-            ret.add(singleton.stream().findFirst().get());
-        }
-
-        return ret;
-    };
 
     /**
      * Implementation of the Inclusion tree according to Lemma 11

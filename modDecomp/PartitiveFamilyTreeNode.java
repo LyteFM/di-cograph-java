@@ -1,16 +1,19 @@
 package dicograph.modDecomp;
 
-import org.jgrapht.DirectedGraph;
 import org.jgrapht.alg.util.Pair;
 import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.SimpleDirectedGraph;
 
 import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.logging.Logger;
 
 import dicograph.graphIO.DirectedInducedIntSubgraph;
 import dicograph.utils.SortAndCompare;
@@ -27,6 +30,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
     private BitSet vertices;
     private boolean isModuleInG;
     private MDNodeType type; // null by default???
+    private DirectedInducedIntSubgraph<DefaultEdge> inducedPartialSubgraph;
 
 
 
@@ -43,6 +47,32 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         vertices = vertexModule;
     }
 
+    protected void reorderAllInnerNodes(Logger log,
+            BitSet[] outNeighbors, BitSet[] inNeighbors, List<PartitiveFamilyLeafNode> orderedLeaves, int[] positionInPermutation){
+        if(type == MDNodeType.ORDER){
+            List<Integer> perfectFactPerm = perfFactPermFromTournament.apply(inducedPartialSubgraph);
+            reorderAccordingToPerfFactPerm(perfectFactPerm);
+        } else if (type.isDegenerate() && isModuleInG){ // todo: really only with the flag?
+            computeEquivalenceClassesAndReorderChildren(outNeighbors, inNeighbors, orderedLeaves, positionInPermutation);
+        }
+
+        PartitiveFamilyTreeNode currentChild = (PartitiveFamilyTreeNode) getFirstChild();
+        if(currentChild != null) {
+            while (currentChild != null) {
+                if(!currentChild.isALeaf()){
+                    currentChild.reorderAllInnerNodes(log,outNeighbors, inNeighbors, orderedLeaves, positionInPermutation);
+                }
+
+                currentChild = (PartitiveFamilyTreeNode) currentChild.getRightSibling();
+            }
+        }
+    }
+
+    /**
+     * Initialization for Step 4 and 5: computes the induced subgraphs to determine the node types.
+     * @param data the data from Modular decomposition
+     * @return a vertex of this node
+     */
     protected int determineNodeType(DirectedMD data){
 
         // node type can be efficiently computed bottom-up: only take one vertex of each child to construct the module
@@ -62,17 +92,17 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         }
         int returnVal = subgraphVertices.getFirst();
         // compute the induced subgraph and determine the node type
-        DirectedInducedIntSubgraph<DefaultEdge> moduleSubgraph = new DirectedInducedIntSubgraph<>(data.inputGraph, subgraphVertices);
-        if(moduleSubgraph.edgeSet().isEmpty()){
+        inducedPartialSubgraph = new DirectedInducedIntSubgraph<>(data.inputGraph, subgraphVertices);
+        if(inducedPartialSubgraph.edgeSet().isEmpty()){
             // no edges means 0-complete
             type = MDNodeType.PARALLEL;
         } else {
             int typeVal = -1;
             int currVal;
             boolean firstRun = true;
-            for(DefaultEdge edge : moduleSubgraph.edgeSet()){
-                int source = moduleSubgraph.getEdgeSource(edge);
-                int target = moduleSubgraph.getEdgeTarget(edge);
+            for(DefaultEdge edge : inducedPartialSubgraph.edgeSet()){
+                int source = inducedPartialSubgraph.getEdgeSource(edge);
+                int target = inducedPartialSubgraph.getEdgeTarget(edge);
                 currVal = data.getEdgeValueForH(source, target);
                 if(firstRun) {
                     typeVal = currVal;
@@ -152,6 +182,88 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         // sort:
         reorderChildren(orderedChildren);
     }
+
+    /**
+     * Computes a perfect factorizing permutation of the given tournament
+     */
+    protected Function<SimpleDirectedGraph<Integer, DefaultEdge>, List<Integer>> perfFactPermFromTournament = tournament -> {
+
+        int n = tournament.vertexSet().size();
+        ArrayList<Integer> ret = new ArrayList<>(n);
+        HashMap<Integer, Collection<Integer>> vertexToPartition = new HashMap<>(n*4/3);
+        ArrayList<Collection<Integer>> partitions = new ArrayList<>(n);
+        // init: P_0 = V. This also defines the vertex Indices.
+        List<Integer> VList = new ArrayList<>(tournament.vertexSet());
+        partitions.add(VList);
+        for(int vertex : VList) {
+            vertexToPartition.put(vertex, VList);
+        }
+
+        for(int i = 0; i<n; i++){
+
+            int realVertexNo = VList.get(i); // unnecessary, if int-vertices from 0 to n-1. necessary, if arbitrary.
+            Collection<Integer> cPartition = vertexToPartition.get(realVertexNo);
+            int partitionsIndex = partitions.indexOf(cPartition);
+
+            // skip singletons
+            if(cPartition.size() > 1) {
+                // neighborhood N_- and N_+:
+                Set<DefaultEdge> incoming = tournament.incomingEdgesOf(realVertexNo);
+                Set <DefaultEdge> outgoing = tournament.outgoingEdgesOf(realVertexNo);
+
+                assert incoming.size() + outgoing.size() == n-1 : "Not a tournament: " + tournament;
+
+                HashSet<Integer> inNeighbors = new HashSet<>(incoming.size()*4/3);
+                for( DefaultEdge edge : incoming){
+                    int source = tournament.getEdgeSource(edge);
+                    inNeighbors.add( source );
+                }
+                inNeighbors.retainAll(cPartition); // Compute the intersection
+
+                HashSet<Integer> outNeigbors = new HashSet<>(outgoing.size()*4/3);
+                for( DefaultEdge edge : outgoing){
+                    int source = tournament.getEdgeTarget(edge);
+                    outNeigbors.add( source );
+                }
+                outNeigbors.retainAll(cPartition);
+
+                // update partitions and update map
+                // remove the former C
+                vertexToPartition.remove(realVertexNo);
+                partitions.remove(partitionsIndex);
+
+                // add C ∩ N_{-}(v_i)
+                partitions.add(partitionsIndex, inNeighbors);
+                for( int vNo : inNeighbors){
+                    vertexToPartition.put(vNo, inNeighbors);
+                }
+
+                // add singleton {v_i}
+                ArrayList<Integer> singleton = new ArrayList<>(1);
+                singleton.add(realVertexNo);
+                partitions.add(partitionsIndex+1, singleton);
+                vertexToPartition.put(realVertexNo, singleton);
+
+                // add C ∩ N_{+}(v_i)
+                partitions.add(partitionsIndex+2, outNeigbors);
+                for(int vNo : outNeigbors){
+                    vertexToPartition.put(vNo, outNeigbors);
+                }
+
+                // done.
+                if (partitions.size() == n) {
+                    break;
+                }
+            }
+        }
+
+        for(Collection<Integer> singleton : partitions){
+            assert singleton.size() > 1 : "Error: invalid element " + singleton.toString();
+            ret.add(singleton.stream().findFirst().get());
+        }
+
+        return ret;
+    };
 
     /**
      * Step 4: reorders the Tree according to its equivalence classes
