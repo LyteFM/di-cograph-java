@@ -330,6 +330,11 @@ public class DirectedMD {
         for(PartitiveFamilyLeafNode leaf : list){
             permutationAsIntegers.add(leaf.getVertex());
         }
+        // the position of every element in the permutation
+        int[] positionInPermutation = new int[nVertices];
+        for(int i = 0; i< permutationAsIntegers.size(); i++){
+            positionInPermutation[permutationAsIntegers.get(i)] = i;
+        }
 
         // now, iterate through the tree and compute for every inner node X of T_H:
         //   - le(X), re(X): the first occurence of any vertex of X in σ.
@@ -337,9 +342,17 @@ public class DirectedMD {
         treeForH.computeReAndLeBottomUp(list);
 
         //   - lc(X), rc(X): the leftmost/rightmost of its cutters
-        // Therefore: "BucketSort" edges of G according to σ,
-        List<DefaultEdge> sortedOutEgdes = Sorting.edgesSortedByPerm(permutationAsIntegers, inputGraph, true); // for N_{+}
-        List<DefaultEdge> sortedInEdges = Sorting.edgesSortedByPerm(permutationAsIntegers, inputGraph, false); // for N_{-}
+        // Therefore: "BucketSort" edges of G according to σ. BitSets guarantee easy symdiff operation.:
+
+        // This is for N_{+}: 1st key is outVertex, 2nd key is destVertex
+        BitSet[] sortedOutEgdes = Sorting.edgesSortedByPerm(permutationAsIntegers, positionInPermutation, inputGraph, true);
+        // This is for N_{-}: 1st key is destVertex, 2nd outVertex
+        BitSet[] sortedInEdges = Sorting.edgesSortedByPerm(permutationAsIntegers, positionInPermutation,  inputGraph, false);
+
+
+
+
+
 
 
 

@@ -1,5 +1,7 @@
 package dicograph.modDecomp;
 
+import org.jgrapht.alg.util.Pair;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,8 +20,11 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
     }
 
 
-    // todo: use general lepth-first-visitor and the apply functions. Migrate to PartitiveFamilyTreeNode.
-    public void getLeavesInLeftToRightOrder(List<PartitiveFamilyLeafNode> orderedLeaves){
+    /**
+     * Fills the provided empty, but size-initialized list with the leaves of the tree in left-to-right order
+     * @param orderedLeaves the list to be filled
+     */
+    protected void getLeavesInLeftToRightOrder(List<PartitiveFamilyLeafNode> orderedLeaves){
 
         PartitiveFamilyTreeNode currentChild = (PartitiveFamilyTreeNode) getFirstChild();
         if(currentChild != null){
@@ -37,9 +42,13 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         }
     }
 
-    protected ArrayList<Integer> computeReAndLe(){
+    /**
+     * Computes the first (le_X) and last (re_X) occurence of any vertex below the node X,
+     * according to Lemma 24.
+     * @return first Element: le_X, second Element: re_X
+     */
+    protected Pair<Integer,Integer> computeReAndLe(){
 
-        ArrayList<Integer> ret = new ArrayList<>(2);
         RootedTreeNode currentChild = getFirstChild();
         // I assume that the leaves are already set. If this is a leaf, currentChild is null.
 
@@ -49,22 +58,20 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
                 // follow the leftmost branch before checking the right sibling.
                 PartitiveFamilyTreeNode realNode = (PartitiveFamilyTreeNode) currentChild;
-                ArrayList<Integer> vals = realNode.computeReAndLe();
+                Pair<Integer,Integer> vals = realNode.computeReAndLe();
                 if(firstRun) {
                     // only the first entry counts here
-                    le_X = vals.get(0);
+                    le_X = vals.getFirst();
                 }
                 // updated until rightmost neighbour completed
-                re_X = vals.get(1);
+                re_X = vals.getSecond();
 
                 currentChild = currentChild.getRightSibling();
                 firstRun = false;
             }
         }
 
-        ret.add(le_X);
-        ret.add(re_X);
-        return ret;
+        return new Pair<>(le_X, re_X);
     }
 
     public int getLe_X() {

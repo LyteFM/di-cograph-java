@@ -61,16 +61,11 @@ public class Sorting {
         return ret;
     }
 
-    public static ArrayList<DefaultEdge> edgesSortedByPerm(List<Integer> permutation, DirectedGraph<Integer, DefaultEdge> g, boolean outgoing){
+    public static BitSet[] edgesSortedByPerm(List<Integer> permutation, int[] positionInPermutation,  DirectedGraph<Integer, DefaultEdge> g, boolean outgoing){
 
-        ArrayList<DefaultEdge> ret = new ArrayList<>(g.edgeSet().size());
+        //ArrayList<DefaultEdge> ret = new ArrayList<>(g.edgeSet().size());
+        BitSet[] retSets = new BitSet[g.vertexSet().size()];
         int n = permutation.size();
-        int[] positionInPermutation = new int[n];
-        for(int i = 0; i< permutation.size(); i++){
-            positionInPermutation[permutation.get(i)] = i;
-        }
-        // this is a possibly futile attemt to stay as close to linearity as possible:
-        BitSet[] bucketSets = new BitSet[n];
 
 
         // get edges, save in BitSet with their vertexNo in the permutation
@@ -80,30 +75,36 @@ public class Sorting {
                 edgeSet = g.outgoingEdgesOf(vertex);
             else
                 edgeSet = g.incomingEdgesOf(vertex);
+            //HashMap<Integer, DefaultEdge> permVertexToEdge = new HashMap<>(edgeSet.size()*4/3);
 
             if(!edgeSet.isEmpty()) {
+                // iterate edges and get the ordering. Using BitSet for performance
                 BitSet edgeTargets = new BitSet(n);
                 for (DefaultEdge e : edgeSet) {
-                    edgeTargets.set(positionInPermutation[g.getEdgeTarget(e)]);
+                    int secondVertex;
+                    if(outgoing)
+                        secondVertex = g.getEdgeTarget(e);
+                    else
+                        secondVertex = g.getEdgeSource(e);
+                    int pos = positionInPermutation[secondVertex];
+                    edgeTargets.set(pos);
+                    //permVertexToEdge.put(pos, e);
                 }
-                bucketSets[vertex] = edgeTargets;
+                retSets[vertex] = edgeTargets;
+//                // add the edges in order. Due to the HashMap, this is also fast for DirectedSpecifics (not FastLookup)
+//                if(outgoing) {
+//                    edgeTargets.stream().forEach( v -> ret.add( permVertexToEdge.get(v) ) );
+//                } else {
+//                    edgeTargets.stream().forEach( v -> ret.add( permVertexToEdge.get(v) ) );
+//                }
+
+            } else {
+                // add an empty BitSet to avoid nulls
+                retSets[vertex] = new BitSet();
             }
+
         }
 
-        // saves the edges according to the permutation
-        for(int i = 0; i < bucketSets.length; i++){
-            final int u = i;
-            BitSet bucket = bucketSets[i];
-            if(bucket != null){ // (isolated vertex)
-                if(outgoing) {
-                    bucket.stream().forEach( v -> ret.add( g.getEdge(u,v) ) ); // FastLookupSpecifics use Pair internally, this is in O(1).
-                } else {
-                    bucket.stream().forEach( v -> ret.add( g.getEdge(v,u) ) );
-                }
-            }
-        }
-
-
-        return ret;
+        return retSets;
     }
 }
