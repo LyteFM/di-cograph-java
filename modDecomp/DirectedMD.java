@@ -211,7 +211,7 @@ public class DirectedMD {
 
         // Step 3: Find T(H) = T(G_s) Λ T(G_d)
 
-        RootedTree TreeForH = intersectPartitiveFamiliesOf(TreeForG_s, TreeForG_d);
+        PartitiveFamilyTree TreeForH = intersectPartitiveFamiliesOf(TreeForG_s, TreeForG_d);
 
         // Step 4: At each O-complete and 1-complete node X of T(H), order the children s.t.
         //         each equivalence class of R_X is consecutive.
@@ -230,6 +230,9 @@ public class DirectedMD {
 
         // Step 6: Resulting leaf order of T(H) is a factorizing permutation of G by Lem 20,21. Use algorithm
         //         [2] to find the modular decomposition of G.
+        // todo: wat? the left-to-right-order?
+        ArrayList<PartitiveFamilyLeafNode> trueLeafOrder =  new ArrayList<>(nVertices);
+        TreeForH.getLeavesInLeftToRightOrder( trueLeafOrder );
 
 
 
@@ -336,7 +339,7 @@ public class DirectedMD {
             positionInPermutation[permutationAsIntegers.get(i)] = i;
         }
 
-        // now, iterate through the tree and compute for every inner node X of T_H:
+        // now, iterate through the tree and compute for every inner node X of T_H: todo: or only for certain nodes?
         //   - le(X), re(X): the first occurence of any vertex of X in σ.
         //     this can be done bottom-up
         treeForH.computeReAndLeBottomUp(list);
@@ -353,7 +356,10 @@ public class DirectedMD {
         treeForH.computeLeftRightCutters(sortedOutEgdes,sortedInEdges);
 
         // remember: X is a module iff le(X) == lc(X) and re(X) == rc(X)
-        // next step: use N_{+} and N_{-} to separate the children of a 0/1-complete node into R_X-classes
+        // next step: use N_{+} and N_{-} to separate the children of a 0/1-complete node that is a module into R_X-classes
+
+
+
 
 
 
@@ -503,7 +509,7 @@ public class DirectedMD {
 
 
         PartitiveFamilyTree ret = new PartitiveFamilyTree();
-        PartitiveFamilyTreeNode root = new PartitiveFamilyTreeNode();
+        PartitiveFamilyTreeNode root = new PartitiveFamilyTreeNode(rootSet);
         ret.setRoot(root);
         //HashMap<BitSet, RootedTreeNode> bitsetToOverlapTreenNode = new HashMap<>(nontrivOverlapComponents.size() * 4 / 3);
         bitsetToInclusionTreenNode.put(rootSet, root);
@@ -528,7 +534,7 @@ public class DirectedMD {
                 // create Trenode if not yet present
                 PartitiveFamilyTreeNode currTreenode = (PartitiveFamilyTreeNode) bitsetToInclusionTreenNode.getOrDefault(currModule, null);
                 if (currTreenode == null) {
-                    currTreenode =  new PartitiveFamilyTreeNode();
+                    currTreenode =  new PartitiveFamilyTreeNode(currModule);
                     bitsetToInclusionTreenNode.put(currModule, currTreenode);
                 }
 
@@ -548,7 +554,7 @@ public class DirectedMD {
 
                     // create parent if not yet present
                     if (parentTreeNode == null) {
-                        parentTreeNode = new PartitiveFamilyTreeNode();
+                        parentTreeNode = new PartitiveFamilyTreeNode(parentModule);
                         bitsetToInclusionTreenNode.put(parentModule, parentTreeNode);
                         log.fine("Vertex " + vertexNr + ": Created Parent " + parentModule);
                     }
@@ -571,6 +577,7 @@ public class DirectedMD {
         return ret;
     }
 
+    // todo: possible to use the same edge Objects???
     int getEdgeValueForH(int u, int v) {
 
         boolean inG_s = G_s.containsEdge(u, v);
@@ -587,7 +594,8 @@ public class DirectedMD {
         }
     }
 
-    RootedTree intersectPartitiveFamiliesOf(MDTree T_a, MDTree T_b) throws InterruptedException,IOException{
+
+    PartitiveFamilyTree intersectPartitiveFamiliesOf(MDTree T_a, MDTree T_b) throws InterruptedException,IOException{
 
         // Notes from section 2:
 
@@ -787,7 +795,7 @@ public class DirectedMD {
         // 7. ) From that set Family, The Inclusion Tree can be constructed by Lem 11.
         // (Cor 19 requires a permutation of the leaves, which will yield the fact perm. So I need the Tree)
 
-        RootedTree ret = getInclusionTreeFromBitsets(strongModulesOfH);
+        PartitiveFamilyTree ret = getInclusionTreeFromBitsets(strongModulesOfH);
         // now we have the Tree T(H) = T_a Λ T_b
         log.info("Inclusion Tree: " + ret.toString());
 

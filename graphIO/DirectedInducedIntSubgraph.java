@@ -1,8 +1,10 @@
 package dicograph.graphIO;
 
+import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
 import java.util.BitSet;
+import java.util.List;
 
 
 /**
@@ -11,7 +13,7 @@ import java.util.BitSet;
 public class DirectedInducedIntSubgraph<E> extends SimpleDirectedGraph<Integer, E>
 {
 
-    final SimpleDirectedGraph<Integer, E> base;
+    final DirectedGraph<Integer, E> base;
 //    //
 //    public DirectedInducedIntSubgraph(EdgeFactory<Integer, E> ef)
 //    {
@@ -22,12 +24,31 @@ public class DirectedInducedIntSubgraph<E> extends SimpleDirectedGraph<Integer, 
 //        this(new ClassBasedEdgeFactory<>(edgeClass));
 //    }
 
-    public DirectedInducedIntSubgraph(SimpleDirectedGraph<Integer, E> baseGraph,  BitSet vertices){
+    public DirectedInducedIntSubgraph(DirectedGraph<Integer, E> baseGraph,  BitSet vertices){
         super(baseGraph.getEdgeFactory());
         base = baseGraph;
 
         // adds the vertices
         vertices.stream().forEach( this::addVertex );
+
+        // adds edges to vertices that are contained in this subgraph
+        for( int vertex : vertexSet()){
+            for(E outEdge : baseGraph.outgoingEdgesOf(vertex)) {
+                int target = baseGraph.getEdgeTarget(outEdge);
+
+                if(containsVertex(target)) {
+                    addEdge(vertex, target);
+                }
+            }
+        }
+    }
+
+    public DirectedInducedIntSubgraph(DirectedGraph<Integer, E> baseGraph, List<Integer> vertices){
+        super(baseGraph.getEdgeFactory());
+        base = baseGraph;
+
+        // adds the vertices
+        vertices.forEach( this::addVertex );
 
         // adds edges to vertices that are contained in this subgraph
         for( int vertex : vertexSet()){
