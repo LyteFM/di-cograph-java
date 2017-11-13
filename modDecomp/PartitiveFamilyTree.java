@@ -41,7 +41,7 @@ public class PartitiveFamilyTree extends RootedTree {
     }
 
 
-    public void computeAllNodeTypes(DirectedMD data){
+    public void computeAllNodeTypes(final DirectedMD data){
         PartitiveFamilyTreeNode rootNode = (PartitiveFamilyTreeNode) root;
         rootNode.determineNodeType(data);
     }
@@ -78,7 +78,7 @@ public class PartitiveFamilyTree extends RootedTree {
             leaf.rc_X = i;
         }
         // compute
-        rootNode.computeReAndLe();
+        rootNode.computeReAndLe(log);
 
 
         //   - lc(X), rc(X): the leftmost/rightmost of its cutters
@@ -92,7 +92,7 @@ public class PartitiveFamilyTree extends RootedTree {
 
 
         // now, compute the cutters:
-        rootNode.computeLeftRightCutterForThis(sortedOutEgdes, sortedInEdges);
+        rootNode.computeLeftRightCutterForThis(sortedOutEgdes, sortedInEdges, log);
 
         // remember: X is a module iff le(X) == lc(X) and re(X) == rc(X)
         // next step: use N_{+} and N_{-} to separate the children of a 0/1-complete node that is a module into R_X-classes

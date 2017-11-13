@@ -23,10 +23,10 @@ import dicograph.utils.SortAndCompare;
  */
 public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
-    protected int le_X;
-    protected int re_X;
-    protected int lc_X;
-    protected int rc_X;
+    int le_X;
+    int re_X;
+    int lc_X;
+    int rc_X;
     private BitSet vertices;
     private boolean isModuleInG;
     private MDNodeType type; // null by default???
@@ -35,25 +35,30 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
 
     // only needed for leaf
-    protected PartitiveFamilyTreeNode(){
+    PartitiveFamilyTreeNode(){
         super();
         isModuleInG = false;
         vertices = null;
+        type = null;
     }
 
-    protected PartitiveFamilyTreeNode(BitSet vertexModule){
+    PartitiveFamilyTreeNode(BitSet vertexModule){
         super();
         isModuleInG = false;
         vertices = vertexModule;
+        type = null;
     }
 
-    protected void reorderAllInnerNodes(Logger log,
+    void reorderAllInnerNodes(Logger log,
             BitSet[] outNeighbors, BitSet[] inNeighbors, List<PartitiveFamilyLeafNode> orderedLeaves, int[] positionInPermutation){
         if(type == MDNodeType.ORDER){
+            log.fine(() -> type + ": computing fact perm of tournament " + inducedPartialSubgraph);
             List<Integer> perfectFactPerm = perfFactPermFromTournament.apply(inducedPartialSubgraph);
-            reorderAccordingToPerfFactPerm(perfectFactPerm);
+            log.fine(() -> type + ": reordering according to permutation: " + perfectFactPerm);
+            reorderAccordingToPerfFactPerm(perfectFactPerm, log);
         } else if (type.isDegenerate() && isModuleInG){ // todo: really only with the flag?
-            computeEquivalenceClassesAndReorderChildren(outNeighbors, inNeighbors, orderedLeaves, positionInPermutation);
+            log.fine(() -> type + " ");
+            computeEquivalenceClassesAndReorderChildren(log, outNeighbors, inNeighbors, orderedLeaves, positionInPermutation);
         }
 
         PartitiveFamilyTreeNode currentChild = (PartitiveFamilyTreeNode) getFirstChild();
@@ -73,7 +78,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
      * @param data the data from Modular decomposition
      * @return a vertex of this node
      */
-    protected int determineNodeType(DirectedMD data){
+     int determineNodeType(final DirectedMD data){
 
         // node type can be efficiently computed bottom-up: only take one vertex of each child to construct the module
         PartitiveFamilyTreeNode currentChild = (PartitiveFamilyTreeNode) getFirstChild();
@@ -121,9 +126,11 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                     break;
                 case 1:
                     type = MDNodeType.SERIES;
+                    assert !inducedPartialSubgraph.isTournament() : type + " but node is a tournament: " + toString();
                     break;
                 case 2:
                     type = MDNodeType.ORDER;
+                    assert inducedPartialSubgraph.isTournament() : type + " but node not a tournament: " + toString();
                     break;
             }
 
@@ -137,9 +144,11 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
      * reorders the children of this vertex accound to the perfect factorizing permutation
      * @param perfFactPerm the computed perfect factorizing permutation of the corresponding tournament
      */
-    protected void reorderAccordingToPerfFactPerm(List<Integer> perfFactPerm){
+    private void reorderAccordingToPerfFactPerm(List<Integer> perfFactPerm, Logger log){
 
-        assert type == MDNodeType.ORDER : "Wrong type in step 5: " + type;
+        if( type != MDNodeType.ORDER ){
+            throw new IllegalStateException("Wrong type in step 5: " + type + " for node:\n" + toString());
+        }
 
         int sz = perfFactPerm.size();
         int[] positionInPermutation = new int[sz];
@@ -167,7 +176,9 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                     }
                 }
 
-                assert orderedNodes[firstPosition] == null : "Vertex for position " + firstPosition + " already present!";
+                if(orderedNodes[firstPosition] != null){
+                    throw new IllegalStateException("Vertex for position " + firstPosition + " already present for node\n" + toString());
+                }
                 orderedNodes[firstPosition] = currentChild;
 
                 currentChild = (PartitiveFamilyTreeNode) currentChild.getRightSibling();
@@ -179,14 +190,16 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             if(node != null)
                 orderedChildren.add(node);
         }
-        // sort:
+        log.fine( () -> type + " Reordering children of " + toString());
+        log.fine( () -> type + " according to: " + orderedChildren.toString() );
         reorderChildren(orderedChildren);
     }
 
     /**
-     * Computes a perfect factorizing permutation of the given tournament
+     * Computes a perfect factorizing permutation of the given tournament.
+     * Assertion if it is a tournament - already verified.
      */
-    protected Function<SimpleDirectedGraph<Integer, DefaultEdge>, List<Integer>> perfFactPermFromTournament = tournament -> {
+    private Function<SimpleDirectedGraph<Integer, DefaultEdge>, List<Integer>> perfFactPermFromTournament = tournament -> {
 
         int n = tournament.vertexSet().size();
         ArrayList<Integer> ret = new ArrayList<>(n);
@@ -258,7 +271,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         }
 
         for(Collection<Integer> singleton : partitions){
-            assert singleton.size() > 1 : "Error: invalid element " + singleton.toString();
+            assert singleton.size() != 1 : "Error: invalid element " + singleton.toString();
             ret.add(singleton.stream().findFirst().get());
         }
 
@@ -272,13 +285,16 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
      * @param orderedLeaves
      * @param positionInPermutation
      */
-    protected void computeEquivalenceClassesAndReorderChildren(
+    private void computeEquivalenceClassesAndReorderChildren( Logger log,
             BitSet[] outNeighbors, BitSet[] inNeighbors, List<PartitiveFamilyLeafNode> orderedLeaves, int[] positionInPermutation){
         // BitSets are according to the position, not the true vertex!
         // for the sake of simplicity, I use strings and compare if they are equal.
         // running time is same as worst case when comparing the lists element by element.
 
-        assert type.isDegenerate() : "Wrong type in step 4: " + type;
+        if( !type.isDegenerate() ){
+            throw new IllegalStateException("Wrong type in step 4: " + type + " for node\n" + toString());
+        }
+
         HashMap<String, List<PartitiveFamilyTreeNode>> equivStringToEquivClass = new HashMap<>(getNumChildren()*4/3);
 
         PartitiveFamilyTreeNode currentChild = (PartitiveFamilyTreeNode) getFirstChild();
@@ -321,10 +337,12 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                 String key = verticesWithoutX.toString();
                 if(equivStringToEquivClass.containsKey(key)){
                     equivStringToEquivClass.get(key).add(currentChild);
+                    log.fine(() -> type + " adding child with vertex " + anyVertex + " to eqClass " + key);
                 } else {
                     LinkedList<PartitiveFamilyTreeNode> eqClass = new LinkedList<>();
                     eqClass.addLast(currentChild);
                     equivStringToEquivClass.put(key, eqClass);
+                    log.fine(() -> type + " creating new eqClass " + key + " for child with vertex " + anyVertex );
                 }
 
                 currentChild = (PartitiveFamilyTreeNode) currentChild.getRightSibling();
@@ -336,14 +354,16 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         for(List<PartitiveFamilyTreeNode> children : equivStringToEquivClass.values()){
             orderedChildren.addAll(children);
         }
+        log.fine( () -> type + " Reordering children of " + toString());
+        log.fine( () -> type + " according to: " + orderedChildren.toString() );
         reorderChildren(orderedChildren);
-
-
-        // return equivStringToEquivClass
     }
 
     private void reorderChildren(List<PartitiveFamilyTreeNode> orderedChildren){
-        assert orderedChildren.size() == getNumChildren() : "Error: different number of children in List!";
+        if( orderedChildren.size() == getNumChildren()){
+            throw new IllegalStateException("Error: " + getNumChildren() + " for node " + toString() +
+                    " \ndifferent number of children in List: \n" + orderedChildren);
+        }
 
         for(int index = orderedChildren.size() -1; index >= 0; index--){
             PartitiveFamilyTreeNode child = orderedChildren.get(index);
@@ -358,7 +378,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
      * @param inNeighbors
      * @return
      */
-    protected Pair<Integer,Integer> computeLeftRightCutterForThis(BitSet[] outNeighbors, BitSet[] inNeighbors){
+    protected Pair<Integer,Integer> computeLeftRightCutterForThis(BitSet[] outNeighbors, BitSet[] inNeighbors, Logger log){
 
         lc_X = outNeighbors.length;
         rc_X = 0;
@@ -366,12 +386,12 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         int second;
         // iterate over children, compute this and the cutter for their re/le
         PartitiveFamilyTreeNode currentChild = (PartitiveFamilyTreeNode) getFirstChild();
-        PartitiveFamilyTreeNode nextChild = null;
+        PartitiveFamilyTreeNode nextChild;
         if(currentChild != null) {
             while (currentChild != null) {
 
                 // compute and compare with its real cutters
-                Pair<Integer,Integer> childsCutters = currentChild.computeLeftRightCutterForThis(outNeighbors,inNeighbors);
+                Pair<Integer,Integer> childsCutters = currentChild.computeLeftRightCutterForThis(outNeighbors,inNeighbors, log);
                 first = childsCutters.getFirst();
                 second = childsCutters.getSecond();
 
@@ -401,6 +421,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         if(lc_X == le_X && rc_X == re_X){
             isModuleInG = true;
         }
+        log.fine( () -> "LC: " + lc_X + ", RC: " + rc_X + " for node: " + toString());
 
         return new Pair<>(lc_X,rc_X);
     }
@@ -408,15 +429,15 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
     /**
      * Helper method to compute left and right cutter of two given vertices
      */
-    protected static Pair<Integer, Integer> computeLeftRightCutterForVertices(int x, int y, BitSet[] outNeighbors, BitSet[] inNeighbors){
+    private static Pair<Integer, Integer> computeLeftRightCutterForVertices(int x, int y, BitSet[] outNeighbors, BitSet[] inNeighbors){
         // compute the symmetrical difference. Need to copy!
-        BitSet inSymDiff = SortAndCompare.symDiff(outNeighbors[x], outNeighbors[y]);
+        BitSet inSymDiff  = SortAndCompare.symDiff(outNeighbors[x], outNeighbors[y]);
         BitSet outSymDiff = SortAndCompare.symDiff(inNeighbors[x], inNeighbors[y]);
 
         inSymDiff.or(outSymDiff); // ∪
 
         boolean first = true;
-        int leftCutter = -1; // todo: was, wenn's keine gibt?
+        int leftCutter = -1; // todo: was, wenn's keine gibt? i = -1 auch in loop.
         int rightCutter = -1;
         for (int i = inSymDiff.nextSetBit(0); i >= 0; i = inSymDiff.nextSetBit(i+1)) {
             if(first) {
@@ -424,6 +445,10 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             }
             rightCutter = i;
             first = false;
+        }
+        if(leftCutter == -1 || rightCutter == -1){
+            throw new IllegalStateException("Error in computing left and right cutter from Bitsets:\n out: " + outNeighbors[x] +
+                    ", in: " +inNeighbors[x] + " \nwith cutter for left: " + leftCutter + ", right: " + rightCutter);
         }
 
         return new Pair<>(leftCutter, rightCutter);
@@ -457,7 +482,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
      * according to Lemma 24.
      * @return first Element: le_X, second Element: re_X
      */
-    protected Pair<Integer,Integer> computeReAndLe(){
+    protected Pair<Integer,Integer> computeReAndLe(Logger log){
 
         RootedTreeNode currentChild = getFirstChild();
         // I assume that the leaves are already set. If this is a leaf, currentChild is null.
@@ -468,7 +493,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
                 // follow the leftmost branch before checking the right sibling.
                 PartitiveFamilyTreeNode realNode = (PartitiveFamilyTreeNode) currentChild;
-                Pair<Integer,Integer> vals = realNode.computeReAndLe();
+                Pair<Integer,Integer> vals = realNode.computeReAndLe(log);
                 if(firstRun) {
                     // only the first entry counts here
                     le_X = vals.getFirst();
@@ -479,6 +504,9 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                 currentChild = currentChild.getRightSibling();
                 firstRun = false;
             }
+        }
+        if(!isALeaf()){
+            log.fine( () -> "1st occ of a v ∈ X: " + le_X + ", last: " + re_X + ", X = " + toString());
         }
 
         return new Pair<>(le_X, re_X);

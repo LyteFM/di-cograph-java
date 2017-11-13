@@ -101,7 +101,7 @@ public class Main {
 
         GraphGenerator gen = new GraphGenerator(log);
         SimpleDirectedGraph<Integer, DefaultEdge> g_d = new SimpleDirectedGraph<>(DefaultEdge.class);
-        gen.generateRandomDirectedCograph(g_d, nVertices);
+        gen.generateRandomDirectedCograph(g_d, nVertices, true);
         gen.disturbDicograph(g_d, nDisturb);
 
         // export the graph for debug purposes
@@ -151,7 +151,7 @@ public class Main {
         // Cograph Testing
         SimpleGraph<Integer, DefaultEdge> g = new SimpleGraph<>(DefaultEdge.class);
         GraphGenerator gen = new GraphGenerator(log);
-        String res = gen.generateRandomCograph(g,35);
+        gen.generateRandomCograph(g,35);
 
         GraphHandle gHand = new GraphHandle(g);
         String g_res = gHand.getMDTree().toString();
@@ -164,7 +164,7 @@ public class Main {
 
         for( int i = 10; i< 50; i++) {
             SimpleDirectedGraph<Integer, DefaultEdge> g_d = new SimpleDirectedGraph<>(DefaultEdge.class);
-            gen.generateRandomDirectedCograph(g_d, i);
+            gen.generateRandomDirectedCograph(g_d, i, true);
 
             CplexDiCographEditingSolver mySolver = new CplexDiCographEditingSolver(g_d, parameters);
             List<SimpleDirectedGraph<Integer, DefaultEdge>> solutions = mySolver.solve();

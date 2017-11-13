@@ -46,6 +46,7 @@ class RootedTreeNode {
         marked = false;
         numMarkedChildren = 0;
         nodeNumber = 0;
+        // end
     }
 
     // F.L. 30.10. Flags for Algorithm 1:
@@ -344,7 +345,8 @@ class RootedTreeNode {
 	}
 
     /**
-     * This is the desired format. Separating members my " " and using -1 to end a module.
+     * F.L. just for display
+	 * This is the desired format. Separating members my " " and using -1 to end a module.
      * 2 3 4 5 6 7 -1
      * 1 8 9 10 11 -1
      * 4 5 6 7 -1

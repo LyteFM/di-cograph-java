@@ -13,6 +13,7 @@ import org.jgrapht.graph.SimpleGraph;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -76,30 +77,28 @@ public class GraphGenerator {
         return graph;
     }
 
-    public String generateRandomCograph(SimpleGraph<Integer,DefaultEdge> graph, int nVertices){
+    public void generateRandomCograph(SimpleGraph<Integer,DefaultEdge> graph, int nVertices){
 
-        return generateCograph(graph, nVertices, false);
+        generateCograph(graph, nVertices, false, false);
 
         // use same method as for Di-Cograph. Only difference:
         // - value for choosing the type must be 2
         // - everything else is ok!
     }
 
-    public String generateRandomDirectedCograph(SimpleDirectedGraph<Integer, DefaultEdge> graph, int nVertices){
-        return generateCograph(graph, nVertices,true);
+    public Set<BitSet> generateRandomDirectedCograph(SimpleDirectedGraph<Integer, DefaultEdge> graph, int nVertices, boolean getBitSets){
+        return generateCograph(graph, nVertices,true, true);
     }
 
 
-    private String generateCograph(Graph<Integer,DefaultEdge> graph, int nVertices, boolean isDirected){
-
-        // todo: a) rekursiv bauen b) MDTree- und LeafNodes verwenden
-        StringBuilder mdTree = new StringBuilder();
+    private Set<BitSet> generateCograph(Graph<Integer,DefaultEdge> graph, int nVertices, boolean isDirected, boolean getBitSets){
 
         // adds n vertices
         EmptyGraphGenerator<Integer, DefaultEdge> gen = new EmptyGraphGenerator<>(nVertices);
         gen.generateGraph(graph, new IntegerVertexFactory(), null);
 
-        // Idea: Save the Graph in the same MDTree-String-Format as in Tedder's Code for easy comparison
+        // Save the Graph's modules in BitSets for easy comparison
+        HashSet<BitSet> allmodules = new HashSet<>();
 
         // init the List of modules
         ArrayList<HashSet<Integer>> modules = new ArrayList<>();
@@ -196,13 +195,24 @@ public class GraphGenerator {
                 modules.remove(i);
             }
             modules.add(mergedModule);
+            if(getBitSets){
+                BitSet moduleBits = new BitSet();
+                for(int i : mergedModule){
+                    moduleBits.set(i);
+                }
+                allmodules.add(moduleBits);
+            }
 
             moduleCount = modules.size();
         }
 
         logger.info("Generated graph: " + graph.toString());
 
-        return mdTree.toString();
+        if(getBitSets){
+            return allmodules;
+        } else {
+            return null;
+        }
     }
 
     private HashSet<Integer> union(Graph<Integer,DefaultEdge> g, ArrayList<HashSet<Integer>> selectedModules, MDNodeType type){

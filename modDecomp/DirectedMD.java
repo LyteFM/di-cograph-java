@@ -219,11 +219,6 @@ public class DirectedMD {
         TreeForH.computeFactorizingPermutationAndReorderAccordingly(log, inputGraph, nVertices );
 
 
-//        SimpleDirectedGraph<Integer, DefaultEdge> inducedSubgraphOf2completeNode = new SimpleDirectedGraph<>(DefaultEdge.class);
-//        List<Integer> permutation = perfFactPermFromTournament.apply(inducedSubgraphOf2completeNode);
-
-
-
         // Step 6: Resulting leaf order of T(H) is a factorizing permutation of G by Lem 20,21. Use algorithm
         //         [2] to find the modular decomposition of G.
         // todo: wat? the left-to-right-order?

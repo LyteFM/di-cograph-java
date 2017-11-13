@@ -5,6 +5,7 @@ import org.jgrapht.graph.SimpleDirectedGraph;
 
 import java.util.BitSet;
 import java.util.List;
+import java.util.TreeSet;
 
 
 /**
@@ -60,6 +61,27 @@ public class DirectedInducedIntSubgraph<E> extends SimpleDirectedGraph<Integer, 
                 }
             }
         }
+    }
+
+    /**
+     * Naive, nonlinear method to verify whether the graph is a tournament.
+     * one equivalence condition for being a tournament is:
+     * "The score sequence of T is {0,1,2,...,n-1}".
+     * For debugging purposes only.
+     * @return true, if this graph is a Tournament
+     */
+    public boolean isTournament(){
+        TreeSet<Integer> outdegrees = new TreeSet<>();
+        for(Integer vertex : vertexSet()){
+            outdegrees.add(outDegreeOf(vertex));
+        }
+        int score = 0;
+        for(int outDeg :outdegrees){
+            if(outDeg != score)
+                return false;
+            score++;
+        }
+        return true;
     }
 
 }
