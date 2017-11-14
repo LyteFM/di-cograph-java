@@ -53,7 +53,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             BitSet[] outNeighbors, BitSet[] inNeighbors, List<PartitiveFamilyLeafNode> orderedLeaves, int[] positionInPermutation){
         if(type == MDNodeType.ORDER){
             log.fine(() -> type + ": computing fact perm of tournament " + inducedPartialSubgraph);
-            List<Integer> perfectFactPerm = perfFactPermFromTournament.apply(inducedPartialSubgraph);
+            List<Integer> perfectFactPerm = perfFactPermFromTournament.apply(inducedPartialSubgraph); // results are real vertices in a new order
             log.fine(() -> type + ": reordering according to permutation: " + perfectFactPerm);
             reorderAccordingToPerfFactPerm(perfectFactPerm, log);
         } else if (type.isDegenerate() && isModuleInG){ // todo: really only with the flag?
@@ -135,7 +135,9 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             }
 
         }
-        assert type != null : "No MDtype found! for " + this;
+        if( type == null ){
+            throw new IllegalStateException("Error: No MDtype found! for " + this);
+        }
 
         return returnVal;
     }
@@ -151,9 +153,9 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         }
 
         int sz = perfFactPerm.size();
-        int[] positionInPermutation = new int[sz];
+        HashMap<Integer,Integer> positionInPermutation = new HashMap<>(sz*4/3);
         for(int i = 0; i<sz; i++){
-            positionInPermutation[perfFactPerm.get(i)] = i;
+            positionInPermutation.put(perfFactPerm.get(i), i);
         }
 
         PartitiveFamilyTreeNode[] orderedNodes = new PartitiveFamilyTreeNode[sz];
@@ -167,10 +169,10 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                 // computes the first position of any vertex in the child module
                 if(currentChild.isALeaf()){
                     realV = ((PartitiveFamilyLeafNode) currentChild).getVertex();
-                    firstPosition = positionInPermutation[realV];
+                    firstPosition = positionInPermutation.get(realV);
                 } else {
                     for(realV = vertices.nextSetBit(0); realV >= 0; realV = vertices.nextSetBit(realV+1)){
-                        int position = positionInPermutation[realV];
+                        int position = positionInPermutation.get(realV);
                         if(position < firstPosition)
                             firstPosition = position;
                     }
@@ -245,22 +247,28 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                 vertexToPartition.remove(realVertexNo);
                 partitions.remove(partitionsIndex);
 
-                // add C ∩ N_{-}(v_i)
-                partitions.add(partitionsIndex, inNeighbors);
-                for( int vNo : inNeighbors){
-                    vertexToPartition.put(vNo, inNeighbors);
+                // add C ∩ N_{-}(v_i), if not empty
+                if(!inNeighbors.isEmpty()) {
+                    partitions.add(partitionsIndex, inNeighbors);
+                    for (int vNo : inNeighbors) {
+                        vertexToPartition.put(vNo, inNeighbors); // todo: or still put?
+                    }
+                    partitionsIndex++;
                 }
 
                 // add singleton {v_i}
                 ArrayList<Integer> singleton = new ArrayList<>(1);
                 singleton.add(realVertexNo);
-                partitions.add(partitionsIndex+1, singleton);
+                partitions.add(partitionsIndex, singleton);
                 vertexToPartition.put(realVertexNo, singleton);
+                partitionsIndex++;
 
-                // add C ∩ N_{+}(v_i)
-                partitions.add(partitionsIndex+2, outNeigbors);
-                for(int vNo : outNeigbors){
-                    vertexToPartition.put(vNo, outNeigbors);
+                // add C ∩ N_{+}(v_i), if not empty
+                if(!outNeigbors.isEmpty()) {
+                    partitions.add(partitionsIndex, outNeigbors);
+                    for (int vNo : outNeigbors) {
+                        vertexToPartition.put(vNo, outNeigbors); // todo: or still update???
+                    }
                 }
 
                 // done.
@@ -271,8 +279,11 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         }
 
         for(Collection<Integer> singleton : partitions){
-            assert singleton.size() != 1 : "Error: invalid element " + singleton.toString();
-            ret.add(singleton.stream().findFirst().get());
+            if(singleton.size() != 1) {
+                throw new IllegalStateException("Error: invalid element " + singleton + " of partitions: " + partitions + "\nvertexToPartition: " + vertexToPartition);
+            } else {
+                ret.add(singleton.stream().findFirst().get());
+            }
         }
 
         return ret;
@@ -295,7 +306,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             throw new IllegalStateException("Wrong type in step 4: " + type + " for node\n" + toString());
         }
 
-        HashMap<String, List<PartitiveFamilyTreeNode>> equivStringToEquivClass = new HashMap<>(getNumChildren()*4/3);
+        HashMap<Pair<BitSet,BitSet>, List<PartitiveFamilyTreeNode>> equivClassByBits = new HashMap<>(getNumChildren()*4/3);
 
         PartitiveFamilyTreeNode currentChild = (PartitiveFamilyTreeNode) getFirstChild();
         if(currentChild != null) {
@@ -311,37 +322,36 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                 int vertexPosition = positionInPermutation[anyVertex];
 
                 // compute S_{+}
-                StringBuilder verticesWithoutX = new StringBuilder();
+                BitSet outgoingWithoutX = new BitSet(orderedLeaves.size());
                 BitSet outNeighborPositions = outNeighbors[vertexPosition];
                 // adds the vertex to the list, if it's not a vertex of this treenode
                 outNeighborPositions.stream().forEach( vPos -> {
                         int realVertex = orderedLeaves.get(vPos).getVertex();
                         if(!vertices.get(realVertex)){
-                            verticesWithoutX.append(realVertex).append('-');
+                            outgoingWithoutX.set(realVertex);
                         }
                 });
-                // compute S_{-}
-                // StringBuilder incomingWithoutX = new StringBuilder();
-                verticesWithoutX.append('*'); // want a delimiter
 
+                // compute S_{-}
+                BitSet incomingWithoutX = new BitSet(orderedLeaves.size());
                 BitSet incNeighborPositions = inNeighbors[vertexPosition];
                 // adds the vertex to the list, if it's not a vertex of this treenode
                 incNeighborPositions.stream().forEach( vPos -> {
                     int realVertex = orderedLeaves.get(vPos).getVertex();
                     if(!vertices.get(realVertex)){
-                        verticesWithoutX.append(realVertex).append('-');
+                        incomingWithoutX.set(realVertex);
                     }
                 });
 
                 // save  directly into equivalence classes, don't bother manual partition refinement
-                String key = verticesWithoutX.toString();
-                if(equivStringToEquivClass.containsKey(key)){
-                    equivStringToEquivClass.get(key).add(currentChild);
+                Pair<BitSet,BitSet> key = new Pair<>(outgoingWithoutX,incomingWithoutX);
+                if(equivClassByBits.containsKey(key)){
+                    equivClassByBits.get(key).add(currentChild);
                     log.fine(() -> type + " adding child with vertex " + anyVertex + " to eqClass " + key);
                 } else {
                     LinkedList<PartitiveFamilyTreeNode> eqClass = new LinkedList<>();
                     eqClass.addLast(currentChild);
-                    equivStringToEquivClass.put(key, eqClass);
+                    equivClassByBits.put(key, eqClass);
                     log.fine(() -> type + " creating new eqClass " + key + " for child with vertex " + anyVertex );
                 }
 
@@ -351,7 +361,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
         // reorder the children accordingly:
         ArrayList<PartitiveFamilyTreeNode> orderedChildren = new ArrayList<>(getNumChildren());
-        for(List<PartitiveFamilyTreeNode> children : equivStringToEquivClass.values()){
+        for(List<PartitiveFamilyTreeNode> children : equivClassByBits.values()){
             orderedChildren.addAll(children);
         }
         log.fine( () -> type + " Reordering children of " + toString());
@@ -360,7 +370,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
     }
 
     private void reorderChildren(List<PartitiveFamilyTreeNode> orderedChildren){
-        if( orderedChildren.size() == getNumChildren()){
+        if( orderedChildren.size() != getNumChildren()){
             throw new IllegalStateException("Error: " + getNumChildren() + " for node " + toString() +
                     " \ndifferent number of children in List: \n" + orderedChildren);
         }
@@ -428,8 +438,10 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
         if(lc_X == le_X && rc_X == re_X){
             isModuleInG = true;
+            log.fine( () -> "Module found - LC: " + lc_X + ", RC: " + rc_X + " for node: " + toString());
+        } else {
+            log.fine( () -> "Discard node - LC: " + lc_X + ", RC: " + rc_X + " for node: " + toString());
         }
-        log.fine( () -> "LC: " + lc_X + ", RC: " + rc_X + " for node: " + toString());
 
         return new Pair<>(lc_X,rc_X);
     }
@@ -451,8 +463,8 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         inSymDiff.or(outSymDiff);
 
         boolean first = true;
-        int leftCutter = -1;
-        int rightCutter = -1;
+        int leftCutter = re_left;
+        int rightCutter = le_right; // todo: wie mit leerer Symdiff umgehen?
         for (int i = inSymDiff.nextSetBit(0); i >= 0; i = inSymDiff.nextSetBit(i+1)) {
             if(first) {
                 leftCutter = i;

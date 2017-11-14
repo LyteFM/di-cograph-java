@@ -158,9 +158,10 @@ public class DirectedMD {
         // todo: I already have more than just the permutation (as Tedder says!). Use that Tree!
         ArrayList<PartitiveFamilyLeafNode> trueLeafOrder =  new ArrayList<>(nVertices);
         treeForH.getLeavesInLeftToRightOrder( trueLeafOrder );
-        log.fine(() ->"Leaves ordered as factorizing permutation: " + trueLeafOrder);
 
-
+        ArrayList<Integer> leafNumbers = new ArrayList<>(trueLeafOrder.size());
+        trueLeafOrder.forEach( l ->  leafNumbers.add(l.getVertex()));
+        log.info(() ->"Leaves ordered as factorizing permutation: " + trueLeafOrder);
 
 
 
