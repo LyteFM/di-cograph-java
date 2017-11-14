@@ -61,9 +61,18 @@ public class SortAndCompare {
         return ret;
     }
 
+    /**
+     * Sorts the outgoing/incoming edges according to the given permutation (Proof of Lem. 24).
+     * - indices of the returned array are according to σ(v)
+     * - the set bits are according to σ(v)
+     * @param permutation the permutation σ of the v ∈ V
+     * @param positionInPermutation the position every v in σ
+     * @param g the directed input graph of the MD
+     * @param outgoing true for outgoing, false for incoming edges
+     * @return the edges sorted according to the permutation
+     */
     public static BitSet[] edgesSortedByPerm(List<Integer> permutation, int[] positionInPermutation,  DirectedGraph<Integer, DefaultEdge> g, boolean outgoing){
 
-        //ArrayList<DefaultEdge> ret = new ArrayList<>(g.edgeSet().size());
         BitSet[] retSets = new BitSet[g.vertexSet().size()];
         int n = permutation.size();
 
@@ -75,7 +84,6 @@ public class SortAndCompare {
                 edgeSet = g.outgoingEdgesOf(vertex);
             else
                 edgeSet = g.incomingEdgesOf(vertex);
-            //HashMap<Integer, DefaultEdge> permVertexToEdge = new HashMap<>(edgeSet.size()*4/3);
 
             if(!edgeSet.isEmpty()) {
                 // iterate edges and get the ordering. Using BitSet for performance
@@ -90,17 +98,12 @@ public class SortAndCompare {
                     edgeTargets.set(pos);
                     //permVertexToEdge.put(pos, e);
                 }
-                retSets[vertex] = edgeTargets;
-//                // add the edges in order. Due to the HashMap, this is also fast for DirectedSpecifics (not FastLookup)
-//                if(outgoing) {
-//                    edgeTargets.stream().forEach( v -> ret.add( permVertexToEdge.get(v) ) );
-//                } else {
-//                    edgeTargets.stream().forEach( v -> ret.add( permVertexToEdge.get(v) ) );
-//                }
+                // todo: use the real vertexNo or the position in permutation?
+                retSets[ positionInPermutation[vertex] ] = edgeTargets;
 
             } else {
                 // add an empty BitSet to avoid nulls
-                retSets[vertex] = new BitSet();
+                retSets[ positionInPermutation[vertex] ] = new BitSet();
             }
 
         }

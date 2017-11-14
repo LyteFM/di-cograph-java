@@ -29,6 +29,23 @@ public class MDTree extends RootedTree {
 	protected MDTree(){
 	    super();
     }
+    /*
+     * Builds the modular decomposition tree for the supplied graph.
+     * @return The root of the constructed modular decomposition tree.
+     */
+    @Deprecated
+    private MDTreeNode buildMDTree(GraphHandle g) {
+
+        if (g.getNumVertices() == 0) { return null; }
+
+        RecSubProblem entireProblem = new RecSubProblem(g);
+
+        MDTreeNode root = entireProblem.solve();
+        root.clearVisited();
+        return root;
+    }
+
+    // F.L. 27.09.17:
 
     public HashMap<BitSet, RootedTreeNode> getStrongModulesBool(MDTreeLeafNode[] leaves) {
         HashMap<BitSet, RootedTreeNode> ret = new HashMap<>();
@@ -81,21 +98,7 @@ public class MDTree extends RootedTree {
         return builder;
     }
 
-	/*
-	 * Builds the modular decomposition tree for the supplied graph.
-	 * @return The root of the constructed modular decomposition tree.
-	 */
-	@Deprecated
-	private MDTreeNode buildMDTree(GraphHandle g) {
-		
-		if (g.getNumVertices() == 0) { return null; }
-		
-		RecSubProblem entireProblem = new RecSubProblem(g);	
-		
-		MDTreeNode root = entireProblem.solve();		
-		root.clearVisited();
-		return root;			
-	}
+
 
 	// F.L. new: use JGraph
 	private MDTreeNode buildMDTree(UndirectedGraph<Integer, DefaultEdge> g) {

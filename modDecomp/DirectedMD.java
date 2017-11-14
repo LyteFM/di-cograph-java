@@ -15,10 +15,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -67,72 +65,6 @@ public class DirectedMD {
 
     }
 
-    /**
-     * Computes the lowest common ancestor for a set of RootedTreeNodes.
-     *
-     * @param lowerNodesCollection the treenodes
-     * @param log                  the logger
-     * @return the LCA. null indicates an error.
-     */
-    public static RootedTreeNode computeLCA(Collection<RootedTreeNode> lowerNodesCollection, Logger log) {
-
-        boolean alreadyReachedRoot = false;
-        // init
-        ArrayList<RootedTreeNode> lowerNodes = new ArrayList<>(lowerNodesCollection);
-
-        HashMap<Integer, LinkedList<RootedTreeNode>> inputNodeToAncestor = new HashMap<>(lowerNodes.size() * 4 / 3);
-        HashMap<RootedTreeNode, Integer> allTraversedNodes = new HashMap<>();
-        HashSet<Integer> lastNodeRemaining = new HashSet<>();
-
-        for (int i = 0; i < lowerNodes.size(); i++) {
-            LinkedList<RootedTreeNode> list = new LinkedList<>();
-            list.add(lowerNodes.get(i));
-            allTraversedNodes.put(lowerNodes.get(i), i);
-            inputNodeToAncestor.put(i, list);
-            lastNodeRemaining.add(i);
-        }
-        int currDistance = 0;
-        // Traverse the Tree bottom-up
-
-        while (lastNodeRemaining.size() > 1) {
-            Iterator<Map.Entry<Integer, LinkedList<RootedTreeNode>>> nodesIter = inputNodeToAncestor.entrySet().iterator();
-            while (nodesIter.hasNext()) {
-                Map.Entry<Integer, LinkedList<RootedTreeNode>> currEntry = nodesIter.next();
-                RootedTreeNode parent = currEntry.getValue().peekLast().getParent();
-                if (allTraversedNodes.containsKey(parent)) {
-
-                    // already present: close this list.
-                    lastNodeRemaining.remove(currEntry.getKey());
-                    if (parent.isRoot()) {
-                        log.fine("Reached root: " + currEntry.toString());
-                        // No problem if just one went up to root.
-                        if (alreadyReachedRoot) {
-                            log.fine("Root is LCA.");
-                            return parent;
-                        }
-                        alreadyReachedRoot = true;
-                    } else {
-                        log.fine("Closing: " + currEntry.toString());
-                    }
-                    nodesIter.remove();
-                    // We're done if this was the last.
-                    if (lastNodeRemaining.size() == 1) {
-                        return parent;
-                    }
-
-                } else {
-                    // add the parent
-                    currEntry.getValue().addLast(parent);
-                    allTraversedNodes.put(parent, currEntry.getKey());
-                }
-            }
-            currDistance++;
-
-        }
-        log.warning("Error: Unexpected Exit! current Distance: " + currDistance);
-        return null;
-    }
-
     // Note: Parameters are:
     // printgraph - 0
     // printcc    - 1
@@ -174,7 +106,6 @@ public class DirectedMD {
         // Step 1: Find G_s, G_d and H
 
         // G_s: undirected graph s.t. {u,v} in E_s iff (u,v) in E or (v,u) in E
-        // todo: make sure this graph is not edited!!!
         G_s = new AsUndirectedGraph<>(inputGraph);
 
         // G_d: undirected graph s.t. {u,v} in E_d iff both (u,v) and (v,u) in E
@@ -199,24 +130,26 @@ public class DirectedMD {
 
         // Step 2: T(G_d) and T(G_s) with algorithm for undirected graphs
 
-        MDTree TreeForG_d = new MDTree(G_d);
-        MDTree TreeForG_s = new MDTree(G_s);
-        log.info("md for G_d:\n" + MDTree.beautify(TreeForG_d.toString()));
-        log.info("md for G_s:\n" + MDTree.beautify(TreeForG_s.toString()));
+        MDTree treeForG_d = new MDTree(G_d);
+        MDTree treeForG_s = new MDTree(G_s);
+        log.info("md for G_d:\n" + MDTree.beautify(treeForG_d.toString()));
+        log.info("md for G_s:\n" + MDTree.beautify(treeForG_s.toString()));
 
         // Step 3: Find T(H) = T(G_s) Λ T(G_d)
 
-        PartitiveFamilyTree TreeForH = intersectPartitiveFamiliesOf(TreeForG_s, TreeForG_d);
+        PartitiveFamilyTree treeForH = intersectPartitiveFamiliesOf(treeForG_s, treeForG_d);
 
         // I guess I should determine which node-type there is:
-        TreeForH.computeAllNodeTypes(this);
+        treeForH.computeAllNodeTypes(this);
+        log.info("Inclusion Tree: " + MDTree.beautify(treeForH.toString()));
+
 
         // Step 4: At each O-complete and 1-complete node X of T(H), order the children s.t.
         //         each equivalence class of R_X is consecutive.
         // AND
         // Step 5: At each  2-complete node Y, select an arbitrary set S of representatives from the children.
         //         order the children of Y according to a perfect factorizing permutation of G[S].
-        TreeForH.computeFactorizingPermutationAndReorderAccordingly(log, inputGraph, nVertices );
+        treeForH.computeFactorizingPermutationAndReorderAccordingly(log, inputGraph, nVertices );
 
 
         // Step 6: Resulting leaf order of T(H) is a factorizing permutation of G by Lem 20,21. Use algorithm
@@ -224,7 +157,8 @@ public class DirectedMD {
         // todo: wat? the left-to-right-order?
         // todo: I already have more than just the permutation (as Tedder says!). Use that Tree!
         ArrayList<PartitiveFamilyLeafNode> trueLeafOrder =  new ArrayList<>(nVertices);
-        TreeForH.getLeavesInLeftToRightOrder( trueLeafOrder );
+        treeForH.getLeavesInLeftToRightOrder( trueLeafOrder );
+        log.fine(() ->"Leaves ordered as factorizing permutation: " + trueLeafOrder);
 
 
 
@@ -254,7 +188,7 @@ public class DirectedMD {
     }
 
 
-    PartitiveFamilyTree intersectPartitiveFamiliesOf(MDTree T_a, MDTree T_b) throws InterruptedException,IOException{
+    private PartitiveFamilyTree intersectPartitiveFamiliesOf(MDTree T_a, MDTree T_b) throws InterruptedException,IOException{
 
         // Notes from section 2:
 
@@ -367,7 +301,7 @@ public class DirectedMD {
         // 3.) @Lemma 11: compute the inclusion tree of σ(T_a, T_b)
         // The previously ommitted V and the singleton sets are also added to the tree.
         RootedTree overlapInclusionTree = new PartitiveFamilyTree(overlapComponents.values(), log, nVertices);
-        log.info("Inclusion tree of overlap components: " + MDTree.beautify(overlapInclusionTree.toString()));
+        log.fine("Inclusion tree of overlap components: " + MDTree.beautify(overlapInclusionTree.toString()));
         HashMap<BitSet, RootedTreeNode> bitsetToOverlapTreenNode = overlapInclusionTree.getModuleToTreenode();
 
 
@@ -456,10 +390,6 @@ public class DirectedMD {
 
         PartitiveFamilyTree ret = new PartitiveFamilyTree(strongModulesOfH, log, nVertices);
         // now we have the Tree T(H) = T_a Λ T_b
-        log.info("Inclusion Tree: " + ret.toString());
-
-
-        String debugg = "ND";
 
         return ret;
     }
@@ -526,25 +456,6 @@ public class DirectedMD {
                 // holds the parents - to be processed in the next iteration
                 HashSet<RootedTreeNode> tmpSet = new HashSet<>(innerNodes.size());
 
-//                ///
-//                for (RootedTreeNode node : innerNodes) {
-//                    if (node.getNumMarkedChildren() == node.getNumChildren()) {
-//                        node.unmarkAllChildren();
-//                        node.mark();
-//                        // nodes can have same parent, HashSet keeps us safe
-//                        tmpSet.add(node.getParent());
-//                        // update maximum members:
-//                        currLCA = node.getParent();
-//                        maximumMembers.add(currLCA);
-//                        RootedTreeNode child = node.getFirstChild();
-//                        while (child != null) {
-//                            maximumMembers.remove(child);
-//                            child = child.getRightSibling();
-//                        }
-//                    }
-//                }
-//                ///
-
                 innerNodes.stream().filter( tnode -> tnode.getNumChildren() == tnode.getNumMarkedChildren() ).forEach(node ->{
                     node.unmarkAllChildren();
                     node.mark();
@@ -580,19 +491,25 @@ public class DirectedMD {
             } else {
                 // compute the LCA of all maximum members and check if it is root. Note: one entry itself could be that.
                 // LCA can be found in O(h), h height of the tree, at least.
-                MDTreeNode lca = (MDTreeNode) computeLCA(maximumMembers, log);
-                if (lca.getType().isDegenerate()) {
+                MDTreeNode lca = (MDTreeNode) RootedTree.computeLCA(maximumMembers, log);
+                if(lca == null || lca.hasNoChildren()){
+                    throw new IllegalStateException("LCA computation failed for: " + setEntryOfSigma);
+                }
+                else if (lca.getType().isDegenerate()) {
+
                     elementsOfA.put(setEntryOfSigma.getValue(), setEntryOfSigma.getKey());
                     elementOfAToP_a.put(setEntryOfSigma.getValue(), lca);
-                    log.fine(logPrefix + "Added: " + setEntryOfSigma.toString());
-                    log.fine("    with complete LCA: " + lca.toString());
-                } else {
-                    log.fine(logPrefix + "Discarded: " + setEntryOfSigma.toString());
-                    log.fine("    with prime LCA: " + lca.toString());
+                    log.fine(() -> logPrefix + "Added: " + setEntryOfSigma);
+                    log.fine(() -> "   with complete LCA: " + lca);
+                }
+                else {
+                    log.fine(() -> logPrefix + "Discarded: " + setEntryOfSigma);
+                    log.fine(() -> "   with prime LCA: " + lca);
                 }
             }
 
-            // Cleaup. I need to unmark all nodes. Marked nodes are now only among children of the maximum Members! todo: verify!
+            // Cleaup. I need to unmark all nodes. Marked nodes are now only among children of the maximum Members!
+            // todo: verify!
             for (RootedTreeNode node : maximumMembers) {
                 node.unmarkAllChildren();
             }

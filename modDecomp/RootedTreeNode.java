@@ -110,13 +110,12 @@ class RootedTreeNode {
 	protected boolean hasNoChildren() {
 		return (numChildren == 0);
 	}
-	
-	
-	/* Returns true iff this node has a single child. */ 
+
+
+	/* Returns true iff this node has a single child. */
 	protected boolean hasOnlyOneChild() {
 		return (numChildren == 1);
 	}
-	
 	
 	/* 
 	 * Replaces this node in its tree with the supplied node.  This node's

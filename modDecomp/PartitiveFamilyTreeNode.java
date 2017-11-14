@@ -29,7 +29,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
     int rc_X;
     private BitSet vertices;
     private boolean isModuleInG;
-    private MDNodeType type; // null by default???
+    private MDNodeType type;
     private DirectedInducedIntSubgraph<DefaultEdge> inducedPartialSubgraph;
 
 
@@ -378,7 +378,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
      * @param inNeighbors
      * @return
      */
-    protected Pair<Integer,Integer> computeLeftRightCutterForThis(BitSet[] outNeighbors, BitSet[] inNeighbors, Logger log){
+    protected Pair<Integer,Integer> computeLeftRightCutter(BitSet[] outNeighbors, BitSet[] inNeighbors, int[] positionInPermutation, Logger log){
 
         lc_X = outNeighbors.length;
         rc_X = 0;
@@ -390,8 +390,8 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         if(currentChild != null) {
             while (currentChild != null) {
 
-                // compute and compare with its real cutters
-                Pair<Integer,Integer> childsCutters = currentChild.computeLeftRightCutterForThis(outNeighbors,inNeighbors, log);
+                // compute and compare with its real cutters. just the vertexNo, if child is leaf
+                Pair<Integer,Integer> childsCutters = currentChild.computeLeftRightCutter(outNeighbors,inNeighbors, positionInPermutation, log);
                 first = childsCutters.getFirst();
                 second = childsCutters.getSecond();
 
@@ -403,10 +403,18 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                 // compute and compare with cutters of le/re
                 nextChild = (PartitiveFamilyTreeNode) currentChild.getRightSibling();
                 if(nextChild != null){
+                    int re_leftNode = currentChild.re_X;
+                    int le_rightNode = nextChild.le_X;
                     Pair<Integer,Integer> leftRightCutters = computeLeftRightCutterForVertices(
-                            currentChild.getRe_X(), nextChild.getLe_X(), outNeighbors, inNeighbors);
+                            re_leftNode, le_rightNode, outNeighbors, inNeighbors);
                     first = leftRightCutters.getFirst();
                     second = leftRightCutters.getSecond();
+
+                    if(first == -1 || second == -1){
+                        throw new IllegalStateException("Error in computing left and right cutter from Bitsets:\nout: " + outNeighbors[re_leftNode] +
+                                "\nin: " +inNeighbors[le_rightNode] + " \nwith cutter for left: " + first + ", right: " + second +
+                                " for x = " + re_leftNode + ", y = " + le_rightNode + "\nfor node " + toString());
+                    }
 
                     if(lc_X > first)
                         lc_X = first;
@@ -427,17 +435,23 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
     }
 
     /**
-     * Helper method to compute left and right cutter of two given vertices
+     * Helper method to compute left and right cutter of two given vertices (end of proof for Lem. 24).
+     * A return value == -1 should be caught as an error.
+     * @param re_left  re(X) of the left  node X - i.e. a position in σ
+     * @param le_right le(Y) of the right node Y - i.e. a position in σ
+     * @param outNeighbors for each index σ(v), the indices σ(w) of each outgoing edge (v,w)
+     * @param inNeighbors  for each index σ(v), the indices σ(u) of each incoming edge (u,v)
+     * @return the left and right cutters as positions in σ
      */
-    private static Pair<Integer, Integer> computeLeftRightCutterForVertices(int x, int y, BitSet[] outNeighbors, BitSet[] inNeighbors){
-        // compute the symmetrical difference. Need to copy!
-        BitSet inSymDiff  = SortAndCompare.symDiff(outNeighbors[x], outNeighbors[y]);
-        BitSet outSymDiff = SortAndCompare.symDiff(inNeighbors[x], inNeighbors[y]);
+    private static Pair<Integer, Integer> computeLeftRightCutterForVertices(int re_left, int le_right, BitSet[] outNeighbors, BitSet[] inNeighbors){
 
-        inSymDiff.or(outSymDiff); // ∪
+        BitSet inSymDiff  = SortAndCompare.symDiff(outNeighbors[re_left], outNeighbors[le_right]);
+        BitSet outSymDiff = SortAndCompare.symDiff(inNeighbors[re_left], inNeighbors[le_right]);
+
+        inSymDiff.or(outSymDiff);
 
         boolean first = true;
-        int leftCutter = -1; // todo: was, wenn's keine gibt? i = -1 auch in loop.
+        int leftCutter = -1;
         int rightCutter = -1;
         for (int i = inSymDiff.nextSetBit(0); i >= 0; i = inSymDiff.nextSetBit(i+1)) {
             if(first) {
@@ -445,10 +459,6 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             }
             rightCutter = i;
             first = false;
-        }
-        if(leftCutter == -1 || rightCutter == -1){
-            throw new IllegalStateException("Error in computing left and right cutter from Bitsets:\n out: " + outNeighbors[x] +
-                    ", in: " +inNeighbors[x] + " \nwith cutter for left: " + leftCutter + ", right: " + rightCutter);
         }
 
         return new Pair<>(leftCutter, rightCutter);
@@ -459,7 +469,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
      * in left-to-right order. Initial action in step 4.
      * @param orderedLeaves the list to be filled
      */
-    protected void getLeavesInLeftToRightOrder(List<PartitiveFamilyLeafNode> orderedLeaves){
+    void getLeavesInLeftToRightOrder(List<PartitiveFamilyLeafNode> orderedLeaves){
 
         PartitiveFamilyTreeNode currentChild = (PartitiveFamilyTreeNode) getFirstChild();
         if(currentChild != null){
@@ -479,10 +489,10 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
     /**
      * Computes the first (le_X) and last (re_X) occurence of any vertex below the node X,
-     * according to Lemma 24.
+     * according to Lemma 24. This works, because no reordering has occured yet.
      * @return first Element: le_X, second Element: re_X
      */
-    protected Pair<Integer,Integer> computeReAndLe(Logger log){
+     Pair<Integer,Integer> computeReAndLe(Logger log){
 
         RootedTreeNode currentChild = getFirstChild();
         // I assume that the leaves are already set. If this is a leaf, currentChild is null.
@@ -512,19 +522,32 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         return new Pair<>(le_X, re_X);
     }
 
-    public int getLe_X() {
-        return le_X;
-    }
-
-    public int getRe_X() {
-        return re_X;
-    }
-
     public boolean isModuleInG() {
         return isModuleInG;
     }
 
     public BitSet getVertices() {
         return vertices;
+    }
+
+    public String toString() {
+
+        StringBuilder result = new StringBuilder("(");
+        if(isRoot())
+            result.append("ROOT ");
+        if(type != null)
+            result.append(type.toString()).append(", ");
+        result.append("numChildren=").append(getNumChildren());
+
+        RootedTreeNode current = getFirstChild();
+        if (current != null) {
+            result.append(current);
+            current  = current.getRightSibling();
+        }
+        while (current != null) {
+            result.append(", ").append(current);
+            current = current.getRightSibling();
+        }
+        return result.append(')').toString();
     }
 }

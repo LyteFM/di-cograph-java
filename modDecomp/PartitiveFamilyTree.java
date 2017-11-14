@@ -8,7 +8,6 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -55,6 +54,7 @@ public class PartitiveFamilyTree extends RootedTree {
         for(PartitiveFamilyLeafNode leaf : orderedLeaves){
             permutationAsIntegers.add(leaf.getVertex());
         }
+        log.fine(() -> "Initial leaf order: " + permutationAsIntegers);
         // the position of every element in the permutation
         int[] positionInPermutation = new int[nVertices];
         for(int i = 0; i< permutationAsIntegers.size(); i++){
@@ -73,9 +73,6 @@ public class PartitiveFamilyTree extends RootedTree {
             PartitiveFamilyLeafNode leaf = orderedLeaves.get(i);
             leaf.le_X = i;
             leaf.re_X = i;
-            // can also be done here
-            leaf.lc_X = i;
-            leaf.rc_X = i;
         }
         // compute
         rootNode.computeReAndLe(log);
@@ -92,7 +89,7 @@ public class PartitiveFamilyTree extends RootedTree {
 
 
         // now, compute the cutters:
-        rootNode.computeLeftRightCutterForThis(sortedOutEgdes, sortedInEdges, log);
+        rootNode.computeLeftRightCutter(sortedOutEgdes, sortedInEdges, positionInPermutation, log);
 
         // remember: X is a module iff le(X) == lc(X) and re(X) == rc(X)
         // next step: use N_{+} and N_{-} to separate the children of a 0/1-complete node that is a module into R_X-classes
