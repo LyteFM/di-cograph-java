@@ -1,7 +1,9 @@
 package dicograph;
 
 
+import org.jgrapht.alg.isomorphism.VF2GraphIsomorphismInspector;
 import org.jgrapht.ext.ExportException;
+import org.jgrapht.graph.AsUndirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.graph.SimpleGraph;
@@ -12,8 +14,12 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
@@ -22,6 +28,7 @@ import java.util.logging.Logger;
 
 import dicograph.ILPSolver.CplexDiCographEditingSolver;
 import dicograph.graphIO.GraphGenerator;
+import dicograph.graphIO.JGraphAdjecencyImporter;
 import dicograph.graphIO.SimpleMatrixExporter;
 import dicograph.graphIO.SimpleMatrixImporter;
 import dicograph.modDecomp.DirectedMD;
@@ -81,19 +88,92 @@ public class Main {
         String folder = "testGraphs/";
         String oftenUsedFile = folder + "randDigraph_n_50_edits_10_1031_16:37:01.txt";
         String smallStackoverflowFile = folder + "randDigraph_n_10_edits_2_11-03_11:35:47:010_original.txt";
-        String tournamentError = folder + "randDigraph_n_24_edits_8_11-14_18:05:20:306_original.txt";
-        MDtestFromFile(log, tournamentError);
+        String weirdError = folder + "randDigraph_n_24_edits_8_11-14_18:05:20:306_original.txt";
+        String test = "testy.txt";
+        //MDtestFromFile(log, weirdError,true);
+
+
+        File importFile = new File("testy.txt");
+        SimpleDirectedGraph<Integer, DefaultEdge> matrixGraph = SimpleMatrixImporter.importIntGraph( new File(weirdError));
+        SimpleDirectedGraph<Integer, DefaultEdge> randGraph = JGraphAdjecencyImporter.importIntGraph(importFile);
+
+        AsUndirectedGraph<Integer,DefaultEdge> matrixUndirected = new AsUndirectedGraph<>(randGraph);
+        AsUndirectedGraph<Integer,DefaultEdge> randUndirected = new AsUndirectedGraph<>(matrixGraph);
+
+        System.out.println("Testing: from matrix");
+
+        List<Integer> se_5_matrix = Arrays.asList(15,16,18,19);
+        TreeSet<Integer> matrix_others = new TreeSet<>(matrixUndirected.vertexSet());
+        matrix_others.removeAll(se_5_matrix);
+        debugTesting(matrixUndirected,matrix_others,se_5_matrix);
+
+        System.out.println("Testing: randomly created");
+
+        List<Integer> se_4_rand = Arrays.asList(4,5,22,23);
+        TreeSet<Integer> rand_others = new TreeSet<>(randUndirected.vertexSet());
+        rand_others.removeAll(se_4_rand);
+        debugTesting(randUndirected, rand_others, se_4_rand);
+
+//
+//        VF2GraphIsomorphismInspector isomorphismInspector = new VF2GraphIsomorphismInspector<>(,new AsUndirectedGraph<>(randGraph));
+//        System.out.println("Iso exists: " + isomorphismInspector.isomorphismExists());
 
     }
 
-    static void MDtestFromFile(Logger log, String importFilePath) throws Exception {
+    static void MDtestFromFile(Logger log, String importFilePath, boolean matrix) throws Exception {
 
         File importFile = new File(importFilePath);
-        SimpleDirectedGraph<Integer, DefaultEdge> importGraph = SimpleMatrixImporter.importIntGraph(importFile);
+        SimpleDirectedGraph<Integer, DefaultEdge> importGraph;
+        if(matrix) {
+            importGraph=SimpleMatrixImporter.importIntGraph(importFile);
+        } else {
+            importGraph = JGraphAdjecencyImporter.importIntGraph(importFile);
+        }
 
         DirectedMD testMD = new DirectedMD(importGraph, log, true);
         testMD.computeModularDecomposition();
 
+    }
+
+    static void debugTesting(AsUndirectedGraph<Integer,DefaultEdge> graph, Set<Integer> otherVertices, List<Integer> moduleVertices){
+
+        for (int i : otherVertices) {
+            System.out.println("Checking: " + i + " with edges: ");
+
+            boolean first = true;
+            boolean hasEdge = false;
+            for(int j : moduleVertices){
+                if(first){
+                    hasEdge = graph.containsEdge(i, j);
+                    first = false;
+                } else {
+                    if (hasEdge != graph.containsEdge(i, j)) {
+                        System.out.println("Error for edge {" + i + "," + j + "}, expected hasEdge == " + hasEdge);
+                    }
+                }
+            }
+        }
+    }
+
+    static void debugTesting2(AsUndirectedGraph<Integer,DefaultEdge> graph, Set<Integer> otherVertices, List<Integer> moduleVertices){
+
+        for (int i : otherVertices) {
+            System.out.println("Checking: " + i + " with edges: " + graph.edgesOf(i));
+
+            boolean first = true;
+            boolean hasFirstEdge = false;
+            for(int j : moduleVertices){
+                boolean hasEdge = graph.containsEdge(i, moduleVertices.get(0));
+                if(first){
+                    hasFirstEdge = hasEdge;
+                    first = false;
+                } else {
+                    if (hasEdge != hasFirstEdge) {
+                        System.out.println("Error for edge {" + i + "," + j + "}, expected hasEdge == " + hasFirstEdge);
+                    }
+                }
+            }
+        }
     }
 
     static SimpleDirectedGraph<Integer, DefaultEdge> directedMDTesting(Logger log, Handler baseHandler, int nVertices, int nDisturb) throws Exception{

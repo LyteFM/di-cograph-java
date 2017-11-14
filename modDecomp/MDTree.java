@@ -21,7 +21,7 @@ public class MDTree extends RootedTree {
 		setRoot(buildMDTree(graphHandle));
 	}
 
-	public MDTree(UndirectedGraph jGraph) {
+	public MDTree(UndirectedGraph<Integer,DefaultEdge> jGraph) {
 		super();
 		setRoot( buildMDTree(jGraph) );
 	}

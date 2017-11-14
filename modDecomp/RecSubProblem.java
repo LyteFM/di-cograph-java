@@ -103,6 +103,7 @@ class RecSubProblem extends RootedTreeNode {
 				
 	}
 
+	// F.L. 04.09.2017:
 	RecSubProblem(UndirectedGraph<Integer, DefaultEdge> graph){
 
 	    this();

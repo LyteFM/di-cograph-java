@@ -100,14 +100,14 @@ public class DirectedMD {
 
     public void computeModularDecomposition() throws InterruptedException, IOException {
 
-        log.info("Starting md of graph: " + inputGraph.toString());
+        log.info("init md of graph: " + inputGraph.toString());
 
 
         // Step 1: Find G_s, G_d and H
 
         // G_s: undirected graph s.t. {u,v} in E_s iff (u,v) in E or (v,u) in E
         G_s = new AsUndirectedGraph<>(inputGraph);
-        log.info("G_s: " + G_s);
+        log.info("  G_s of digraph: " + G_s);
 
         // G_d: undirected graph s.t. {u,v} in E_d iff both (u,v) and (v,u) in E
         G_d = new SimpleGraph<>(DefaultEdge.class);
@@ -121,7 +121,7 @@ public class DirectedMD {
                 G_d.addEdge(source, target);
             }
         }
-        log.info("G_d: " + G_d);
+        log.info("  G_d of digraph: " + G_d);
 
         // H: symmetric 2-structure with
         //    E_H(u,v) = 0 if {u,v} non-edge (i.e. non-edge in both G_s and G_d)
