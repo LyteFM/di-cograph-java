@@ -1,6 +1,7 @@
 package dicograph;
 
 
+import org.jgrapht.DirectedGraph;
 import org.jgrapht.alg.isomorphism.VF2GraphIsomorphismInspector;
 import org.jgrapht.ext.ExportException;
 import org.jgrapht.graph.AsUndirectedGraph;
@@ -114,6 +115,11 @@ public class Main {
         rand_others.removeAll(se_4_rand);
         debugTesting(randUndirected, rand_others, se_4_rand);
 
+        System.out.println("\n*** test with directed ***\nFrom Matrix");
+        debugTesting2(matrixGraph, matrix_others, se_5_matrix);
+        System.out.println("\nFrom rand:");
+        debugTesting2(randGraph, rand_others, se_4_rand);
+
 //
 //        VF2GraphIsomorphismInspector isomorphismInspector = new VF2GraphIsomorphismInspector<>(,new AsUndirectedGraph<>(randGraph));
 //        System.out.println("Iso exists: " + isomorphismInspector.isomorphismExists());
@@ -138,16 +144,16 @@ public class Main {
     static void debugTesting(AsUndirectedGraph<Integer,DefaultEdge> graph, Set<Integer> otherVertices, List<Integer> moduleVertices){
 
         for (int i : otherVertices) {
-            System.out.println("Checking: " + i + " with edges: ");
+            System.out.println("Checking: " + i + " with edges: " + graph.edgesOf(i));
 
             boolean first = true;
             boolean hasEdge = false;
             for(int j : moduleVertices){
                 if(first){
-                    hasEdge = graph.containsEdge(i, j);
+                    hasEdge = graph.getEdge(i,j) != null; // containsEdge(i, j)
                     first = false;
                 } else {
-                    if (hasEdge != graph.containsEdge(i, j)) {
+                    if ((graph.getEdge(i, j) == null) == hasEdge) { // containsEdge(i, j)
                         System.out.println("Error for edge {" + i + "," + j + "}, expected hasEdge == " + hasEdge);
                     }
                 }
@@ -155,21 +161,20 @@ public class Main {
         }
     }
 
-    static void debugTesting2(AsUndirectedGraph<Integer,DefaultEdge> graph, Set<Integer> otherVertices, List<Integer> moduleVertices){
+    static void debugTesting2(DirectedGraph<Integer,DefaultEdge> graph, Set<Integer> otherVertices, List<Integer> moduleVertices){
 
         for (int i : otherVertices) {
             System.out.println("Checking: " + i + " with edges: " + graph.edgesOf(i));
 
             boolean first = true;
-            boolean hasFirstEdge = false;
+            boolean hasEdge = false;
             for(int j : moduleVertices){
-                boolean hasEdge = graph.containsEdge(i, moduleVertices.get(0));
                 if(first){
-                    hasFirstEdge = hasEdge;
+                    hasEdge = graph.containsEdge(i, j) || graph.containsEdge(j,i);
                     first = false;
                 } else {
-                    if (hasEdge != hasFirstEdge) {
-                        System.out.println("Error for edge {" + i + "," + j + "}, expected hasEdge == " + hasFirstEdge);
+                    if (hasEdge != (graph.containsEdge(i, j) || graph.containsEdge(j,i))) {
+                        System.out.println("Error for edge {" + i + "," + j + "}, expected hasEdge == " + hasEdge);
                     }
                 }
             }
