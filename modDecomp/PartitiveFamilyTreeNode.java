@@ -164,24 +164,29 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         if(currentChild != null) {
             while (currentChild != null) {
 
-                int firstPosition = sz;
+                int position = -1; // want an error if not found
                 int realV;
                 // computes the first position of any vertex in the child module
                 if(currentChild.isALeaf()){
                     realV = ((PartitiveFamilyLeafNode) currentChild).getVertex();
-                    firstPosition = positionInPermutation.get(realV);
+                    position = positionInPermutation.get(realV);
                 } else {
-                    for(realV = vertices.nextSetBit(0); realV >= 0; realV = vertices.nextSetBit(realV+1)){
-                        int position = positionInPermutation.get(realV);
-                        if(position < firstPosition)
-                            firstPosition = position;
+                    int skipCount = 0;
+                    for(realV = currentChild.vertices.nextSetBit(0); realV >= 0; realV = currentChild.vertices.nextSetBit(realV+1)){
+                        if(positionInPermutation.containsKey(realV)){
+                            position = positionInPermutation.get(realV);
+                            break;
+                        } else {
+                            skipCount++;
+                        }
                     }
+                    log.fine("Checked " + skipCount + " of " + currentChild.getNumChildren() + " vertices to find position " + position);
                 }
 
-                if(orderedNodes[firstPosition] != null){
-                    throw new IllegalStateException("Vertex for position " + firstPosition + " already present for node\n" + toString());
+                if(orderedNodes[position] != null){
+                    throw new IllegalStateException("Vertex for position " + position + " already present for node\n" + toString());
                 }
-                orderedNodes[firstPosition] = currentChild;
+                orderedNodes[position] = currentChild;
 
                 currentChild = (PartitiveFamilyTreeNode) currentChild.getRightSibling();
             }

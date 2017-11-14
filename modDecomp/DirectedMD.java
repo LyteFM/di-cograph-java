@@ -107,6 +107,7 @@ public class DirectedMD {
 
         // G_s: undirected graph s.t. {u,v} in E_s iff (u,v) in E or (v,u) in E
         G_s = new AsUndirectedGraph<>(inputGraph);
+        log.info("G_s: " + G_s);
 
         // G_d: undirected graph s.t. {u,v} in E_d iff both (u,v) and (v,u) in E
         G_d = new SimpleGraph<>(DefaultEdge.class);
@@ -120,6 +121,7 @@ public class DirectedMD {
                 G_d.addEdge(source, target);
             }
         }
+        log.info("G_d: " + G_d);
 
         // H: symmetric 2-structure with
         //    E_H(u,v) = 0 if {u,v} non-edge (i.e. non-edge in both G_s and G_d)
@@ -161,7 +163,7 @@ public class DirectedMD {
 
         ArrayList<Integer> leafNumbers = new ArrayList<>(trueLeafOrder.size());
         trueLeafOrder.forEach( l ->  leafNumbers.add(l.getVertex()));
-        log.info(() ->"Leaves ordered as factorizing permutation: " + trueLeafOrder);
+        log.info(() ->"Leaves ordered as factorizing permutation: " + leafNumbers);
 
 
 

@@ -74,14 +74,15 @@ public class Main {
         //mdTest();
         //DirectedMD.dahlhausProcessDelegator("OverlapComponentProg/test3_neu.txt");
 
-//        for( int i = 15; i <= 20; i ++) {
-//            directedMDTesting(log, consoleHandler, i, i/2);
+//        for( int i = 20; i <= 30; i ++) {
+//            directedMDTesting(log, consoleHandler, i, i/3);
 //        }
 
         String folder = "testGraphs/";
         String oftenUsedFile = folder + "randDigraph_n_50_edits_10_1031_16:37:01.txt";
         String smallStackoverflowFile = folder + "randDigraph_n_10_edits_2_11-03_11:35:47:010_original.txt";
-        MDtestFromFile(log, oftenUsedFile);
+        String tournamentError = folder + "randDigraph_n_24_edits_8_11-14_18:05:20:306_original.txt";
+        MDtestFromFile(log, tournamentError);
 
     }
 
