@@ -32,7 +32,7 @@ public class DirectedMD {
     final UnmodifiableDirectedGraph<Integer, DefaultEdge> inputGraph;
     final Logger log;
     final int nVertices;
-    AsUndirectedGraph<Integer, DefaultEdge> G_s;
+    SimpleGraph<Integer, DefaultEdge> G_s;
     SimpleGraph<Integer, DefaultEdge> G_d;
 
     final boolean debugMode; // false for max speed, true for nicely sorted vertices etc.
@@ -105,15 +105,10 @@ public class DirectedMD {
 
         // Step 1: Find G_s, G_d and H
 
-        // G_s: undirected graph s.t. {u,v} in E_s iff (u,v) in E or (v,u) in E
-        G_s = new AsUndirectedGraph<>(inputGraph);
-        log.info("  G_s of digraph: " + G_s);
-
         // G_d: undirected graph s.t. {u,v} in E_d iff both (u,v) and (v,u) in E
         G_d = new SimpleGraph<>(DefaultEdge.class);
-        for (int vertex : inputGraph.vertexSet()) {
-            G_d.addVertex(vertex);
-        }
+        inputGraph.vertexSet().forEach( G_d::addVertex );
+
         for (DefaultEdge edge : inputGraph.edgeSet()) {
             int source = inputGraph.getEdgeSource(edge);
             int target = inputGraph.getEdgeTarget(edge);
@@ -122,6 +117,21 @@ public class DirectedMD {
             }
         }
         log.info("  G_d of digraph: " + G_d);
+
+        // G_s: undirected graph s.t. {u,v} in E_s iff (u,v) in E or (v,u) in E todo: ändert nix :(
+        G_s = new SimpleGraph<>(DefaultEdge.class);
+        inputGraph.vertexSet().forEach( G_s::addVertex );
+        for (DefaultEdge edge : inputGraph.edgeSet()) {
+            int source = inputGraph.getEdgeSource(edge);
+            int target = inputGraph.getEdgeTarget(edge);
+            if (!G_s.containsEdge(source, target)) {
+                G_s.addEdge(source, target);
+            }
+        }
+
+        log.info("  G_s of digraph: " + G_s);
+
+
 
         // H: symmetric 2-structure with
         //    E_H(u,v) = 0 if {u,v} non-edge (i.e. non-edge in both G_s and G_d)

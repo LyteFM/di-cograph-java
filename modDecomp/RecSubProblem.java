@@ -142,6 +142,8 @@ class RecSubProblem extends RootedTreeNode {
             addChild(leafNode);
         }
 
+        String debug = "deb";
+
     }
 	
 	

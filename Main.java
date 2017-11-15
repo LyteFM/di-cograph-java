@@ -2,6 +2,7 @@ package dicograph;
 
 
 import org.jgrapht.DirectedGraph;
+import org.jgrapht.UndirectedGraph;
 import org.jgrapht.alg.isomorphism.VF2GraphIsomorphismInspector;
 import org.jgrapht.ext.ExportException;
 import org.jgrapht.graph.AsUndirectedGraph;
@@ -32,6 +33,7 @@ import dicograph.graphIO.GraphGenerator;
 import dicograph.graphIO.JGraphAdjecencyImporter;
 import dicograph.graphIO.SimpleMatrixExporter;
 import dicograph.graphIO.SimpleMatrixImporter;
+import dicograph.graphIO.TedFormatExporter;
 import dicograph.modDecomp.DirectedMD;
 import dicograph.modDecomp.GraphHandle;
 import dicograph.modDecomp.MDTree;
@@ -91,38 +93,26 @@ public class Main {
         String smallStackoverflowFile = folder + "randDigraph_n_10_edits_2_11-03_11:35:47:010_original.txt";
         String weirdError = folder + "randDigraph_n_24_edits_8_11-14_18:05:20:306_original.txt";
         String test = "testy.txt";
+
         //MDtestFromFile(log, weirdError,true);
+        //MDtestFromFile(log, test, false);
 
 
         File importFile = new File("testy.txt");
         SimpleDirectedGraph<Integer, DefaultEdge> matrixGraph = SimpleMatrixImporter.importIntGraph( new File(weirdError));
         SimpleDirectedGraph<Integer, DefaultEdge> randGraph = JGraphAdjecencyImporter.importIntGraph(importFile);
 
-        AsUndirectedGraph<Integer,DefaultEdge> matrixUndirected = new AsUndirectedGraph<>(randGraph);
-        AsUndirectedGraph<Integer,DefaultEdge> randUndirected = new AsUndirectedGraph<>(matrixGraph);
+//        TedFormatExporter<Integer,DefaultEdge> tedXp = new TedFormatExporter<>();
+//        File expfile = new File("ted_matrix_case.txt");
+//        tedXp.exportGraph(getG_s(matrixGraph),expfile );
+//        File expfile2 = new File("ted_rand_case.txt");
+//        tedXp.exportGraph(getG_s(randGraph),expfile2);
 
-        System.out.println("Testing: from matrix");
+        //testScenario(matrixGraph,randGraph);
 
-        List<Integer> se_5_matrix = Arrays.asList(15,16,18,19);
-        TreeSet<Integer> matrix_others = new TreeSet<>(matrixUndirected.vertexSet());
-        matrix_others.removeAll(se_5_matrix);
-        debugTesting(matrixUndirected,matrix_others,se_5_matrix);
+        mdTest();
 
-        System.out.println("Testing: randomly created");
 
-        List<Integer> se_4_rand = Arrays.asList(4,5,22,23);
-        TreeSet<Integer> rand_others = new TreeSet<>(randUndirected.vertexSet());
-        rand_others.removeAll(se_4_rand);
-        debugTesting(randUndirected, rand_others, se_4_rand);
-
-        System.out.println("\n*** test with directed ***\nFrom Matrix");
-        debugTesting2(matrixGraph, matrix_others, se_5_matrix);
-        System.out.println("\nFrom rand:");
-        debugTesting2(randGraph, rand_others, se_4_rand);
-
-//
-//        VF2GraphIsomorphismInspector isomorphismInspector = new VF2GraphIsomorphismInspector<>(,new AsUndirectedGraph<>(randGraph));
-//        System.out.println("Iso exists: " + isomorphismInspector.isomorphismExists());
 
     }
 
@@ -141,7 +131,59 @@ public class Main {
 
     }
 
-    static void debugTesting(AsUndirectedGraph<Integer,DefaultEdge> graph, Set<Integer> otherVertices, List<Integer> moduleVertices){
+    static void testScenario(DirectedGraph<Integer,DefaultEdge> matrixGraph, DirectedGraph<Integer,DefaultEdge> randGraph){
+        AsUndirectedGraph<Integer,DefaultEdge> matrixUndirected = new AsUndirectedGraph<>(randGraph);
+        AsUndirectedGraph<Integer,DefaultEdge> randUndirected = new AsUndirectedGraph<>(matrixGraph);
+
+        System.out.println("Testing: from matrix");
+
+        List<Integer> se_5_matrix = Arrays.asList(15,16,18,19);
+        TreeSet<Integer> matrix_others = new TreeSet<>(matrixUndirected.vertexSet());
+        matrix_others.removeAll(se_5_matrix);
+        debugTesting(matrixUndirected,matrix_others,se_5_matrix);
+
+        System.out.println("\nTesting: randomly created");
+
+        List<Integer> se_4_rand = Arrays.asList(4,5,22,23);
+        TreeSet<Integer> rand_others = new TreeSet<>(randUndirected.vertexSet());
+        rand_others.removeAll(se_4_rand);
+        debugTesting(randUndirected, rand_others, se_4_rand);
+
+        System.out.println("\n*** test with directed ***\nFrom Matrix");
+        debugTesting2(matrixGraph, matrix_others, se_5_matrix);
+        System.out.println("\nFrom rand:");
+        debugTesting2(randGraph, rand_others, se_4_rand);
+
+
+        VF2GraphIsomorphismInspector isomorphismInspector = new VF2GraphIsomorphismInspector<>(matrixGraph,randGraph);
+        System.out.println("Iso exists for Directed: " + isomorphismInspector.isomorphismExists());
+
+        SimpleGraph<Integer,DefaultEdge> g_s_matrix = getG_s(matrixGraph);
+        SimpleGraph<Integer,DefaultEdge> g_s_rand = getG_s(randGraph);
+
+        System.out.println("\nTest from matrix:\n");
+        debugTesting(g_s_matrix, matrix_others, se_5_matrix);
+        System.out.println("\nTest from rand:\n");
+        debugTesting(g_s_rand, rand_others, se_4_rand);
+
+        VF2GraphIsomorphismInspector iso2 = new VF2GraphIsomorphismInspector<>(g_s_matrix,g_s_rand);
+        System.out.println("Iso exists for G_s: " + iso2.isomorphismExists());
+    }
+
+    static SimpleGraph<Integer,DefaultEdge> getG_s (DirectedGraph<Integer,DefaultEdge> inputGraph){
+        SimpleGraph<Integer,DefaultEdge> G_s = new SimpleGraph<>(DefaultEdge.class);
+        inputGraph.vertexSet().forEach( G_s::addVertex );
+        for (DefaultEdge edge : inputGraph.edgeSet()) {
+            int source = inputGraph.getEdgeSource(edge);
+            int target = inputGraph.getEdgeTarget(edge);
+            if (!G_s.containsEdge(source, target)) {
+                G_s.addEdge(source, target);
+            }
+        }
+        return G_s;
+    }
+
+    static void debugTesting(UndirectedGraph<Integer,DefaultEdge> graph, Set<Integer> otherVertices, List<Integer> moduleVertices){
 
         for (int i : otherVertices) {
             System.out.println("Checking: " + i + " with edges: " + graph.edgesOf(i));
@@ -150,10 +192,10 @@ public class Main {
             boolean hasEdge = false;
             for(int j : moduleVertices){
                 if(first){
-                    hasEdge = graph.getEdge(i,j) != null; // containsEdge(i, j)
+                    hasEdge = graph.containsEdge(i, j);
                     first = false;
                 } else {
-                    if ((graph.getEdge(i, j) == null) == hasEdge) { // containsEdge(i, j)
+                    if (hasEdge != graph.containsEdge(i, j)){
                         System.out.println("Error for edge {" + i + "," + j + "}, expected hasEdge == " + hasEdge);
                     }
                 }
@@ -289,9 +331,10 @@ public class Main {
 
     static void mdTest(){
         //String filePath = args[0];
-        String filePath = "importFiles/tedder_test0.txt";
+        String filePath = "ted_matrix_case.txt";
+        String filePath2 = "ted_rand_case.txt";
 
-        // old läuft korrekt.
+        System.out.println("*** Matrix case ***\n");
         GraphHandle g = new GraphHandle(filePath);
         String g_res = g.getMDTreeOld().toString();
         System.out.println("Old Code:\n" + MDTree.beautify(g_res));
@@ -299,7 +342,17 @@ public class Main {
         GraphHandle g2 = new GraphHandle(filePath);
         String g2_res = g2.getMDTree().toString();
         System.out.println("\nNew Code:\n" + MDTree.beautify(g2_res));
-        System.out.print(g2.getMDTree().getSetRepresentationAsStrings()+ "\n\n");
+
+        System.out.println("\n*** Rand case ***\n");
+
+        GraphHandle g3 = new GraphHandle(filePath);
+        String g3_res = g3.getMDTreeOld().toString();
+        System.out.println("Old Code:\n" + MDTree.beautify(g3_res));
+
+        GraphHandle g4 = new GraphHandle(filePath);
+        String g4_res = g4.getMDTree().toString();
+        System.out.println("\nNew Code:\n" + MDTree.beautify(g4_res));
+
     }
 
     void cplexTest() throws ExportException, IloException, IOException{
