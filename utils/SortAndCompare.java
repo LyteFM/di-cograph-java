@@ -4,6 +4,7 @@ import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
@@ -17,6 +18,18 @@ import dicograph.graphIO.IntegerVertexFactory;
  * Created by Fynn Leitow on 17.10.17.
  */
 public class SortAndCompare {
+
+    public static void shuffleList(Integer[] input, SecureRandom random){
+
+        int size = input.length;
+
+        for (int i = size-1; i >= 0; i--) {
+            int newIndex = random.nextInt(i+1);
+            int tmp = input[i];
+            input[i] = input[newIndex];
+            input[newIndex] = tmp;
+        }
+    }
 
     public static ArrayList<Set<Integer>> bucketSortBySize(ArrayList<Set<Integer>> input) {
 

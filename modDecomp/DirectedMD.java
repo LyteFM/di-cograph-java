@@ -174,6 +174,8 @@ public class DirectedMD {
         ArrayList<Integer> leafNumbers = new ArrayList<>(trueLeafOrder.size());
         trueLeafOrder.forEach( l ->  leafNumbers.add(l.getVertex()));
         log.info(() ->"Leaves ordered as factorizing permutation: " + leafNumbers);
+        log.info("Reordered Tree: " + MDTree.beautify(treeForH.toString()));
+
 
 
 

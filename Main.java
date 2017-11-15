@@ -10,13 +10,17 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.graph.SimpleGraph;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.file.Files;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
@@ -37,6 +41,7 @@ import dicograph.graphIO.TedFormatExporter;
 import dicograph.modDecomp.DirectedMD;
 import dicograph.modDecomp.GraphHandle;
 import dicograph.modDecomp.MDTree;
+import dicograph.utils.SortAndCompare;
 import dicograph.utils.VerySimpleFormatter;
 import ilog.concert.IloException;
 
@@ -94,26 +99,86 @@ public class Main {
         String weirdError = folder + "randDigraph_n_24_edits_8_11-14_18:05:20:306_original.txt";
         String test = "testy.txt";
 
-        //MDtestFromFile(log, weirdError,true);
-        //MDtestFromFile(log, test, false);
+        MDtestFromFile(log, weirdError,true);
+        MDtestFromFile(log, test, false);
 
 
-        File importFile = new File("testy.txt");
-        SimpleDirectedGraph<Integer, DefaultEdge> matrixGraph = SimpleMatrixImporter.importIntGraph( new File(weirdError));
-        SimpleDirectedGraph<Integer, DefaultEdge> randGraph = JGraphAdjecencyImporter.importIntGraph(importFile);
+//        File importFile = new File("testy.txt");
+//        SimpleDirectedGraph<Integer, DefaultEdge> matrixGraph = SimpleMatrixImporter.importIntGraph( new File(weirdError));
+//        SimpleDirectedGraph<Integer, DefaultEdge> randGraph = JGraphAdjecencyImporter.importIntGraph(importFile);
+//
+//        SecureRandom random = new SecureRandom();
+//        random.setSeed(new byte[17]);
+//
+//        Integer[] start = new Integer[24];
+//        for (int i = 0; i < 24; i++) {
+//            start[i] = i;
+//        }
+//
+//        for (int i = 0; i < 5; i++) {
+//            Integer[] permutation = permutation(start,random);
+//
+//            TedFormatExporter<Integer,DefaultEdge> tedXp = new TedFormatExporter<>();
+//            tedXp.setPermutation(permutation);
+//
+//            String filePath = "ted_matrix_case_" + i + ".txt";
+//            String filePath2 = "ted_rand_case_" +i + ".txt";
+//
+//            File expfile = new File(filePath);
+//            tedXp.exportGraph(getG_s(matrixGraph),expfile );
+//            File expfile2 = new File(filePath2);
+//            tedXp.exportGraph(getG_s(randGraph),expfile2);
+//
+//            mdTestCompareTwo(filePath, filePath2);
+//        }
 
-//        TedFormatExporter<Integer,DefaultEdge> tedXp = new TedFormatExporter<>();
-//        File expfile = new File("ted_matrix_case.txt");
-//        tedXp.exportGraph(getG_s(matrixGraph),expfile );
-//        File expfile2 = new File("ted_rand_case.txt");
-//        tedXp.exportGraph(getG_s(randGraph),expfile2);
 
         //testScenario(matrixGraph,randGraph);
 
-        mdTest();
+
+    }
+
+    static Integer[] permutation(Integer[] start, SecureRandom random){
 
 
+        SortAndCompare.shuffleList(start, random);
+        StringBuilder str = new StringBuilder("Permutation: ");
+        for (Integer aStart : start) {
+            str.append(aStart).append(", ");
+        }
+        System.out.println(str);
+        return start;
+    }
 
+    static void reorder(Integer[] permutation, String filePath){
+
+        File file = new File(filePath);
+        try( InputStream inStream = Files.newInputStream(file.toPath()) ) {
+            BufferedReader in = new BufferedReader(new InputStreamReader(inStream));
+            StringBuilder builder = new StringBuilder();
+            in.lines().forEach( line -> builder.append(line).append("\n") );
+            String oldContent = builder.toString();
+            String newContent = "";
+
+            for (int i = 0; i < permutation.length; i++) {
+                String oldPos = String.valueOf(i);
+                if(oldPos.length() == 1)
+                    oldPos = "0" + oldPos;
+                String newPos = String.valueOf(permutation[i]);
+                if(newPos.length() == 1)
+                    newPos = "0" + newPos;
+                newContent = oldContent.replaceAll(oldPos, newPos);
+            }
+
+            try (BufferedWriter writer = Files.newBufferedWriter(file.toPath())) {
+                writer.write(newContent, 0, newContent.length());
+            } catch (IOException x) {
+                System.err.format("IOException: %s%n", x);
+            }
+
+        } catch (IOException e){
+            System.err.format("IOException: %s%n", e);
+        }
     }
 
     static void MDtestFromFile(Logger log, String importFilePath, boolean matrix) throws Exception {
@@ -329,12 +394,18 @@ public class Main {
     }
 
 
-    static void mdTest(){
+    static void mdTestCompareTwo(String filePath, String filePath2){
         //String filePath = args[0];
-        String filePath = "ted_matrix_case.txt";
-        String filePath2 = "ted_rand_case.txt";
 
-        System.out.println("*** Matrix case ***\n");
+        System.out.println("*** Matrix case: file " + filePath + " ***\n");
+        mdTestOldNew(filePath);
+
+        System.out.println("\n*** Rand case: file " + filePath2 + " ***\n");
+
+        mdTestOldNew(filePath2);
+    }
+
+    static void mdTestOldNew(String filePath){
         GraphHandle g = new GraphHandle(filePath);
         String g_res = g.getMDTreeOld().toString();
         System.out.println("Old Code:\n" + MDTree.beautify(g_res));
@@ -342,17 +413,6 @@ public class Main {
         GraphHandle g2 = new GraphHandle(filePath);
         String g2_res = g2.getMDTree().toString();
         System.out.println("\nNew Code:\n" + MDTree.beautify(g2_res));
-
-        System.out.println("\n*** Rand case ***\n");
-
-        GraphHandle g3 = new GraphHandle(filePath);
-        String g3_res = g3.getMDTreeOld().toString();
-        System.out.println("Old Code:\n" + MDTree.beautify(g3_res));
-
-        GraphHandle g4 = new GraphHandle(filePath);
-        String g4_res = g4.getMDTree().toString();
-        System.out.println("\nNew Code:\n" + MDTree.beautify(g4_res));
-
     }
 
     void cplexTest() throws ExportException, IloException, IOException{
