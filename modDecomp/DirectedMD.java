@@ -232,6 +232,20 @@ public class DirectedMD {
         // todo: Brauche ich die corresp. TreeNode irgendwann? Muss hier auch die leaves mit Index abfragen. Könnte das BitSet auch an die Node schreiben.
         HashMap<BitSet, RootedTreeNode> nontrivModulesBoolA = T_a.getStrongModulesBool(leavesOfT_a);
         HashMap<BitSet, RootedTreeNode> nontrivModulesBoolB = T_b.getStrongModulesBool(leavesOfT_b);
+
+
+        // debug option: verify if the modules are correct.
+        if(debugMode){
+            String debug_T_a = T_a.verifyNodeTypes(G_s);
+            String debug_T_b = T_b.verifyNodeTypes(G_d);
+            if(!debug_T_a.isEmpty())
+                log.warning(() -> "Error in modules of G_s:\n" + debug_T_a );
+
+            if(!debug_T_b.isEmpty())
+                log.warning(() -> "Error in modules of G_d:\n" + debug_T_b);
+        }
+
+
         // other way round for later
 
 //        HashMap<RootedTreeNode, BitSet> modulesAToBitset = new HashMap<>(nontrivModulesBoolA.size() * 4 / 3);

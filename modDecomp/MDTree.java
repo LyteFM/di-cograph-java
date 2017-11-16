@@ -6,6 +6,10 @@ import org.jgrapht.graph.SimpleGraph;
 
 import java.util.BitSet;
 import java.util.HashMap;
+import java.util.Map;
+
+import dicograph.graphIO.NodeTypeTester;
+import dicograph.graphIO.UndirectedInducedIntSubgraph;
 
 /*
  * A modular decomposition tree of a simple, undirected graph.
@@ -55,6 +59,27 @@ public class MDTree extends RootedTree {
 
         return ret;
     }
+
+    // F.L. 16.11.17: Debug option (via moduleToTreenode)
+    public String verifyNodeTypes(UndirectedGraph<Integer,DefaultEdge> graph){
+
+        StringBuilder builder = new StringBuilder();
+
+        for(Map.Entry<BitSet,RootedTreeNode> moduleEntry : moduleToTreenode.entrySet() ){
+
+            MDTreeNode currNode = (MDTreeNode) moduleEntry.getValue(); // note: of course, I may only use one represantative.
+
+            UndirectedInducedIntSubgraph<DefaultEdge> subgraph = new UndirectedInducedIntSubgraph<>(graph, moduleEntry.getKey());
+            MDNodeType verified = NodeTypeTester.determineNodeType(subgraph,false);
+            if(verified != currNode.getType()){
+                builder.append("Wrong type ").append(verified).append(" for node: ").append(currNode).append("\n");
+            }
+
+        }
+
+        return builder.toString();
+    }
+
 
     /**
      * Makes the String representation of MDTree human-readable.

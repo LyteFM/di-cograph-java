@@ -22,7 +22,6 @@ public class NodeTypeTester {
             return MDNodeType.PARALLEL;
         } else {
             // series means degree = n-1 (or double for directed)
-            boolean firstRun = true;
             boolean valid = true;
             Set<Integer> vertices = subgraph.vertexSet();
             BitSet allOutDegs = new BitSet(vertices.size());
@@ -33,8 +32,9 @@ public class NodeTypeTester {
                 if (count != expectedCount) {
                     // also order needs n-1 touching vertices
                     valid = false;
+                    break;
                 }
-                if(directed && valid){
+                if(directed){
                     // for order: need all outdegs from 0 to n-1
                     int outDeg = 0;
                     for(DefaultEdge edge : touchingEdges){
@@ -56,8 +56,7 @@ public class NodeTypeTester {
                 }
                 return null; // shouldn't happen, at that point it's either series or order, right?
             }
-
+            return MDNodeType.PRIME;
         }
-        return MDNodeType.PRIME;
     }
 }

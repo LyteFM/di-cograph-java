@@ -2,28 +2,20 @@ package dicograph.modDecomp;
 
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.SimpleGraph;
-import org.jgrapht.graph.UndirectedSubgraph;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.ListIterator;
 import java.util.Set;
-
-import dicograph.graphIO.NodeTypeTester;
 
 /* 
  * A node in the recursion tree used to compute the modular decomposition tree
  * of a graph.
  */
 class RecSubProblem extends RootedTreeNode {
-
-	// F.L. 15.11.17: added to debug the false prime root error
-    private UndirectedGraph<Integer,DefaultEdge> g;
 
 	// Is the recursive subproblem connected by edges to its sibling subproblems.
 	private boolean connected;
@@ -57,8 +49,6 @@ class RecSubProblem extends RootedTreeNode {
 		connected = copy.connected;
 		active = copy.active;
 		pivot = copy.pivot;
-
-
 	}
 	
 	
@@ -116,8 +106,6 @@ class RecSubProblem extends RootedTreeNode {
 	RecSubProblem(UndirectedGraph<Integer, DefaultEdge> graph){
 
 	    this();
-
-	    g = graph;
 
 	    // Initial capacity for no rehash
         HashMap <Integer, MDTreeLeafNode> nodeToLeaves = new HashMap<>( graph.vertexSet().size()*4/3 );
@@ -236,18 +224,8 @@ class RecSubProblem extends RootedTreeNode {
 		// have already been pivots for calculation of alpha-lists 
 		// (see 'processNeighbours').
 		thisProblem.clearAllButVisited();
-
-		// F.L. 15.11.17: verify node type.
-        MDTreeNode returnNode = (MDTreeNode) thisProblem.getFirstChild();
-        LinkedHashSet<Integer> leafValues = new LinkedHashSet<>();
-        returnNode.getLeaves().forEach( l -> leafValues.add( ((MDTreeLeafNode) l).vertexNo) );
-        UndirectedSubgraph<Integer,DefaultEdge> subgraph = new UndirectedSubgraph<>(g,leafValues);
-        MDNodeType testedType = NodeTypeTester.determineNodeType(subgraph,false);
-        if(testedType != returnNode.getType())
-            System.err.println("Expected node type " + returnNode.getType() + " but got " + testedType + " from subgraph:\n" + subgraph);
-
-
-		return returnNode;
+				
+		return (MDTreeNode) thisProblem.getFirstChild();			
 	}
 	
 	
