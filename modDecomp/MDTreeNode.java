@@ -104,6 +104,7 @@ class MDTreeNode extends RootedTreeNode {
             }
         }
 
+        vertices = ret;
         return ret;
     }
 

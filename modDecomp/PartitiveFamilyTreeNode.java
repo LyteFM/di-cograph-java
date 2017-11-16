@@ -27,7 +27,6 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
     int re_X;
     int lc_X;
     int rc_X;
-    private BitSet vertices;
     private boolean isModuleInG;
     private MDNodeType type;
     private DirectedInducedIntSubgraph<DefaultEdge> inducedPartialSubgraph;
@@ -38,7 +37,6 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
     PartitiveFamilyTreeNode(){
         super();
         isModuleInG = false;
-        vertices = null;
         type = null;
     }
 
@@ -322,7 +320,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                 if(currentChild.isALeaf()) {
                     anyVertex = ((PartitiveFamilyLeafNode) currentChild).getVertex();
                 } else {
-                    anyVertex = currentChild.getVertices().nextSetBit(0);
+                    anyVertex = currentChild.vertices.nextSetBit(0);
                 }
                 int vertexPosition = positionInPermutation[anyVertex];
 
@@ -543,9 +541,6 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         return isModuleInG;
     }
 
-    public BitSet getVertices() {
-        return vertices;
-    }
 
     public String toString() {
 

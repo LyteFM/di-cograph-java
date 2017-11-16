@@ -5,6 +5,7 @@ import org.jgrapht.UndirectedGraph;
 import org.jgrapht.graph.SimpleGraph;
 
 import java.util.BitSet;
+import java.util.Collection;
 
 /**
  * Created by Fynn Leitow on 16.11.17.
@@ -13,12 +14,12 @@ public class UndirectedInducedIntSubgraph<E> extends SimpleGraph<Integer,E> {
 
     final Graph<Integer,E> base;
 
-    public UndirectedInducedIntSubgraph(Graph<Integer, E> baseGraph,  BitSet vertices){
+    public UndirectedInducedIntSubgraph(Graph<Integer, E> baseGraph, Collection<Integer> vertices){
         super(baseGraph.getEdgeFactory());
         base = baseGraph;
 
         // adds the vertices
-        vertices.stream().forEach( this::addVertex );
+        vertices.forEach( this::addVertex );
 
         // adds edges to vertices that are contained in this subgraph
         for( int vertex : vertexSet()){

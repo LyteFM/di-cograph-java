@@ -11,7 +11,11 @@ import java.util.List;
  * A node in a rooted tree.
  */
 class RootedTreeNode {
-    // F.L. 30.10. Flags for directedMD:
+	// F.L. 16.11.17: moved here
+	protected BitSet vertices;
+
+
+	// F.L. 30.10. Flags for directedMD:
     boolean marked;
     int numMarkedChildren;
     int nodeNumber;
@@ -47,6 +51,8 @@ class RootedTreeNode {
         numMarkedChildren = 0;
         nodeNumber = 0;
         // end
+        vertices = null;
+
     }
 
     // F.L. 30.10. Flags for Algorithm 1:

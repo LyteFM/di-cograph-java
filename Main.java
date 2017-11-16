@@ -38,6 +38,7 @@ import dicograph.graphIO.JGraphAdjecencyImporter;
 import dicograph.graphIO.SimpleMatrixExporter;
 import dicograph.graphIO.SimpleMatrixImporter;
 import dicograph.graphIO.TedFormatExporter;
+import dicograph.graphIO.UndirectedInducedIntSubgraph;
 import dicograph.modDecomp.DirectedMD;
 import dicograph.modDecomp.GraphHandle;
 import dicograph.modDecomp.MDTree;
@@ -99,13 +100,13 @@ public class Main {
         String weirdError = folder + "randDigraph_n_24_edits_8_11-14_18:05:20:306_original.txt";
         String test = "testy.txt";
 
-        MDtestFromFile(log, weirdError,true);
-        MDtestFromFile(log, test, false);
+        //MDtestFromFile(log, weirdError,true);
+        //MDtestFromFile(log, test, false);
 
 
-//        File importFile = new File("testy.txt");
-//        SimpleDirectedGraph<Integer, DefaultEdge> matrixGraph = SimpleMatrixImporter.importIntGraph( new File(weirdError));
-//        SimpleDirectedGraph<Integer, DefaultEdge> randGraph = JGraphAdjecencyImporter.importIntGraph(importFile);
+        File importFile = new File("testy.txt");
+        SimpleDirectedGraph<Integer, DefaultEdge> matrixGraph = SimpleMatrixImporter.importIntGraph( new File(weirdError));
+        SimpleDirectedGraph<Integer, DefaultEdge> randGraph = JGraphAdjecencyImporter.importIntGraph(importFile);
 //
 //        SecureRandom random = new SecureRandom();
 //        random.setSeed(new byte[17]);
@@ -133,7 +134,7 @@ public class Main {
 //        }
 
 
-        //testScenario(matrixGraph,randGraph);
+        testScenario(matrixGraph,randGraph);
 
 
     }
@@ -197,8 +198,29 @@ public class Main {
     }
 
     static void testScenario(DirectedGraph<Integer,DefaultEdge> matrixGraph, DirectedGraph<Integer,DefaultEdge> randGraph){
-        AsUndirectedGraph<Integer,DefaultEdge> matrixUndirected = new AsUndirectedGraph<>(randGraph);
-        AsUndirectedGraph<Integer,DefaultEdge> randUndirected = new AsUndirectedGraph<>(matrixGraph);
+        //AsUndirectedGraph<Integer,DefaultEdge> matrixUndirected = new AsUndirectedGraph<>(randGraph);
+        //AsUndirectedGraph<Integer,DefaultEdge> randUndirected = new AsUndirectedGraph<>(matrixGraph);
+        // same here as in MD
+        SimpleGraph <Integer,DefaultEdge> matrixUndirected = new SimpleGraph<>(DefaultEdge.class);
+        matrixGraph.vertexSet().forEach(  matrixUndirected::addVertex );
+        for (DefaultEdge edge : matrixGraph.edgeSet()) {
+            int source = matrixGraph.getEdgeSource(edge);
+            int target = matrixGraph.getEdgeTarget(edge);
+            if (!matrixUndirected.containsEdge(source, target)) {
+                matrixUndirected.addEdge(source, target);
+            }
+        }
+
+        SimpleGraph <Integer,DefaultEdge> randUndirected = new SimpleGraph<>(DefaultEdge.class);
+        randGraph.vertexSet().forEach(  randUndirected::addVertex );
+        for (DefaultEdge edge : randGraph.edgeSet()) {
+            int source = randGraph.getEdgeSource(edge);
+            int target = randGraph.getEdgeTarget(edge);
+            if (!randUndirected.containsEdge(source, target)) {
+                randUndirected.addEdge(source, target);
+            }
+        }
+
 
         System.out.println("Testing: from matrix");
 

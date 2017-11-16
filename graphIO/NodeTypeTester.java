@@ -13,7 +13,7 @@ import dicograph.modDecomp.MDNodeType;
  */
 public class NodeTypeTester {
 
-    public static MDNodeType determineNodeType(Graph<Integer,DefaultEdge> subgraph, boolean directed){
+    public static MDNodeType determineNodeType(Graph<Integer,DefaultEdge> subgraph, boolean directed, boolean logThis){
 
         Set<DefaultEdge> subEdgeSet = subgraph.edgeSet();
 
@@ -25,9 +25,13 @@ public class NodeTypeTester {
             boolean valid = true;
             Set<Integer> vertices = subgraph.vertexSet();
             BitSet allOutDegs = new BitSet(vertices.size());
-            int expectedCount = vertices.size();
+            int expectedCount = vertices.size() -1;
+            if(logThis)
+                System.out.println("Vertex Set of root: " + vertices);
             for(int vertex : vertices){
                 Set<DefaultEdge> touchingEdges = subgraph.edgesOf(vertex);
+                if(logThis)
+                    System.out.println("Edges of " + vertex + ": " + touchingEdges);
                 int count = touchingEdges.size();
                 if (count != expectedCount) {
                     // also order needs n-1 touching vertices

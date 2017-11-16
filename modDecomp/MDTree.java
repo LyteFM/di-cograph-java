@@ -6,6 +6,7 @@ import org.jgrapht.graph.SimpleGraph;
 
 import java.util.BitSet;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 
 import dicograph.graphIO.NodeTypeTester;
@@ -64,13 +65,33 @@ public class MDTree extends RootedTree {
     public String verifyNodeTypes(UndirectedGraph<Integer,DefaultEdge> graph){
 
         StringBuilder builder = new StringBuilder();
+        LinkedList<RootedTreeNode> allNodes = new LinkedList<>(moduleToTreenode.values());
+        allNodes.add(root);
 
-        for(Map.Entry<BitSet,RootedTreeNode> moduleEntry : moduleToTreenode.entrySet() ){
+        for(RootedTreeNode node : allNodes ){
 
-            MDTreeNode currNode = (MDTreeNode) moduleEntry.getValue(); // note: of course, I may only use one represantative.
+            MDTreeNode currNode = (MDTreeNode) node; // note: of course, I may only use one represantative.
+            LinkedList<Integer> childRepresentatives = new LinkedList<>();
+            RootedTreeNode currChild = currNode.getFirstChild();
+            while (currChild != null){
+                int anyVertex;
+                if(currChild.isALeaf()) {
+                    anyVertex = ((MDTreeLeafNode) currChild).getVertexNo();
+                } else {
+                    anyVertex = currChild.vertices.nextSetBit(0);
+                }
+                if(anyVertex >= 0)
+                    childRepresentatives.add(anyVertex);
+                else
+                    throw new IllegalStateException("No valid child vertex found for "+ currChild);
 
-            UndirectedInducedIntSubgraph<DefaultEdge> subgraph = new UndirectedInducedIntSubgraph<>(graph, moduleEntry.getKey());
-            MDNodeType verified = NodeTypeTester.determineNodeType(subgraph,false);
+                currChild = currChild.getRightSibling();
+            }
+
+
+            UndirectedInducedIntSubgraph<DefaultEdge> subgraph = new UndirectedInducedIntSubgraph<>(graph, childRepresentatives);
+
+            MDNodeType verified = NodeTypeTester.determineNodeType(subgraph,false,node.isRoot());
             if(verified != currNode.getType()){
                 builder.append("Wrong type ").append(verified).append(" for node: ").append(currNode).append("\n");
             }
