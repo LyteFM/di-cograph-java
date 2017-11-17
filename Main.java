@@ -90,8 +90,13 @@ public class Main {
         //mdTest();
         //DirectedMD.dahlhausProcessDelegator("OverlapComponentProg/test3_neu.txt");
 
+        boolean morePls = true;
+        while (morePls){
+            morePls = directedMDTesting(log,consoleHandler,10,5,false);
+        }
+
 //        for( int i = 20; i <= 30; i ++) {
-//            directedMDTesting(log, consoleHandler, i, i/3);
+//            directedMDTesting(log, consoleHandler, i, i/2,true);
 //        }
 
         String folder = "testGraphs/";
@@ -100,14 +105,18 @@ public class Main {
         String weirdError = folder + "randDigraph_n_24_edits_8_11-14_18:05:20:306_original.txt";
         String test = "testy.txt";
 
-        //MDtestFromFile(log, weirdError,true);
-        //MDtestFromFile(log, test, false);
+//        System.out.println("From Matrix:\n\n");
+//        MDtestFromFile(log, weirdError,true);
+//        System.out.println("From rand:\n\n");
+//        MDtestFromFile(log, test, false);
 
 
         File importFile = new File("testy.txt");
         SimpleDirectedGraph<Integer, DefaultEdge> matrixGraph = SimpleMatrixImporter.importIntGraph( new File(weirdError));
         SimpleDirectedGraph<Integer, DefaultEdge> randGraph = JGraphAdjecencyImporter.importIntGraph(importFile);
 //
+
+
 //        SecureRandom random = new SecureRandom();
 //        random.setSeed(new byte[17]);
 //
@@ -134,7 +143,7 @@ public class Main {
 //        }
 
 
-        testScenario(matrixGraph,randGraph);
+        //testScenario(matrixGraph,randGraph);
 
 
     }
@@ -310,8 +319,9 @@ public class Main {
         }
     }
 
-    static SimpleDirectedGraph<Integer, DefaultEdge> directedMDTesting(Logger log, Handler baseHandler, int nVertices, int nDisturb) throws Exception{
+    static boolean directedMDTesting(Logger log, Handler baseHandler, int nVertices, int nDisturb, boolean solveILP) throws Exception{
 
+        boolean ok = true;
         String timeStamp = new SimpleDateFormat("MM-dd_HH:mm:ss:SSS").format(Calendar.getInstance().getTime());
 
         GraphGenerator gen = new GraphGenerator(log);
@@ -335,12 +345,21 @@ public class Main {
         log.addHandler(fileHandler);
 
         System.out.println("Started modular decomposition");
-        DirectedMD testMD = new DirectedMD(g_d, log, true);
-        testMD.computeModularDecomposition();
+
+        try {
+            DirectedMD testMD = new DirectedMD(g_d, log, true);
+            testMD.computeModularDecomposition();
+        } catch (IllegalStateException | AssertionError e){
+            ok = false;
+            e.printStackTrace();
+        }
+
+
+
         System.out.println("Finished modular decomposition. Log written to:");
         System.out.println(filePath+ ".log");
 
-        if(nVertices + nDisturb <= 50){
+        if(solveILP){
             // compute the solution via ILP
             System.out.println("*** Starting ILP-Solver ***");
             int [] parameters = {0,0}; // one solution
@@ -358,7 +377,7 @@ public class Main {
         fileHandler.close();
         log.removeHandler(fileHandler);
 
-        return g_d;
+        return ok;
 
     }
 

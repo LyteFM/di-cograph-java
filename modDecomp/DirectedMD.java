@@ -234,15 +234,22 @@ public class DirectedMD {
         HashMap<BitSet, RootedTreeNode> nontrivModulesBoolB = T_b.getStrongModulesBool(leavesOfT_b);
 
 
-        // debug option: verify if the modules are correct.
+        // debug option: verify if the modules are correct (kills linearity).
         if(debugMode){
             String debug_T_a = T_a.verifyNodeTypes(G_s);
             String debug_T_b = T_b.verifyNodeTypes(G_d);
-            if(!debug_T_a.isEmpty())
-                log.warning(() -> "Error in modules of G_s:\n" + debug_T_a );
+            String msg = "";
+            if(!debug_T_a.isEmpty()) {
+                msg = "Error in modules of G_s:\n" + debug_T_a;
+            }
 
-            if(!debug_T_b.isEmpty())
-                log.warning(() -> "Error in modules of G_d:\n" + debug_T_b);
+            if(!debug_T_b.isEmpty()) {
+                msg += "\n\nError in modules of G_d:\n" + debug_T_b;
+            }
+            if(!msg.isEmpty()){
+                log.severe(msg);
+                throw new IllegalStateException(msg);
+            }
         }
 
 

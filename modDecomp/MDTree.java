@@ -2,14 +2,11 @@ package dicograph.modDecomp;
 
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.SimpleGraph;
 
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map;
 
-import dicograph.graphIO.NodeTypeTester;
 import dicograph.graphIO.UndirectedInducedIntSubgraph;
 
 /*
@@ -90,11 +87,8 @@ public class MDTree extends RootedTree {
 
 
             UndirectedInducedIntSubgraph<DefaultEdge> subgraph = new UndirectedInducedIntSubgraph<>(graph, childRepresentatives);
-
-            MDNodeType verified = NodeTypeTester.determineNodeType(subgraph,false,node.isRoot());
-            if(verified != currNode.getType()){
-                builder.append("Wrong type ").append(verified).append(" for node: ").append(currNode).append("\n");
-            }
+            String verificationResult = MDNodeType.verifyNodeType(false,subgraph, graph,currNode.getType(), childRepresentatives, currNode);
+            builder.append(verificationResult);
 
         }
 
