@@ -186,6 +186,15 @@ class MDTreeLeafNode extends MDTreeNode {
     }
 
     @Override
+	int exportAsDot(StringBuilder output, int[] counter){
+	    counter[0]++;
+		int myCounter = counter[0];
+		output.append(myCounter).append("[label=v").append(vertexNo).append("];\n");
+		return myCounter;
+	}
+
+
+		@Override
     public String getSetRepresentation(ArrayList<String> bla) {
         return Integer.toString(vertexNo);
     }

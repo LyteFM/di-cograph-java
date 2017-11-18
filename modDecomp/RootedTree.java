@@ -143,6 +143,16 @@ class RootedTree {
         return ret;
     }
 
+    // F.L. 18.11.17: export Tree as .dot
+    public String exportAsDot(){
+        StringBuilder output = new StringBuilder("digraph G {\n");
+        int[] counter = new int[1];
+        counter[0] = -1;
+        root.exportAsDot(output,counter);
+        output.append("}\n");
+        return output.toString();
+    }
+
 
 
 

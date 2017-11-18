@@ -15,7 +15,7 @@ class RootedTreeNode {
 	protected BitSet vertices;
 
 
-	// F.L. 30.10. Flags for directedMD:
+	// F.L. 30.10. Flags for directedMD, should go there.
     boolean marked;
     int numMarkedChildren;
     int nodeNumber;
@@ -385,6 +385,38 @@ class RootedTreeNode {
 
 	    return thisNodesMembers;
     }
+
+     int exportAsDot(StringBuilder output, int[] counter){
+
+         // first action: increment the counter, used for this
+         counter[0] ++;
+         // assign the number to this node
+         int myNumber = counter[0];
+
+         String label;
+         if(this instanceof MDTreeNode){
+             label = ((MDTreeNode) this).getType().toString();
+         } else if(this instanceof PartitiveFamilyTreeNode){
+             label = ((PartitiveFamilyTreeNode)this).getType().toString();
+         } else {
+             label = vertices.toString();
+         }
+
+         output.append(myNumber).append("[label=").append(label).append("];\n");
+
+         RootedTreeNode currentChild = firstChild;
+         while (currentChild != null){
+             // add edge from this to no of child
+             // increment happens as first step
+
+             int childNo = currentChild.exportAsDot(output, counter);
+             output.append(myNumber).append("->").append(childNo).append( ";\n");
+             currentChild = currentChild.rightSibling;
+         }
+
+         return myNumber;
+
+	}
 
 
 

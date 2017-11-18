@@ -90,10 +90,14 @@ public class Main {
         //mdTest();
         //DirectedMD.dahlhausProcessDelegator("OverlapComponentProg/test3_neu.txt");
 
-        boolean morePls = true;
-        while (morePls){
-            morePls = directedMDTesting(log,consoleHandler,10,5,false);
-        }
+//        boolean morePls = true;
+//        while (morePls){
+//            morePls = directedMDTesting(log,consoleHandler,10,5,false);
+//        }
+
+        String fromPaper = "fromFactPermPaper.txt";
+        SimpleDirectedGraph<Integer, DefaultEdge> paperGraph = JGraphAdjecencyImporter.importIntGraph(new File(fromPaper));
+        System.out.println(paperGraph);
 
 //        for( int i = 20; i <= 30; i ++) {
 //            directedMDTesting(log, consoleHandler, i, i/2,true);
@@ -105,10 +109,10 @@ public class Main {
         String weirdError = folder + "randDigraph_n_24_edits_8_11-14_18:05:20:306_original.txt";
         String test = "testy.txt";
 
-//        System.out.println("From Matrix:\n\n");
-//        MDtestFromFile(log, weirdError,true);
-//        System.out.println("From rand:\n\n");
-//        MDtestFromFile(log, test, false);
+        System.out.println("From Matrix:\n\n");
+        MDtestFromFile(log, weirdError,true);
+        System.out.println("From rand:\n\n");
+        MDtestFromFile(log, test, false);
 
 
         File importFile = new File("testy.txt");

@@ -24,6 +24,7 @@ public enum MDNodeType {
 		return (this == PARALLEL || this == SERIES);
 	}
 
+
 	// F.L. 17.11.17: added verification methods
 
 	public static String verifyNodeType(boolean isDirected, Graph<Integer,DefaultEdge> subgraph, Graph<Integer,DefaultEdge> mainGraph,

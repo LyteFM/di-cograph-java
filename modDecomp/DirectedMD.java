@@ -145,7 +145,9 @@ public class DirectedMD {
         MDTree treeForG_d = new MDTree(G_d);
         MDTree treeForG_s = new MDTree(G_s);
         log.info("md for G_d:\n" + MDTree.beautify(treeForG_d.toString()));
+        log.fine("DOT for G_d:\n" + treeForG_s.exportAsDot());
         log.info("md for G_s:\n" + MDTree.beautify(treeForG_s.toString()));
+        log.fine("DOT for G_s:\n" + treeForG_s.exportAsDot());
 
         // Step 3: Find T(H) = T(G_s) Λ T(G_d)
 

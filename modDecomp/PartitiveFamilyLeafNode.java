@@ -36,4 +36,12 @@ public class PartitiveFamilyLeafNode extends PartitiveFamilyTreeNode {
         rc_X = positionInPermutation[vertex];
         return new Pair<>(lc_X,rc_X);
     }
+
+    @Override
+    int exportAsDot(StringBuilder output, int[] counter){
+        counter[0]++;
+        int myCounter = counter[0];
+        output.append(myCounter).append("[label=v").append(vertex).append("];\n");
+        return myCounter;
+    }
 }

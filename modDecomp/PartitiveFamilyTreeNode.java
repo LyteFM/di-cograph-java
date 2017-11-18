@@ -562,4 +562,8 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         }
         return result.append(')').toString();
     }
+
+    public MDNodeType getType() {
+        return type;
+    }
 }
