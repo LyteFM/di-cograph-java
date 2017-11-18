@@ -180,7 +180,7 @@ public class PartitiveFamilyTree extends RootedTree {
 
                 // the first entry of the list always gets the leaf attached.
                 if (firstEntry) {
-                    currTreenode.addChild(leafNode);
+                    currTreenode.addChild(leafNode); // no need to change bitset
                     allLeafs[vertexNr] = leafNode;
                     firstEntry = false;
                 }
@@ -201,7 +201,7 @@ public class PartitiveFamilyTree extends RootedTree {
 
                     // add parent if current treenode has no parent
                     if (currTreenode.isRoot()) {
-                        parentTreeNode.addChild(currTreenode);
+                        parentTreeNode.addChild(currTreenode); // no need to update bitset here, they are already set.
                         relationCount++;
                         log.fine("Vertex " + vertexNr + ": Rel " + relationCount + ": child " + currModule + " to parent " + parentModule);
                     }

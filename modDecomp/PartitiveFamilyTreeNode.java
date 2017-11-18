@@ -53,8 +53,8 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             log.fine(() -> type + ": computing fact perm of tournament " + inducedPartialSubgraph);
             List<Pair<Integer,Integer>> perfectFactPerm = perfFactPermFromTournament.apply(inducedPartialSubgraph);
             // results are real vertices in a new order (first) and their outdegree (second).
-            // need to verify if the node is really order - or merged.
             log.fine(() -> type + ": reordering and splitting merged modules according to permutation: " + perfectFactPerm);
+            // ok: if a merged module has been split, it's children are processed later :)
             reorderAccordingToPerfFactPerm(perfectFactPerm, log);
         } else if (type.isDegenerate() && isModuleInG){ // todo: really only with the flag?
             log.fine(() -> type + " ");
@@ -213,48 +213,36 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         }
 
 
-        // ordering is still valid, but might need to split merged module.
 
 
 
-        // retrieve the new ordering, skipping merged nodes
-        boolean before = true;
         boolean first = true;
         boolean recoverMerged = !primeMemberIndexInPerm.isEmpty();
         BitSet trueModule;
-        PartitiveFamilyTreeNode newNode = null;
-        if(recoverMerged){
-            trueModule = new BitSet();
-            newNode = new PartitiveFamilyTreeNode(trueModule);
-            type = MDNodeType.PRIME;
+        PartitiveFamilyTreeNode newNode;
+        trueModule = new BitSet();
+        newNode = new PartitiveFamilyTreeNode(trueModule);
 
-        }
-
-
-
-
+        // ordering is still valid, but might need to split merged module.
         ArrayList<PartitiveFamilyTreeNode> orderedChildren = new ArrayList<>(getNumChildren());
         for(int i = 0; i< orderedNodes.length; i++){
             PartitiveFamilyTreeNode node = orderedNodes[i];
 
             if(recoverMerged){
-                addChild(newNode);
 
                 if(primeMemberIndexInPerm.containsKey(i)){
                     orderedChildren.add(node);
                 } else {
                     newNode.addChild(node); // also removes it from the current node.
                     if(node.isALeaf()){
-                        newNode.vertices.set( perfFactPerm.get(i).getFirst()); // todo: need more here
+                        newNode.vertices.set(perfFactPerm.get(i).getFirst());
                     } else {
                         newNode.vertices.or( node.vertices );
                     }
 
                     if(first){
-                        orderedNodes[i] = newNode;
+                        orderedChildren.add(newNode);
                         first = false;
-                    } else {
-                        orderedNodes[i] = null;
                     }
                 }
 
@@ -264,8 +252,14 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             }
         }
 
-        if(recoverMerged)
-            vertices.andNot( newNode.vertices );
+        if (recoverMerged) {
+            type = MDNodeType.PRIME;
+            newNode.type = MDNodeType.ORDER;
+            newNode.inducedPartialSubgraph = new DirectedInducedIntSubgraph<>(inducedPartialSubgraph.getBase(), newNode.vertices);
+            // todo: does it need any other properties? like LC/RC?
+            addChild(newNode);
+            log.fine(() -> "new child created: " + newNode.toString());
+        }
 
         log.fine( () -> type + " Reordering children of " + toString());
         log.fine( () -> type + " according to: " + orderedChildren.toString() );
@@ -303,7 +297,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
 
             // skip singletons
-            if(cPartition.size() > 1) {
+            if (cPartition.size() > 1 && partitions.size() < n) {
                 // neighborhood N_- and N_+:
                 Set <DefaultEdge> incoming = tournament.incomingEdgesOf(realVertexNo);
 
@@ -351,11 +345,6 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                         vertexToPartition.put(vNo, outNeigbors); // todo: or still update???
                     }
                 }
-
-                // done.
-                if (partitions.size() == n) {
-                    break;
-                }
             }
         }
 
@@ -366,7 +355,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                 throw new IllegalStateException("Error: invalid element " + singleton + " of partitions: " + partitions + "\nvertexToPartition: " + vertexToPartition);
             } else {
                 int realVertexNo = singleton.stream().findFirst().get();
-                ret.add(new Pair<>(realVertexNo, vertexToOutdegree.get(realVertexNo)));
+                ret.add(new Pair<>(realVertexNo, vertexToOutdegree.get(realVertexNo))); // todo: habe ich hier bereits die ungültigen???
             }
         }
 

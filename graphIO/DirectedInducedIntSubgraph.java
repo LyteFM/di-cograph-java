@@ -84,4 +84,7 @@ public class DirectedInducedIntSubgraph<E> extends SimpleDirectedGraph<Integer, 
         return true;
     }
 
+    public DirectedGraph<Integer, E> getBase() {
+        return base;
+    }
 }
