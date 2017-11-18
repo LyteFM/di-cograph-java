@@ -16,13 +16,16 @@ import java.util.StringTokenizer;
  */
 public class JGraphAdjecencyImporter {
 
+    public static SimpleDirectedGraph<Integer, DefaultEdge> importIntGraph(File file){
+        return importIntGraph(file,false);
+    }
     /**
      * Creates a directed Graph from the format of DirectedGraph.toString() in JGraphT. Note: You
      * need to separate edges and values by a newline after the "],".
      * @param file
      * @return
      */
-    public static SimpleDirectedGraph<Integer, DefaultEdge> importIntGraph(File file) {
+    public static SimpleDirectedGraph<Integer, DefaultEdge> importIntGraph(File file, boolean startAtOne) {
 
         try(InputStream inStream = Files.newInputStream(file.toPath())) {
             BufferedReader in = new BufferedReader(new InputStreamReader(inStream));
@@ -59,6 +62,8 @@ public class JGraphAdjecencyImporter {
 
 
             }
+            if(startAtOne)
+                vertex++;
 
             if(vertexLine != null && edgeLine != null) {
                 for (StringTokenizer toki = new StringTokenizer(vertexLine, ", "); toki.hasMoreTokens(); ) {

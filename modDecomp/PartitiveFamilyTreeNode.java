@@ -51,8 +51,10 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             BitSet[] outNeighbors, BitSet[] inNeighbors, List<PartitiveFamilyLeafNode> orderedLeaves, int[] positionInPermutation){
         if(type == MDNodeType.ORDER){
             log.fine(() -> type + ": computing fact perm of tournament " + inducedPartialSubgraph);
-            List<Integer> perfectFactPerm = perfFactPermFromTournament.apply(inducedPartialSubgraph); // results are real vertices in a new order
-            log.fine(() -> type + ": reordering according to permutation: " + perfectFactPerm);
+            List<Pair<Integer,Integer>> perfectFactPerm = perfFactPermFromTournament.apply(inducedPartialSubgraph);
+            // results are real vertices in a new order (first) and their outdegree (second).
+            // need to verify if the node is really order - or merged.
+            log.fine(() -> type + ": reordering and splitting merged modules according to permutation: " + perfectFactPerm);
             reorderAccordingToPerfFactPerm(perfectFactPerm, log);
         } else if (type.isDegenerate() && isModuleInG){ // todo: really only with the flag?
             log.fine(() -> type + " ");
@@ -128,7 +130,8 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                     break;
                 case 2:
                     type = MDNodeType.ORDER;
-                    assert inducedPartialSubgraph.isTournament() : type + " but node not a tournament: " + toString();
+                    //assert inducedPartialSubgraph.isTournament() : type + " but node not a tournament: " + toString();
+                    // todo: Hier können merged modules vorkommen. Jetzt oder später filtern!
                     break;
             }
 
@@ -144,7 +147,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
      * reorders the children of this vertex accound to the perfect factorizing permutation
      * @param perfFactPerm the computed perfect factorizing permutation of the corresponding tournament
      */
-    private void reorderAccordingToPerfFactPerm(List<Integer> perfFactPerm, Logger log){
+    private void reorderAccordingToPerfFactPerm(List<Pair<Integer,Integer>> perfFactPerm, Logger log){
 
         if( type != MDNodeType.ORDER ){
             throw new IllegalStateException("Wrong type in step 5: " + type + " for node:\n" + toString());
@@ -152,9 +155,28 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
         int sz = perfFactPerm.size();
         HashMap<Integer,Integer> positionInPermutation = new HashMap<>(sz*4/3);
+
+        // detect merged modules here. According to Th3 of the fact.perm. paper, the "true" module appears consecutively
+        // therefore, there is only room for mergers at start end end of the fact.perm.
+        int outScore = sz - 1;
+        HashMap<Integer,Integer> primeMemberIndexInPerm = new HashMap<>();
+
         for(int i = 0; i<sz; i++){
-            positionInPermutation.put(perfFactPerm.get(i), i);
+            Pair<Integer,Integer> element = perfFactPerm.get(i);
+            int vertex = element.getFirst();
+            positionInPermutation.put(vertex, i);
+
+            int outDeg = element.getSecond();
+            if(outScore !=outDeg){
+                // if it's not the expected score, you're out. need to verify if that's enough, though.
+                log.fine(() -> "Detected merged vertex: " + vertex + ", outDegree " + outDeg );
+                primeMemberIndexInPerm.put(i,vertex);
+            }
+
+            outScore --;
         }
+
+
 
         PartitiveFamilyTreeNode[] orderedNodes = new PartitiveFamilyTreeNode[sz];
 
@@ -189,12 +211,62 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                 currentChild = (PartitiveFamilyTreeNode) currentChild.getRightSibling();
             }
         }
-        // retrieve the new ordering
-        ArrayList<PartitiveFamilyTreeNode> orderedChildren = new ArrayList<>(getNumChildren());
-        for(PartitiveFamilyTreeNode node : orderedNodes){
-            if(node != null)
-                orderedChildren.add(node);
+
+
+        // ordering is still valid, but might need to split merged module.
+
+
+
+        // retrieve the new ordering, skipping merged nodes
+        boolean before = true;
+        boolean first = true;
+        boolean recoverMerged = !primeMemberIndexInPerm.isEmpty();
+        BitSet trueModule;
+        PartitiveFamilyTreeNode newNode = null;
+        if(recoverMerged){
+            trueModule = new BitSet();
+            newNode = new PartitiveFamilyTreeNode(trueModule);
+            type = MDNodeType.PRIME;
+
         }
+
+
+
+
+        ArrayList<PartitiveFamilyTreeNode> orderedChildren = new ArrayList<>(getNumChildren());
+        for(int i = 0; i< orderedNodes.length; i++){
+            PartitiveFamilyTreeNode node = orderedNodes[i];
+
+            if(recoverMerged){
+                addChild(newNode);
+
+                if(primeMemberIndexInPerm.containsKey(i)){
+                    orderedChildren.add(node);
+                } else {
+                    newNode.addChild(node); // also removes it from the current node.
+                    if(node.isALeaf()){
+                        newNode.vertices.set( perfFactPerm.get(i).getFirst()); // todo: need more here
+                    } else {
+                        newNode.vertices.or( node.vertices );
+                    }
+
+                    if(first){
+                        orderedNodes[i] = newNode;
+                        first = false;
+                    } else {
+                        orderedNodes[i] = null;
+                    }
+                }
+
+            } else {
+                //if (node != null) todo: warum darf das?
+                orderedChildren.add(node);
+            }
+        }
+
+        if(recoverMerged)
+            vertices.andNot( newNode.vertices );
+
         log.fine( () -> type + " Reordering children of " + toString());
         log.fine( () -> type + " according to: " + orderedChildren.toString() );
         reorderChildren(orderedChildren);
@@ -202,12 +274,12 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
     /**
      * Computes a perfect factorizing permutation of the given tournament.
-     * Assertion if it is a tournament - already verified.
+     * Assertion if it is a tournament - already verified. todo: may be a merged module!!! will it be in order here???
+     * "The ordering of the vertices in σ is exactly the ordering induced by the order node, otherwise there would exist some cutter."
      */
-    private Function<SimpleDirectedGraph<Integer, DefaultEdge>, List<Integer>> perfFactPermFromTournament = tournament -> {
+    private Function<SimpleDirectedGraph<Integer, DefaultEdge>, List<Pair<Integer,Integer>>> perfFactPermFromTournament = tournament -> {
 
         int n = tournament.vertexSet().size();
-        ArrayList<Integer> ret = new ArrayList<>(n);
         HashMap<Integer, Collection<Integer>> vertexToPartition = new HashMap<>(n*4/3);
         ArrayList<Collection<Integer>> partitions = new ArrayList<>(n);
         // init: P_0 = V. This also defines the vertex Indices.
@@ -217,19 +289,25 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             vertexToPartition.put(vertex, VList);
         }
 
+        //neuer Ansatz für merged modules:
+        HashMap<Integer,Integer> vertexToOutdegree = new HashMap<>(n*4/3);
+
         for(int i = 0; i<n; i++){
 
             int realVertexNo = VList.get(i); // unnecessary, if int-vertices from 0 to n-1. necessary, if arbitrary.
             Collection<Integer> cPartition = vertexToPartition.get(realVertexNo);
-            int partitionsIndex = partitions.indexOf(cPartition);
+            int partitionsIndex = partitions.indexOf(cPartition); // todo: ouch, linearity :/
+
+            Set <DefaultEdge> outgoing = tournament.outgoingEdgesOf(realVertexNo);
+            vertexToOutdegree.put(realVertexNo,outgoing.size());
+
 
             // skip singletons
             if(cPartition.size() > 1) {
                 // neighborhood N_- and N_+:
-                Set<DefaultEdge> incoming = tournament.incomingEdgesOf(realVertexNo);
-                Set <DefaultEdge> outgoing = tournament.outgoingEdgesOf(realVertexNo);
+                Set <DefaultEdge> incoming = tournament.incomingEdgesOf(realVertexNo);
 
-                assert incoming.size() + outgoing.size() == n-1 : "Not a tournament: " + tournament;
+                assert incoming.size() + outgoing.size() == n-1 : "Not a tournament: " + tournament; // not enough :) true for merger
 
                 HashSet<Integer> inNeighbors = new HashSet<>(incoming.size()*4/3);
                 for( DefaultEdge edge : incoming){
@@ -281,11 +359,14 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             }
         }
 
+        ArrayList<Pair<Integer,Integer>> ret = new ArrayList<>(n);
+
         for(Collection<Integer> singleton : partitions){
             if(singleton.size() != 1) {
                 throw new IllegalStateException("Error: invalid element " + singleton + " of partitions: " + partitions + "\nvertexToPartition: " + vertexToPartition);
             } else {
-                ret.add(singleton.stream().findFirst().get());
+                int realVertexNo = singleton.stream().findFirst().get();
+                ret.add(new Pair<>(realVertexNo, vertexToOutdegree.get(realVertexNo)));
             }
         }
 

@@ -39,6 +39,7 @@ public class DirectedMD {
 
     final MDTreeLeafNode[] leavesOfT_a;
     final MDTreeLeafNode[] leavesOfT_b;
+    List<PartitiveFamilyTreeNode> orderNodes; // they can be merged modules and in fact contain primes.
 
 
 
@@ -155,7 +156,7 @@ public class DirectedMD {
 
         // I guess I should determine which node-type there is:
         treeForH.computeAllNodeTypes(this);
-        log.info("Inclusion Tree: " + MDTree.beautify(treeForH.toString()));
+        log.info("Inclusion Tree with computed types: " + MDTree.beautify(treeForH.toString()));
 
 
         // Step 4: At each O-complete and 1-complete node X of T(H), order the children s.t.
@@ -177,6 +178,7 @@ public class DirectedMD {
         trueLeafOrder.forEach( l ->  leafNumbers.add(l.getVertex()));
         log.info(() ->"Leaves ordered as factorizing permutation: " + leafNumbers);
         log.info("Reordered Tree: " + MDTree.beautify(treeForH.toString()));
+        log.info("As .dot:\n" + treeForH.exportAsDot());
 
 
 
@@ -205,7 +207,7 @@ public class DirectedMD {
     }
 
 
-    private PartitiveFamilyTree intersectPartitiveFamiliesOf(MDTree T_a, MDTree T_b) throws InterruptedException,IOException{
+    private PartitiveFamilyTree intersectPartitiveFamiliesOf(MDTree of_Gs_T_a, MDTree of_Gd_T_b) throws InterruptedException,IOException{
 
         // Notes from section 2:
 
@@ -232,14 +234,14 @@ public class DirectedMD {
         // much better than my current approach with BitSets of size n :)
 
         // todo: Brauche ich die corresp. TreeNode irgendwann? Muss hier auch die leaves mit Index abfragen. Könnte das BitSet auch an die Node schreiben.
-        HashMap<BitSet, RootedTreeNode> nontrivModulesBoolA = T_a.getStrongModulesBool(leavesOfT_a);
-        HashMap<BitSet, RootedTreeNode> nontrivModulesBoolB = T_b.getStrongModulesBool(leavesOfT_b);
+        HashMap<BitSet, RootedTreeNode> nontrivModulesBoolA = of_Gs_T_a.getStrongModulesBool(leavesOfT_a);
+        HashMap<BitSet, RootedTreeNode> nontrivModulesBoolB = of_Gd_T_b.getStrongModulesBool(leavesOfT_b);
 
 
         // debug option: verify if the modules are correct (kills linearity).
         if(debugMode){
-            String debug_T_a = T_a.verifyNodeTypes(G_s);
-            String debug_T_b = T_b.verifyNodeTypes(G_d);
+            String debug_T_a = of_Gs_T_a.verifyNodeTypes(G_s);
+            String debug_T_b = of_Gd_T_b.verifyNodeTypes(G_d);
             String msg = "";
             if(!debug_T_a.isEmpty()) {
                 msg = "Error in modules of G_s:\n" + debug_T_a;
@@ -355,10 +357,12 @@ public class DirectedMD {
         HashMap<RootedTreeNode, RootedTreeNode> elementOfAToP_a = new HashMap<>();
         HashMap<RootedTreeNode, RootedTreeNode> elementOfBToP_b = new HashMap<>();
 
+        log.fine("Computing nodes with complete Parent for Tree T_a of G_s");
         HashMap<RootedTreeNode, BitSet> elementsOfA = computeNodesWithCompleteParent(
                 bitsetToOverlapTreenNode, true, elementOfAToP_a);
 
         // Reinitialize and Compute P_b
+        log.fine("Computing nodes with complete Parent for Tree T_B of G_d");
         HashMap<RootedTreeNode, BitSet> elementsOfB = computeNodesWithCompleteParent(
                 bitsetToOverlapTreenNode,false, elementOfBToP_b);
 

@@ -4,6 +4,7 @@ package dicograph;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.alg.isomorphism.VF2GraphIsomorphismInspector;
+import org.jgrapht.ext.DOTExporter;
 import org.jgrapht.ext.ExportException;
 import org.jgrapht.graph.AsUndirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
@@ -96,8 +97,12 @@ public class Main {
 //        }
 
         String fromPaper = "fromFactPermPaper.txt";
-        SimpleDirectedGraph<Integer, DefaultEdge> paperGraph = JGraphAdjecencyImporter.importIntGraph(new File(fromPaper));
+        SimpleDirectedGraph<Integer, DefaultEdge> paperGraph = JGraphAdjecencyImporter.importIntGraph(new File(fromPaper),false);
         System.out.println(paperGraph);
+        DOTExporter<Integer,DefaultEdge> exporter =new DOTExporter<>();
+        exporter.exportGraph(paperGraph, new File(fromPaper+ ".dot"));
+        DirectedMD paperMD = new DirectedMD(paperGraph, log, true);
+        paperMD.computeModularDecomposition();
 
 //        for( int i = 20; i <= 30; i ++) {
 //            directedMDTesting(log, consoleHandler, i, i/2,true);
@@ -109,10 +114,10 @@ public class Main {
         String weirdError = folder + "randDigraph_n_24_edits_8_11-14_18:05:20:306_original.txt";
         String test = "testy.txt";
 
-        System.out.println("From Matrix:\n\n");
-        MDtestFromFile(log, weirdError,true);
-        System.out.println("From rand:\n\n");
-        MDtestFromFile(log, test, false);
+//        System.out.println("From Matrix:\n\n");
+//        MDtestFromFile(log, weirdError,true);
+//        System.out.println("From rand:\n\n");
+//        MDtestFromFile(log, test, false);
 
 
         File importFile = new File("testy.txt");

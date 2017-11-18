@@ -111,7 +111,7 @@ public class PartitiveFamilyTree extends RootedTree {
         // Step 0: eliminate doubles from input and add root, if not yet present.
         HashSet<BitSet> inputSetNoDoubles = new HashSet<>(inputSet);
         if (inputSetNoDoubles.size() != inputSet.size()) {
-            log.info("Double entry in input for inclusion tree - possible merge in overlap components.");
+            log.fine("Double entry in input for inclusion tree");
         }
         ArrayList<BitSet> inputNodeList = new ArrayList<>(inputSetNoDoubles);
 
