@@ -1,6 +1,5 @@
 package dicograph.graphIO;
 
-import org.jgrapht.DirectedGraph;
 import org.jgrapht.Graph;
 import org.jgrapht.VertexFactory;
 import org.jgrapht.generate.EmptyGraphGenerator;

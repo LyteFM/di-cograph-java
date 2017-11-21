@@ -1,7 +1,7 @@
 package dicograph.graphIO;
 
 import org.jgrapht.Graph;
-import org.jgrapht.ext.GraphExporter;
+import org.jgrapht.io.GraphExporter;
 
 import java.io.PrintWriter;
 import java.io.Writer;

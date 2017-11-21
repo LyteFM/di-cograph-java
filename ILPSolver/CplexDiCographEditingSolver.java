@@ -1,7 +1,5 @@
 package dicograph.ILPSolver;
 
-import org.jgrapht.DirectedGraph;
-import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
@@ -73,7 +71,7 @@ public class CplexDiCographEditingSolver {
 
 
     // input data. Also works, if has self-loops (will be ignored)
-    DirectedGraph<Integer, DefaultEdge> inputGraph;
+    SimpleDirectedGraph<Integer, DefaultEdge> inputGraph;
     TreeSet<Integer> sortedVertexSet;
     // parameters
     int [] parameters;

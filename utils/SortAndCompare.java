@@ -1,6 +1,5 @@
 package dicograph.utils;
 
-import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
@@ -84,7 +83,7 @@ public class SortAndCompare {
      * @param outgoing true for outgoing, false for incoming edges
      * @return the edges sorted according to the permutation
      */
-    public static BitSet[] edgesSortedByPerm(List<Integer> permutation, int[] positionInPermutation,  DirectedGraph<Integer, DefaultEdge> g, boolean outgoing){
+    public static BitSet[] edgesSortedByPerm(List<Integer> permutation, int[] positionInPermutation,  SimpleDirectedGraph<Integer, DefaultEdge> g, boolean outgoing){
 
         BitSet[] retSets = new BitSet[g.vertexSet().size()];
         int n = permutation.size();

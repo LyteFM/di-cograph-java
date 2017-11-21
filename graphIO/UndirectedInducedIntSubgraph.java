@@ -1,7 +1,6 @@
 package dicograph.graphIO;
 
 import org.jgrapht.Graph;
-import org.jgrapht.UndirectedGraph;
 import org.jgrapht.graph.SimpleGraph;
 
 import java.util.BitSet;

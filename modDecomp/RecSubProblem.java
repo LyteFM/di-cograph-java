@@ -1,7 +1,7 @@
 package dicograph.modDecomp;
 
-import org.jgrapht.UndirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.SimpleGraph;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -98,12 +98,13 @@ class RecSubProblem extends RootedTreeNode {
 		while (leafIt.hasNext()) {			
 			MDTreeLeafNode current = leafIt.next();
 			addChild(current);
-		}
+            System.out.println("New child: " + current);
+        }
 				
 	}
 
 	// F.L. 04.09.2017:
-	RecSubProblem(UndirectedGraph<Integer, DefaultEdge> graph){
+	RecSubProblem(SimpleGraph<Integer, DefaultEdge> graph){
 
 	    this();
 
@@ -139,6 +140,7 @@ class RecSubProblem extends RootedTreeNode {
         // Add leaf nodes to the problem for recursion: (move to the upper loop?)
         for( MDTreeLeafNode leafNode : nodeToLeaves.values()){
             addChild(leafNode);
+            System.out.println("added child: " + leafNode.vertexNo);
         }
 
         String debug = "deb";
@@ -174,14 +176,19 @@ class RecSubProblem extends RootedTreeNode {
 						
 			processNeighbours(pivot);
 			pivot.setVisited();
-						
-			return (MDTreeNode) this.getFirstChild(); 
+
+            System.out.println("Only one Child: " + getFirstChild());
+
+            return (MDTreeNode) this.getFirstChild();
 		}
 									
 		// Pivot this subproblem and refine the subproblems in the rest of 
 		// the recursion tree.  See note of 'pivot' for the required introduction
 		// of 'thisProblem'.
 		RecSubProblem thisProblem = pivot();
+
+        System.out.println("Pivot: " + thisProblem);
+
 		
 		
 		// Solve the subproblems defined by the layers.
@@ -198,6 +205,8 @@ class RecSubProblem extends RootedTreeNode {
 		// MD trees later.
 		MDTreeNode extraComponents = 
 			thisProblem.removeExtraComponents();
+
+        //System.out.println("Extra Components: " + extraComponents);
 
 		// Replace the layers by their solutions.
 		thisProblem.removeLayers();
@@ -224,6 +233,8 @@ class RecSubProblem extends RootedTreeNode {
 		// have already been pivots for calculation of alpha-lists 
 		// (see 'processNeighbours').
 		thisProblem.clearAllButVisited();
+
+		System.out.println((MDTreeNode) thisProblem.getFirstChild());
 				
 		return (MDTreeNode) thisProblem.getFirstChild();			
 	}
@@ -1218,8 +1229,9 @@ class RecSubProblem extends RootedTreeNode {
 					
 		MDTreeLeafNode pivot = (MDTreeLeafNode) getFirstChild();
 		pivot.setVisited();
-	 
-		RecSubProblem neighbourProblem = processNeighbours(pivot);
+        System.out.println("Pivot Vertex: " + pivot);
+
+        RecSubProblem neighbourProblem = processNeighbours(pivot);
 						
 		pivot.removeSubtree();
 		RecSubProblem pivotProblem = new RecSubProblem(pivot);

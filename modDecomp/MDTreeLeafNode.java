@@ -158,7 +158,7 @@ class MDTreeLeafNode extends MDTreeNode {
 	 */
 	public String toString() {
 	    if(vertex != null)
-		    return vertex.toString();
+		    return String.format("(no= %s)", vertex.getLabel());
 	    else{ // F.L.
 //            StringBuilder result = new StringBuilder("(no= " + vertexNo);
 

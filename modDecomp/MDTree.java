@@ -1,11 +1,21 @@
 package dicograph.modDecomp;
 
-import org.jgrapht.UndirectedGraph;
+import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.SimpleDirectedGraph;
+import org.jgrapht.alg.util.Pair;
+import org.jgrapht.graph.SimpleGraph;
+import org.jgrapht.io.DOTImporter;
+import org.jgrapht.io.ImportException;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 
 import dicograph.graphIO.UndirectedInducedIntSubgraph;
 
@@ -23,7 +33,7 @@ public class MDTree extends RootedTree {
 		setRoot(buildMDTree(graphHandle));
 	}
 
-	public MDTree(UndirectedGraph<Integer,DefaultEdge> jGraph) {
+	public MDTree(SimpleGraph<Integer,DefaultEdge> jGraph) {
 		super();
 		setRoot( buildMDTree(jGraph) );
 	}
@@ -59,7 +69,7 @@ public class MDTree extends RootedTree {
     }
 
     // F.L. 16.11.17: Debug option (via moduleToTreenode)
-    public String verifyNodeTypes(UndirectedGraph<Integer,DefaultEdge> graph){
+    public String verifyNodeTypes(SimpleGraph<Integer,DefaultEdge> graph){
 
         StringBuilder builder = new StringBuilder();
         LinkedList<RootedTreeNode> allNodes = new LinkedList<>(moduleToTreenode.values());
@@ -141,7 +151,7 @@ public class MDTree extends RootedTree {
 
 
 	// F.L. new: use JGraph
-	private MDTreeNode buildMDTree(UndirectedGraph<Integer, DefaultEdge> g) {
+	private MDTreeNode buildMDTree(SimpleGraph<Integer, DefaultEdge> g) {
 
 		if (g.vertexSet().isEmpty()){
 			return null;
@@ -153,4 +163,27 @@ public class MDTree extends RootedTree {
 		root.clearVisited();
 		return root;
 	}
+
+
+
+	public static MDTree readFromDot(File dotFile) throws IOException, ImportException{
+
+        SimpleDirectedGraph< Integer ,DefaultEdge> treeGraph = new SimpleDirectedGraph<>(DefaultEdge.class);
+        HashMap<Integer,String> noToLabel = new HashMap<>();
+
+        DOTImporter<Integer,DefaultEdge> importer = new DOTImporter<>(
+                (label, attributes) -> { int no = Integer.valueOf(label); noToLabel.put(no,attributes.get("label").getValue()); return no;
+                }
+                ,
+                (from, to, label, attributes) -> treeGraph.addEdge(from, to) );
+        importer.importGraph(treeGraph, dotFile );
+        System.out.println(treeGraph);
+
+
+        MDTree ret = new MDTree();
+
+        return ret;
+    }
+
+
 }

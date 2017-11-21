@@ -1,10 +1,11 @@
 package dicograph.graphIO;
 
 import org.jgrapht.Graph;
-import org.jgrapht.ext.GraphExporter;
+import org.jgrapht.io.GraphExporter;
 
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -46,12 +47,19 @@ public class TedFormatExporter<V,E> implements GraphExporter<V,E> {
 
         String name;
         if (nameToVertex.isEmpty()) {
+
+            HashMap<Integer,Integer> vNumToPos = new HashMap<>();
+            for (int i = 0; i < permutation.length; i++) {
+                vNumToPos.put(permutation[i],i);
+            }
+
             for (V vertex : g.vertexSet()) {
                 // Map vertex names to vertex objects by their String representation
                 // And consider the permutation, if one was provided
                 name = vertex.toString();
                 int vertexNo = Integer.valueOf(name);
-                int permutedNo = permutation[vertexNo];
+                int permutedIndex = vNumToPos.get(vertexNo);
+                int permutedNo = permutation[permutedIndex];
                 name = String.valueOf(permutedNo);
 
                 if(name.length() == 1){

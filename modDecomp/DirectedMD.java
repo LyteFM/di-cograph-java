@@ -1,10 +1,8 @@
 package dicograph.modDecomp;
 
-import org.jgrapht.graph.AsUndirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.graph.SimpleGraph;
-import org.jgrapht.graph.UnmodifiableDirectedGraph;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -29,7 +27,7 @@ import java.util.logging.Logger;
  */
 public class DirectedMD {
 
-    final UnmodifiableDirectedGraph<Integer, DefaultEdge> inputGraph;
+    final SimpleDirectedGraph<Integer, DefaultEdge> inputGraph;
     final Logger log;
     final int nVertices;
     SimpleGraph<Integer, DefaultEdge> G_s;
@@ -45,7 +43,7 @@ public class DirectedMD {
 
     public DirectedMD(SimpleDirectedGraph<Integer, DefaultEdge> input, Logger logger, boolean debugMode){
 
-        inputGraph = new UnmodifiableDirectedGraph<>(input);
+        inputGraph = input;
         log = logger;
         nVertices = input.vertexSet().size();
         leavesOfT_a = new MDTreeLeafNode[nVertices];
@@ -139,11 +137,13 @@ public class DirectedMD {
         //    E_H(u,v) = 1 if {u,v} edge (i.e. edge in both G_s and G_d)
         //    E_H(u,v) = 2 if (u,v) or (v,u) simple arc (i.e. edge in G_s but not G_d)
 
-        log.info("computing md for G_d and G_s");
+        log.info("computing md for G_d:");
 
         // Step 2: T(G_d) and T(G_s) with algorithm for undirected graphs
 
         MDTree treeForG_d = new MDTree(G_d);
+        log.info("computing md for G_s:");
+
         MDTree treeForG_s = new MDTree(G_s);
         log.info("md for G_d:\n" + MDTree.beautify(treeForG_d.toString()));
         log.fine("DOT for G_d:\n" + treeForG_s.exportAsDot());

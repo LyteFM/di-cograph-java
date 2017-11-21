@@ -1,6 +1,5 @@
 package dicograph.graphIO;
 
-import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
 import java.util.BitSet;
@@ -14,7 +13,7 @@ import java.util.TreeSet;
 public class DirectedInducedIntSubgraph<E> extends SimpleDirectedGraph<Integer, E>
 {
 
-    final DirectedGraph<Integer, E> base;
+    final SimpleDirectedGraph<Integer, E> base;
 //    //
 //    public DirectedInducedIntSubgraph(EdgeFactory<Integer, E> ef)
 //    {
@@ -25,7 +24,7 @@ public class DirectedInducedIntSubgraph<E> extends SimpleDirectedGraph<Integer, 
 //        this(new ClassBasedEdgeFactory<>(edgeClass));
 //    }
 
-    public DirectedInducedIntSubgraph(DirectedGraph<Integer, E> baseGraph,  BitSet vertices){
+    public DirectedInducedIntSubgraph(SimpleDirectedGraph<Integer, E> baseGraph,  BitSet vertices){
         super(baseGraph.getEdgeFactory());
         base = baseGraph;
 
@@ -44,7 +43,7 @@ public class DirectedInducedIntSubgraph<E> extends SimpleDirectedGraph<Integer, 
         }
     }
 
-    public DirectedInducedIntSubgraph(DirectedGraph<Integer, E> baseGraph, List<Integer> vertices){
+    public DirectedInducedIntSubgraph(SimpleDirectedGraph<Integer, E> baseGraph, List<Integer> vertices){
         super(baseGraph.getEdgeFactory());
         base = baseGraph;
 
@@ -84,7 +83,7 @@ public class DirectedInducedIntSubgraph<E> extends SimpleDirectedGraph<Integer, 
         return true;
     }
 
-    public DirectedGraph<Integer, E> getBase() {
+    public SimpleDirectedGraph<Integer, E> getBase() {
         return base;
     }
 }

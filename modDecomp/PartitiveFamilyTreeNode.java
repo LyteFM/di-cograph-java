@@ -54,11 +54,17 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             List<Pair<Integer,Integer>> perfectFactPerm = perfFactPermFromTournament.apply(inducedPartialSubgraph);
             // results are real vertices in a new order (first) and their outdegree (second).
             log.fine(() -> type + ": reordering and splitting merged modules according to permutation: " + perfectFactPerm);
-            // ok: if a merged module has been split, it's children are processed later :)
+            // ok: if a merged module has been split, it's children are processed later
             reorderAccordingToPerfFactPerm(perfectFactPerm, log);
-        } else if (type.isDegenerate() && isModuleInG){ // todo: really only with the flag?
-            log.fine(() -> type + " ");
-            computeEquivalenceClassesAndReorderChildren(log, outNeighbors, inNeighbors, orderedLeaves, positionInPermutation);
+        } else if (type.isDegenerate()){
+            // todo: really only with the flag? how do I delete weak modules? How about merged modules here?
+            if(isModuleInG) {
+                log.fine(() -> type + " ");
+                computeEquivalenceClassesAndReorderChildren(log, outNeighbors, inNeighbors, orderedLeaves, positionInPermutation);
+            } else {
+                // how to delete weak modules?
+                throw new IllegalStateException("Weak module found: " + this);
+            }
         }
 
         PartitiveFamilyTreeNode currentChild = (PartitiveFamilyTreeNode) getFirstChild();
@@ -301,7 +307,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                 // neighborhood N_- and N_+:
                 Set <DefaultEdge> incoming = tournament.incomingEdgesOf(realVertexNo);
 
-                assert incoming.size() + outgoing.size() == n-1 : "Not a tournament: " + tournament; // not enough :) true for merger
+                assert incoming.size() + outgoing.size() == n-1 : "Not a tournament: " + tournament; // may be still true for merger. Happened in small tError.
 
                 HashSet<Integer> inNeighbors = new HashSet<>(incoming.size()*4/3);
                 for( DefaultEdge edge : incoming){

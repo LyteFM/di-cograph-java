@@ -1,7 +1,7 @@
 package dicograph.modDecomp;
 
-import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.SimpleDirectedGraph;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -45,7 +45,7 @@ public class PartitiveFamilyTree extends RootedTree {
         rootNode.determineNodeType(data);
     }
 
-    public void computeFactorizingPermutationAndReorderAccordingly(Logger log, DirectedGraph<Integer,DefaultEdge> inputGraph, int nVertices){
+    public void computeFactorizingPermutationAndReorderAccordingly(Logger log, SimpleDirectedGraph<Integer,DefaultEdge> inputGraph, int nVertices){
 
         // First step: order the leaves in accordance of their left-right appearance in the Tree
         List<PartitiveFamilyLeafNode> orderedLeaves = new ArrayList<>(nVertices);
@@ -93,7 +93,7 @@ public class PartitiveFamilyTree extends RootedTree {
 
         // remember: X is a module iff le(X) == lc(X) and re(X) == rc(X)
         // next step: use N_{+} and N_{-} to separate the children of a 0/1-complete node that is a module into R_X-classes
-        // todo: according to step 5, I can select any representative of its children. Is my subgraph okay???
+        // According to step 5, I can select any representative of its children, as they have uniform relationship to other nodes
         rootNode.reorderAllInnerNodes( log, sortedOutEgdes, sortedInEdges,  orderedLeaves, positionInPermutation);
 
     }

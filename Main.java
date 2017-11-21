@@ -1,15 +1,11 @@
 package dicograph;
 
 
-import org.jgrapht.DirectedGraph;
-import org.jgrapht.UndirectedGraph;
 import org.jgrapht.alg.isomorphism.VF2GraphIsomorphismInspector;
-import org.jgrapht.ext.DOTExporter;
-import org.jgrapht.ext.ExportException;
-import org.jgrapht.graph.AsUndirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.graph.SimpleGraph;
+import org.jgrapht.io.ExportException;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -22,8 +18,10 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -39,7 +37,6 @@ import dicograph.graphIO.JGraphAdjecencyImporter;
 import dicograph.graphIO.SimpleMatrixExporter;
 import dicograph.graphIO.SimpleMatrixImporter;
 import dicograph.graphIO.TedFormatExporter;
-import dicograph.graphIO.UndirectedInducedIntSubgraph;
 import dicograph.modDecomp.DirectedMD;
 import dicograph.modDecomp.GraphHandle;
 import dicograph.modDecomp.MDTree;
@@ -96,13 +93,15 @@ public class Main {
 //            morePls = directedMDTesting(log,consoleHandler,10,5,false);
 //        }
 
+
         String fromPaper = "fromFactPermPaper.txt";
-        SimpleDirectedGraph<Integer, DefaultEdge> paperGraph = JGraphAdjecencyImporter.importIntGraph(new File(fromPaper),false);
-        System.out.println(paperGraph);
-        DOTExporter<Integer,DefaultEdge> exporter =new DOTExporter<>();
-        exporter.exportGraph(paperGraph, new File(fromPaper+ ".dot"));
-        DirectedMD paperMD = new DirectedMD(paperGraph, log, true);
-        paperMD.computeModularDecomposition();
+//        SimpleDirectedGraph<Integer, DefaultEdge> paperGraph = JGraphAdjecencyImporter.importIntGraph(new File(fromPaper),false);
+//        System.out.println(paperGraph);
+//        DOTExporter<Integer,DefaultEdge> exporter =new DOTExporter<>();
+//        exporter.exportGraph(paperGraph, new File(fromPaper+ ".dot"));
+//        DirectedMD paperMD = new DirectedMD(paperGraph, log, true);
+//        paperMD.computeModularDecomposition();
+
 
 //        for( int i = 20; i <= 30; i ++) {
 //            directedMDTesting(log, consoleHandler, i, i/2,true);
@@ -114,10 +113,21 @@ public class Main {
         String weirdError = folder + "randDigraph_n_24_edits_8_11-14_18:05:20:306_original.txt";
         String test = "testy.txt";
 
-//        System.out.println("From Matrix:\n\n");
-//        MDtestFromFile(log, weirdError,true);
+
 //        System.out.println("From rand:\n\n");
 //        MDtestFromFile(log, test, false);
+//        System.out.println("From Matrix:\n\n");
+//        MDtestFromFile(log, weirdError,true);
+
+        // Error-files
+        String errgraph = folder + "randDigraph_n_7_edits_3_11-17_14:04:24:233_original.txt";
+
+
+
+
+
+
+
 
 
         File importFile = new File("testy.txt");
@@ -126,30 +136,47 @@ public class Main {
 //
 
 
-//        SecureRandom random = new SecureRandom();
-//        random.setSeed(new byte[17]);
-//
-//        Integer[] start = new Integer[24];
-//        for (int i = 0; i < 24; i++) {
+        SecureRandom random = new SecureRandom();
+        random.setSeed(new byte[17]);
+
+        int sz = 10;
+
+//        Integer[] start = new Integer[sz];
+//        for (int i = 0; i < sz; i++) {
 //            start[i] = i;
 //        }
 //
 //        for (int i = 0; i < 5; i++) {
-//            Integer[] permutation = permutation(start,random);
+//            Integer[] permutation = randPermutation(start,random);
 //
 //            TedFormatExporter<Integer,DefaultEdge> tedXp = new TedFormatExporter<>();
 //            tedXp.setPermutation(permutation);
 //
-//            String filePath = "ted_matrix_case_" + i + ".txt";
-//            String filePath2 = "ted_rand_case_" +i + ".txt";
+////            String filePath = "ted_matrix_case_" + i + ".txt";
+////            String filePath2 = "ted_rand_case_" +i + ".txt";
+////
+////            File expfile = new File(filePath);
+////            tedXp.exportGraph(getG_s(matrixGraph),expfile );
+////            File expfile2 = new File(filePath2);
+////            tedXp.exportGraph(getG_s(randGraph),expfile2);
 //
-//            File expfile = new File(filePath);
-//            tedXp.exportGraph(getG_s(matrixGraph),expfile );
-//            File expfile2 = new File(filePath2);
-//            tedXp.exportGraph(getG_s(randGraph),expfile2);
+//
+//            String expPath = "ted_md10_error-" + i + ".txt";
+//            System.out.println(expPath);
+//            File exporty = new File(expPath);
+//
+//            tedXp.exportGraph(getG_s(mderr10G), exporty);
 //
 //            mdTestCompareTwo(filePath, filePath2);
+//            mdTestOldNew(expPath);
+//
+//            start = permutation;
 //        }
+
+        MDTree.readFromDot(new File("MD/build/G_s_paper.dot"));
+
+        List<Integer> integers = Arrays.asList(1,2,3,4);
+        allPermutations(integers);
 
 
         //testScenario(matrixGraph,randGraph);
@@ -157,7 +184,49 @@ public class Main {
 
     }
 
-    static Integer[] permutation(Integer[] start, SecureRandom random){
+    static void md10test() throws Exception{
+        String folder = "testGraphs/";
+
+        String mderror_10 = folder + "randDigraph_n_10_edits_5_11-17_13:54:28:564_original.txt";
+        //MDtestFromFile(log, mderror_10,true);
+
+        SimpleDirectedGraph<Integer, DefaultEdge> mderr10G = SimpleMatrixImporter.importIntGraph( new File(mderror_10));
+        System.out.println(getG_s(mderr10G).toString());
+
+
+        for( int i : Arrays.asList(6,5)){
+            mderr10G.removeVertex(i);
+        }
+        List<Integer> vertices = new ArrayList<>(mderr10G.vertexSet());
+        List<List<Integer>> all = allPermutations(vertices);
+        System.out.println("Total: " + all.size());
+
+        int permNum = 0;
+        for( List<Integer> perm : all){
+            permNum++;
+            if(permNum % 100 != 0)
+                continue;
+            System.out.println("Permutation number: " + permNum);
+            Integer[] permutation = new Integer[perm.size()];
+            int count = 0;
+            for( int i : perm){
+                permutation[count] = i;
+                count++;
+            }
+            TedFormatExporter<Integer,DefaultEdge> tedXp = new TedFormatExporter<>();
+            tedXp.setPermutation(permutation);
+            String expPath = "ted_md10Cut" + 0 + ".txt";
+            System.out.println(expPath);
+            File exporty = new File(expPath);
+
+            tedXp.exportGraph(getG_s(mderr10G), exporty);
+
+            mdTestOldNew(expPath);
+
+        }
+    }
+
+    static Integer[] randPermutation(Integer[] start, SecureRandom random){
 
 
         SortAndCompare.shuffleList(start, random);
@@ -167,6 +236,42 @@ public class Main {
         }
         System.out.println(str);
         return start;
+    }
+
+    static List<List<Integer>> allPermutations(List<Integer> elements){
+        int size = elements.size();
+        int permCount = factorial(size);
+        ArrayList<List<Integer>> ret = new ArrayList<>(permCount);
+
+
+        perm1(new LinkedList<>(), elements,ret);
+
+        return ret;
+
+
+
+    }
+
+    private static void perm1(List<Integer> pre, List<Integer> list,List<List<Integer>> allLists){
+        int n = list.size();
+        if(n==0)
+            allLists.add(pre);
+        else{
+            for (int i = 0; i < n; i++) {
+                ArrayList<Integer> prefix = new ArrayList<>(pre);
+                prefix.add(list.get(i));
+                ArrayList<Integer> newList = new ArrayList<>(list.subList(0,i));
+                newList.addAll(list.subList(i+1,n));
+                perm1(prefix, newList,allLists);
+            }
+        }
+    }
+
+    static int factorial(int n){
+        if(n==1)
+            return 1;
+        else
+            return n*factorial(n-1);
     }
 
     static void reorder(Integer[] permutation, String filePath){
@@ -215,7 +320,7 @@ public class Main {
 
     }
 
-    static void testScenario(DirectedGraph<Integer,DefaultEdge> matrixGraph, DirectedGraph<Integer,DefaultEdge> randGraph){
+    static void testScenario(SimpleDirectedGraph<Integer,DefaultEdge> matrixGraph, SimpleDirectedGraph<Integer,DefaultEdge> randGraph){
         //AsUndirectedGraph<Integer,DefaultEdge> matrixUndirected = new AsUndirectedGraph<>(randGraph);
         //AsUndirectedGraph<Integer,DefaultEdge> randUndirected = new AsUndirectedGraph<>(matrixGraph);
         // same here as in MD
@@ -275,7 +380,7 @@ public class Main {
         System.out.println("Iso exists for G_s: " + iso2.isomorphismExists());
     }
 
-    static SimpleGraph<Integer,DefaultEdge> getG_s (DirectedGraph<Integer,DefaultEdge> inputGraph){
+    static SimpleGraph<Integer,DefaultEdge> getG_s (SimpleDirectedGraph<Integer,DefaultEdge> inputGraph){
         SimpleGraph<Integer,DefaultEdge> G_s = new SimpleGraph<>(DefaultEdge.class);
         inputGraph.vertexSet().forEach( G_s::addVertex );
         for (DefaultEdge edge : inputGraph.edgeSet()) {
@@ -288,7 +393,7 @@ public class Main {
         return G_s;
     }
 
-    static void debugTesting(UndirectedGraph<Integer,DefaultEdge> graph, Set<Integer> otherVertices, List<Integer> moduleVertices){
+    static void debugTesting(SimpleGraph<Integer,DefaultEdge> graph, Set<Integer> otherVertices, List<Integer> moduleVertices){
 
         for (int i : otherVertices) {
             System.out.println("Checking: " + i + " with edges: " + graph.edgesOf(i));
@@ -308,7 +413,7 @@ public class Main {
         }
     }
 
-    static void debugTesting2(DirectedGraph<Integer,DefaultEdge> graph, Set<Integer> otherVertices, List<Integer> moduleVertices){
+    static void debugTesting2(SimpleDirectedGraph<Integer,DefaultEdge> graph, Set<Integer> otherVertices, List<Integer> moduleVertices){
 
         for (int i : otherVertices) {
             System.out.println("Checking: " + i + " with edges: " + graph.edgesOf(i));
@@ -456,12 +561,15 @@ public class Main {
     }
 
     static void mdTestOldNew(String filePath){
+
         GraphHandle g = new GraphHandle(filePath);
+
         String g_res = g.getMDTreeOld().toString();
         System.out.println("Old Code:\n" + MDTree.beautify(g_res));
 
         GraphHandle g2 = new GraphHandle(filePath);
         String g2_res = g2.getMDTree().toString();
+        System.out.println(g2.getGraph());
         System.out.println("\nNew Code:\n" + MDTree.beautify(g2_res));
     }
 

@@ -175,5 +175,7 @@ public class GraphHandle {
 		return vertices.values().toString();
 	}
 
-
+	public SimpleGraph<Integer, DefaultEdge> getGraph() {
+		return graph;
+	}
 }
