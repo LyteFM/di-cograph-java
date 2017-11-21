@@ -3,6 +3,7 @@ package dicograph.modDecomp;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.graph.SimpleGraph;
+import org.jgrapht.io.ImportException;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -97,7 +98,7 @@ public class DirectedMD {
         return ret;
     }
 
-    public void computeModularDecomposition() throws InterruptedException, IOException {
+    public void computeModularDecomposition() throws InterruptedException, IOException, ImportException {
 
         log.info("init md of graph: " + inputGraph.toString());
 
@@ -141,10 +142,11 @@ public class DirectedMD {
 
         // Step 2: T(G_d) and T(G_s) with algorithm for undirected graphs
 
-        MDTree treeForG_d = new MDTree(G_d);
+        // without null used Tedder's MD
+        MDTree treeForG_d = new MDTree(G_d, null);
         log.info("computing md for G_s:");
 
-        MDTree treeForG_s = new MDTree(G_s);
+        MDTree treeForG_s = new MDTree(G_s, null);
         log.info("md for G_d:\n" + MDTree.beautify(treeForG_d.toString()));
         log.fine("DOT for G_d:\n" + treeForG_s.exportAsDot());
         log.info("md for G_s:\n" + MDTree.beautify(treeForG_s.toString()));

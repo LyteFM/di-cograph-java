@@ -173,7 +173,8 @@ public class Main {
 //            start = permutation;
 //        }
 
-        MDTree.readFromDot(new File("MD/build/G_s_paper.dot"));
+        MDTree testTree = new MDTree(getG_s(matrixGraph), null);
+        System.out.println(testTree);
 
         List<Integer> integers = Arrays.asList(1,2,3,4);
         allPermutations(integers);

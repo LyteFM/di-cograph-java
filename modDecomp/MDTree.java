@@ -5,17 +5,24 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.alg.util.Pair;
 import org.jgrapht.graph.SimpleGraph;
+import org.jgrapht.io.Attribute;
 import org.jgrapht.io.DOTImporter;
 import org.jgrapht.io.ImportException;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import dicograph.graphIO.UndirectedInducedIntSubgraph;
 
@@ -164,25 +171,84 @@ public class MDTree extends RootedTree {
 		return root;
 	}
 
+    public static Reader readMDAsDot(Graph<Integer, DefaultEdge> inputGraph, String factPerm) throws IOException {
 
+        // I might need two separate classes, anyways...
+        boolean undirectedMD = factPerm == null || factPerm.isEmpty();
+        if (undirectedMD)
+            assert inputGraph instanceof SimpleGraph : "Wrong Graph type provided: " + inputGraph;
+        else
+            assert inputGraph instanceof SimpleDirectedGraph : "Wrong Graph type provided: " + inputGraph;
 
-	public static MDTree readFromDot(File dotFile) throws IOException, ImportException{
+        List<String> command = new ArrayList<>();
+//        String input = "([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [{0,4}, {0,5}, {0,6}, {0,7}, {0,8}, {0,9}, {1,0}, {1,4}, {1,5}, {1,6}, {1,7}, {1,8}, {2,3}, {2,4}, {2,5}, {2,6}, {2,7}, {2,8}, {2,9}, {3," +
+//                "5}, {3,6}, {3,7}, {3,8}, {3,9}, {4,5}, {4,7}, {4,8}, {4,9}, {5,6}, {5,7}, {5,8}, {5,9}, {6,4}, {7,6}, {7,8}, {7,9}, {8,6}, {8,9}, {9,6}])";
+        command.add("./MD/build/mod_dec");
+        command.add(inputGraph.toString());
+
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        processBuilder.environment();
+
+        Process process = processBuilder.start();
+        InputStream inputStream = process.getInputStream();
+        return new InputStreamReader(inputStream);
+    }
+
+    public MDTree(Graph<Integer, DefaultEdge> inputGraph, String factPerm) throws IOException, ImportException {
+        super();
+        Reader reader = readMDAsDot(inputGraph, factPerm);
+//        BufferedReader br = new BufferedReader(reader);
+//        String next;
+//        while ((next = br.readLine()) != null){
+//            System.out.println(next);
+//        }
+        readFromDot(reader);
+    }
+
+    public void readFromDot(Reader dotReader) throws IOException, ImportException {
 
         SimpleDirectedGraph< Integer ,DefaultEdge> treeGraph = new SimpleDirectedGraph<>(DefaultEdge.class);
-        HashMap<Integer,String> noToLabel = new HashMap<>();
+        HashMap<Integer, MDTreeNode> noToTreenode = new HashMap<>();
 
         DOTImporter<Integer,DefaultEdge> importer = new DOTImporter<>(
-                (label, attributes) -> { int no = Integer.valueOf(label); noToLabel.put(no,attributes.get("label").getValue()); return no;
+                (String label, Map<String, Attribute> attributes) -> {
+                    int no = Integer.valueOf(label);
+                    String content = attributes.get("label").getValue();
+                    MDTreeNode node;
+                    switch (content) {
+                        case "Parallel":
+                            node = new MDTreeNode(MDNodeType.PARALLEL);
+                            break;
+                        case "Prime":
+                            node = new MDTreeNode();
+                            break;
+                        case "Series":
+                            node = new MDTreeNode(MDNodeType.SERIES);
+                            break;
+                        case "Order":
+                            node = new MDTreeNode(MDNodeType.ORDER);
+                            break;
+                        default:
+                            int vertexNo = Integer.valueOf(content);
+                            node = new MDTreeLeafNode(vertexNo);
+                            break;
+                    }
+                    noToTreenode.put(no, node);
+                    return no;
                 }
                 ,
-                (from, to, label, attributes) -> treeGraph.addEdge(from, to) );
-        importer.importGraph(treeGraph, dotFile );
-        System.out.println(treeGraph);
+                (from, to, label, attributes) -> {
+                    MDTreeNode parent = noToTreenode.get(from);
+                    MDTreeNode child = noToTreenode.get(to);
+                    parent.addChild(child);
+                    return treeGraph.addEdge(from, to);
+                });
+
+        importer.importGraph(treeGraph, dotReader);
+        //System.out.println(treeGraph);
 
 
-        MDTree ret = new MDTree();
-
-        return ret;
+        root = noToTreenode.get(0);
     }
 
 
