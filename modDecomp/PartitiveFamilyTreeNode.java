@@ -80,11 +80,13 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
     }
 
     /**
+     * todo: need to distinguish this from method in MDNodeType!
      * Initialization for Step 4 and 5: computes the induced subgraphs to determine the node types.
+     * Based only on the Edge type of the 2-Structure H
      * @param data the data from Modular decomposition
      * @return a vertex of this node
      */
-     int determineNodeType(final DirectedMD data){
+    int determineNodeTypeForH(final DirectedMD data) {
 
         // node type can be efficiently computed bottom-up: only take one vertex of each child to construct the module
         PartitiveFamilyTreeNode currentChild = (PartitiveFamilyTreeNode) getFirstChild();
@@ -95,7 +97,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                 if(currentChild.isALeaf()){
                     subgraphVertices.add( ((PartitiveFamilyLeafNode) currentChild).getVertex() );
                 } else  {
-                    subgraphVertices.add( currentChild.determineNodeType(data) ); // recursion
+                    subgraphVertices.add(currentChild.determineNodeTypeForH(data)); // recursion
                 }
 
                 currentChild = (PartitiveFamilyTreeNode) currentChild.getRightSibling();
@@ -137,7 +139,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                 case 2:
                     type = MDNodeType.ORDER;
                     //assert inducedPartialSubgraph.isTournament() : type + " but node not a tournament: " + toString();
-                    // todo: Hier können merged modules vorkommen. Jetzt oder später filtern!
+                    // merged modules might occur here, will be taken care of later
                     break;
             }
 
@@ -436,6 +438,11 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
                 currentChild = (PartitiveFamilyTreeNode) currentChild.getRightSibling();
             }
+        }
+
+        // todo: need to spot and handle merged modules here!
+        if (equivClassByBits.size() > 1) {
+            throw new IllegalStateException("Found several equiv classes in step 5 :)");
         }
 
         // reorder the children accordingly:

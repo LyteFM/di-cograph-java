@@ -11,11 +11,11 @@ import java.util.Collection;
  */
 public class UndirectedInducedIntSubgraph<E> extends SimpleGraph<Integer,E> {
 
-    final Graph<Integer,E> base;
+    final SimpleGraph<Integer, E> base;
 
     public UndirectedInducedIntSubgraph(Graph<Integer, E> baseGraph, Collection<Integer> vertices){
         super(baseGraph.getEdgeFactory());
-        base = baseGraph;
+        base = (SimpleGraph<Integer, E>) baseGraph;
 
         // adds the vertices
         vertices.forEach( this::addVertex );

@@ -1,5 +1,6 @@
 package dicograph.graphIO;
 
+import org.jgrapht.Graph;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
 import java.util.BitSet;
@@ -23,39 +24,32 @@ public class DirectedInducedIntSubgraph<E> extends SimpleDirectedGraph<Integer, 
 //    public DirectedInducedIntSubgraph(Class<? extends E> edgeClass){
 //        this(new ClassBasedEdgeFactory<>(edgeClass));
 //    }
-
-    public DirectedInducedIntSubgraph(SimpleDirectedGraph<Integer, E> baseGraph,  BitSet vertices){
+private DirectedInducedIntSubgraph(Graph<Integer, E> baseGraph) {
         super(baseGraph.getEdgeFactory());
-        base = baseGraph;
+    base = (SimpleDirectedGraph<Integer, E>) baseGraph;
+}
 
-        // adds the vertices
+    public DirectedInducedIntSubgraph(Graph<Integer, E> baseGraph, BitSet vertices) {
+        this(baseGraph);
+
         vertices.stream().forEach( this::addVertex );
-
-        // adds edges to vertices that are contained in this subgraph
-        for( int vertex : vertexSet()){
-            for(E outEdge : baseGraph.outgoingEdgesOf(vertex)) {
-                int target = baseGraph.getEdgeTarget(outEdge);
-
-                if(containsVertex(target)) {
-                    addEdge(vertex, target);
-                }
-            }
-        }
+        addEdges();
     }
 
-    public DirectedInducedIntSubgraph(SimpleDirectedGraph<Integer, E> baseGraph, List<Integer> vertices){
-        super(baseGraph.getEdgeFactory());
-        base = baseGraph;
+    public DirectedInducedIntSubgraph(Graph<Integer, E> baseGraph, List<Integer> vertices) {
+        this(baseGraph);
 
-        // adds the vertices
         vertices.forEach( this::addVertex );
+        addEdges();
+    }
 
+    private void addEdges() {
         // adds edges to vertices that are contained in this subgraph
-        for( int vertex : vertexSet()){
-            for(E outEdge : baseGraph.outgoingEdgesOf(vertex)) {
-                int target = baseGraph.getEdgeTarget(outEdge);
+        for (int vertex : vertexSet()) {
+            for (E outEdge : base.outgoingEdgesOf(vertex)) {
+                int target = base.getEdgeTarget(outEdge);
 
-                if(containsVertex(target)) {
+                if (containsVertex(target)) {
                     addEdge(vertex, target);
                 }
             }

@@ -8,6 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import dicograph.graphIO.DirectedInducedIntSubgraph;
 import dicograph.graphIO.UndirectedInducedIntSubgraph;
 
 /*
@@ -26,6 +27,7 @@ public enum MDNodeType {
 
 
 	// F.L. 17.11.17: added verification methods
+	// independent of MDTree/Partivive Tree
 
 	public static String verifyNodeType(boolean isDirected, Graph<Integer,DefaultEdge> subgraph, Graph<Integer,DefaultEdge> mainGraph,
 										MDNodeType expected, List<Integer> childRepresentatives, RootedTreeNode node){
@@ -33,21 +35,26 @@ public enum MDNodeType {
 
 		MDNodeType verified = determineNodeType(subgraph,isDirected);
 		if(verified != expected){
-			builder.append("Wrong type ").append(verified).append(" for node: ").append(node).append("\n");
-		} else if( verified == MDNodeType.PRIME ){
-			// need to check again: We have an error if any node has the same relation to all others.
+			builder.append("Wrong verified type ").append(verified).append(" for node: ").append(node).append("\n");
+		} else if (verified == PRIME) {
+			// Prime: We have an error if any node has the same relation to all others.
 			boolean error = false;
 			for (int v1 : childRepresentatives) {
 				boolean first = true;
 				boolean isPrime = false;
-				MDNodeType firstNodeType = MDNodeType.PRIME;
+				MDNodeType firstNodeType = verified;
 
 				for (int v2: childRepresentatives) {
 					if(v1 != v2) {
 						LinkedList<Integer> subSet = new LinkedList<>();
 						subSet.add(v1);
 						subSet.add(v2);
-						UndirectedInducedIntSubgraph<DefaultEdge> subsetSubgraph = new UndirectedInducedIntSubgraph<>(mainGraph, subSet);
+						Graph<Integer, DefaultEdge> subsetSubgraph;
+						if (isDirected) {
+							subsetSubgraph = new DirectedInducedIntSubgraph<>(mainGraph, subSet);
+						} else {
+							subsetSubgraph = new UndirectedInducedIntSubgraph<>(mainGraph, subSet);
+						}
 						MDNodeType innerType = determineNodeType(subsetSubgraph, isDirected);
 						if (first) {
 							firstNodeType = innerType;
@@ -60,7 +67,10 @@ public enum MDNodeType {
 						}
 					}
 				}
-				if(!isPrime) {
+				if (!isPrime && firstNodeType == PRIME) {
+					isPrime = true; // no changes, always stayed prime
+				}
+				if (!isPrime) { // no error, if
 					error = true;
 					builder.append("Found only ").append(firstNodeType).append(" for adjacencies of ").append(v1).append("\n");
 				}
@@ -89,14 +99,19 @@ public enum MDNodeType {
 			boolean valid = true;
 			Set<Integer> vertices = subgraph.vertexSet();
 			BitSet allOutDegs = new BitSet(vertices.size());
-			int expectedCount = vertices.size() -1;
+			int expCountSeries = vertices.size() - 1;
+			int expCountOrder = expCountSeries;
+			if (directed)
+				expCountSeries *= 2;
 			for(int vertex : vertices){
 				Set<DefaultEdge> touchingEdges = subgraph.edgesOf(vertex);
 				int count = touchingEdges.size();
-				if (count != expectedCount) {
-					// also order needs n-1 touching vertices
-					valid = false;
-					break;
+				if (count != expCountSeries) {
+					// order needs n-1 touching vertices, but Series required twice as many in directed case
+					if (!(directed && count == expCountOrder)) {
+						valid = false;
+						break;
+					}
 				}
 				if(directed){
 					// for order: need all outdegs from 0 to n-1

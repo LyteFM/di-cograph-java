@@ -182,6 +182,15 @@ public class DirectedMD {
         log.info("Reordered Tree: " + MDTree.beautify(treeForH.toString()));
         log.info("As .dot:\n" + treeForH.exportAsDot());
 
+        if (debugMode) {
+            String msg = treeForH.verifyNodeTypes(inputGraph, true);
+
+            if (!msg.isEmpty()) {
+                msg = "Error in modules of G:\n" + msg;
+                throw new IllegalStateException(msg);
+            }
+        }
+
 
 
 
@@ -242,8 +251,8 @@ public class DirectedMD {
 
         // debug option: verify if the modules are correct (kills linearity).
         if(debugMode){
-            String debug_T_a = of_Gs_T_a.verifyNodeTypes(G_s);
-            String debug_T_b = of_Gd_T_b.verifyNodeTypes(G_d);
+            String debug_T_a = of_Gs_T_a.verifyNodeTypes(G_s, false);
+            String debug_T_b = of_Gd_T_b.verifyNodeTypes(G_d, false);
             String msg = "";
             if(!debug_T_a.isEmpty()) {
                 msg = "Error in modules of G_s:\n" + debug_T_a;
@@ -305,6 +314,10 @@ public class DirectedMD {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        // I need to make sure that the program breaks if the char-Buffer would overflow
+        if (nVertices > 324)
+            throw new IndexOutOfBoundsException("Error: adapt the size of the char buff[1000] in OverlapComponentProg/main.cc and recompile.");
 
         ArrayList<Integer> overlapComponentNumbers = dahlhausProcessDelegator("dahlhaus.txt", log);
 
@@ -423,17 +436,18 @@ public class DirectedMD {
         }
         log.fine("Equivalence Classes: " + equivalenceClassesR_U.values());
 
+
         // 6. ) the set \mathcal S(T_a, T_b) - which is the set Family of H's MD-Tree:
         ArrayList<BitSet> strongModulesOfH = new ArrayList<>(
                 equivalenceClassesR_U.size() + intersectionOfAandB.size());
         strongModulesOfH.addAll(equivalenceClassesR_U.values());
         strongModulesOfH.addAll(intersectionOfAandB.values());
+        // todo: do I need to delete the ones with several equi classes? -> others should be prime then
 
         // 7. ) From that set Family, The Inclusion Tree can be constructed by Lem 11.
-        // (Cor 19 requires a permutation of the leaves, which will yield the fact perm. So I need the Tree)
 
         PartitiveFamilyTree ret = new PartitiveFamilyTree(strongModulesOfH, log, nVertices);
-        // now we have the Tree T(H) = T_a Λ T_b
+        // now we have the Tree T(H) = T_a Λ T_b which is equal to the MD Tree, exept...
 
         return ret;
     }

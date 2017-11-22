@@ -64,11 +64,6 @@ public class Main {
 //        }
         System.out.println("Working Directory = " +
                 System.getProperty("user.dir"));
-//
-//        Double d = 0.99999999999999999 * 2; // todo: kann echt 2 werden x)
-//        System.out.println("0.99 * 2 = " + d.intValue());
-
-        System.out.println("The default PRNG on this system is " + new SecureRandom().getAlgorithm());
 
         // remove defaults
         Logger log = Logger.getLogger( "TestLogger" );
@@ -85,9 +80,6 @@ public class Main {
         log.setLevel( Level.FINEST );
         log.fine( "Alles ist fein!" );
 
-        //mdTest();
-        //DirectedMD.dahlhausProcessDelegator("OverlapComponentProg/test3_neu.txt");
-
 //        boolean morePls = true;
 //        while (morePls){
 //            morePls = directedMDTesting(log,consoleHandler,10,5,false);
@@ -95,12 +87,12 @@ public class Main {
 
 
         String fromPaper = "fromFactPermPaper.txt";
-//        SimpleDirectedGraph<Integer, DefaultEdge> paperGraph = JGraphAdjecencyImporter.importIntGraph(new File(fromPaper),false);
+        SimpleDirectedGraph<Integer, DefaultEdge> paperGraph = JGraphAdjecencyImporter.importIntGraph(new File(fromPaper), false);
 //        System.out.println(paperGraph);
 //        DOTExporter<Integer,DefaultEdge> exporter =new DOTExporter<>();
 //        exporter.exportGraph(paperGraph, new File(fromPaper+ ".dot"));
-//        DirectedMD paperMD = new DirectedMD(paperGraph, log, true);
-//        paperMD.computeModularDecomposition();
+        //DirectedMD paperMD = new DirectedMD(paperGraph, log, true);
+        //paperMD.computeModularDecomposition();
 
 
 //        for( int i = 20; i <= 30; i ++) {
@@ -108,10 +100,11 @@ public class Main {
 //        }
 
         String folder = "testGraphs/";
-        String oftenUsedFile = folder + "randDigraph_n_50_edits_10_1031_16:37:01.txt";
-        String smallStackoverflowFile = folder + "randDigraph_n_10_edits_2_11-03_11:35:47:010_original.txt";
         String weirdError = folder + "randDigraph_n_24_edits_8_11-14_18:05:20:306_original.txt";
+        String smallNotAtournament = folder + "randDigraph_n_10_edits_5_11-17_14:11:11:882_original.txt";
         String test = "testy.txt";
+
+        MDtestFromFile(log, smallNotAtournament, true);
 
 
 //        System.out.println("From rand:\n\n");
@@ -129,11 +122,11 @@ public class Main {
 
 
 
-
-        File importFile = new File("testy.txt");
-        SimpleDirectedGraph<Integer, DefaultEdge> matrixGraph = SimpleMatrixImporter.importIntGraph( new File(weirdError));
-        SimpleDirectedGraph<Integer, DefaultEdge> randGraph = JGraphAdjecencyImporter.importIntGraph(importFile);
 //
+//        File importFile = new File("testy.txt");
+//        SimpleDirectedGraph<Integer, DefaultEdge> matrixGraph = SimpleMatrixImporter.importIntGraph( new File(weirdError));
+//        SimpleDirectedGraph<Integer, DefaultEdge> randGraph = JGraphAdjecencyImporter.importIntGraph(importFile);
+
 
 
         SecureRandom random = new SecureRandom();
@@ -172,12 +165,6 @@ public class Main {
 //
 //            start = permutation;
 //        }
-
-        MDTree testTree = new MDTree(getG_s(matrixGraph), null);
-        System.out.println(testTree);
-
-        List<Integer> integers = Arrays.asList(1,2,3,4);
-        allPermutations(integers);
 
 
         //testScenario(matrixGraph,randGraph);

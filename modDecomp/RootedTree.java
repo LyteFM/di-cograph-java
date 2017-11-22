@@ -1,5 +1,9 @@
 package dicograph.modDecomp;
 
+import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.SimpleGraph;
+
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
@@ -10,6 +14,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+
+import dicograph.graphIO.DirectedInducedIntSubgraph;
+import dicograph.graphIO.UndirectedInducedIntSubgraph;
 
 /*
  * A rooted tree.
@@ -141,6 +148,56 @@ class RootedTree {
         ArrayList<String> ret = new ArrayList<String>();
         root.getSetRepresentation(ret);
         return ret;
+    }
+
+
+    // F.L. 16.11.17: Debug option (via moduleToTreenode)
+    public String verifyNodeTypes(Graph<Integer, DefaultEdge> graph, boolean directed) {
+
+        StringBuilder builder = new StringBuilder();
+        LinkedList<RootedTreeNode> allNodes = new LinkedList<>(moduleToTreenode.values());
+        allNodes.add(root);
+
+        for (RootedTreeNode node : allNodes) {
+
+
+            LinkedList<Integer> childRepresentatives = new LinkedList<>();
+            RootedTreeNode currChild = node.getFirstChild();
+            while (currChild != null) {
+                int anyVertex;
+                if (currChild.isALeaf()) {
+                    if (directed) {
+                        anyVertex = ((PartitiveFamilyLeafNode) currChild).getVertex();
+                    } else {
+                        anyVertex = ((MDTreeLeafNode) currChild).getVertexNo();
+                    }
+                } else {
+                    anyVertex = currChild.vertices.nextSetBit(0);
+                }
+                if (anyVertex >= 0)
+                    childRepresentatives.add(anyVertex);
+                else
+                    throw new IllegalStateException("No valid child vertex found for " + currChild);
+
+                currChild = currChild.getRightSibling();
+            }
+
+
+            Graph<Integer, DefaultEdge> subgraph;
+            MDNodeType currNodeType;
+            if (directed) {
+                currNodeType = ((PartitiveFamilyTreeNode) node).getType();
+                subgraph = new DirectedInducedIntSubgraph<DefaultEdge>(graph, childRepresentatives);
+            } else {
+                currNodeType = ((MDTreeNode) node).getType();
+                subgraph = new UndirectedInducedIntSubgraph<>(graph, childRepresentatives);
+            }
+            String verificationResult = MDNodeType.verifyNodeType(directed, subgraph, graph, currNodeType, childRepresentatives, node);
+            builder.append(verificationResult);
+
+        }
+
+        return builder.toString();
     }
 
     // F.L. 18.11.17: export Tree as .dot

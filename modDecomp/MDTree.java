@@ -75,42 +75,7 @@ public class MDTree extends RootedTree {
         return ret;
     }
 
-    // F.L. 16.11.17: Debug option (via moduleToTreenode)
-    public String verifyNodeTypes(SimpleGraph<Integer,DefaultEdge> graph){
 
-        StringBuilder builder = new StringBuilder();
-        LinkedList<RootedTreeNode> allNodes = new LinkedList<>(moduleToTreenode.values());
-        allNodes.add(root);
-
-        for(RootedTreeNode node : allNodes ){
-
-            MDTreeNode currNode = (MDTreeNode) node; // note: of course, I may only use one represantative.
-            LinkedList<Integer> childRepresentatives = new LinkedList<>();
-            RootedTreeNode currChild = currNode.getFirstChild();
-            while (currChild != null){
-                int anyVertex;
-                if(currChild.isALeaf()) {
-                    anyVertex = ((MDTreeLeafNode) currChild).getVertexNo();
-                } else {
-                    anyVertex = currChild.vertices.nextSetBit(0);
-                }
-                if(anyVertex >= 0)
-                    childRepresentatives.add(anyVertex);
-                else
-                    throw new IllegalStateException("No valid child vertex found for "+ currChild);
-
-                currChild = currChild.getRightSibling();
-            }
-
-
-            UndirectedInducedIntSubgraph<DefaultEdge> subgraph = new UndirectedInducedIntSubgraph<>(graph, childRepresentatives);
-            String verificationResult = MDNodeType.verifyNodeType(false,subgraph, graph,currNode.getType(), childRepresentatives, currNode);
-            builder.append(verificationResult);
-
-        }
-
-        return builder.toString();
-    }
 
 
     /**

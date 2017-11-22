@@ -42,7 +42,7 @@ public class PartitiveFamilyTree extends RootedTree {
 
     public void computeAllNodeTypes(final DirectedMD data){
         PartitiveFamilyTreeNode rootNode = (PartitiveFamilyTreeNode) root;
-        rootNode.determineNodeType(data);
+        rootNode.determineNodeTypeForH(data);
     }
 
     public void computeFactorizingPermutationAndReorderAccordingly(Logger log, SimpleDirectedGraph<Integer,DefaultEdge> inputGraph, int nVertices){
