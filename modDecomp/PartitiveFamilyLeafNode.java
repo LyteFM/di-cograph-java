@@ -41,7 +41,7 @@ public class PartitiveFamilyLeafNode extends PartitiveFamilyTreeNode {
     int exportAsDot(StringBuilder output, int[] counter){
         counter[0]++;
         int myCounter = counter[0];
-        output.append(myCounter).append("[label=v").append(vertex).append("];\n");
+        output.append(myCounter).append("[label=").append(vertex).append("];\n");
         return myCounter;
     }
 }

@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.io.StringReader;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -160,14 +161,31 @@ public class MDTree extends RootedTree {
     }
 
     public MDTree(Graph<Integer, DefaultEdge> inputGraph, String factPerm) throws IOException, ImportException {
+        this(inputGraph, factPerm, false, null);
+    }
+
+    public MDTree(Graph<Integer, DefaultEdge> inputGraph, String factPerm, boolean debug, Logger log) throws IOException, ImportException {
         super();
         Reader reader = readMDAsDot(inputGraph, factPerm);
-//        BufferedReader br = new BufferedReader(reader);
-//        String next;
-//        while ((next = br.readLine()) != null){
-//            System.out.println(next);
-//        }
+        if (debug) {
+            BufferedReader br = new BufferedReader(reader);
+            StringBuilder builder = new StringBuilder();
+            String next;
+            while ((next = br.readLine()) != null) {
+                builder.append(next).append("\n");
+            }
+            String res = builder.toString();
+            log.fine("Passed .dot-file:\n" + res);
+            reader = new StringReader(res);
+        }
+
         readFromDot(reader);
+    }
+
+
+    // F.L. 22.11.17: removing dummy primes from adrians MD
+    public boolean removeDummyPrimes() {
+        return ((MDTreeNode) root).removeDummyPrimes();
     }
 
     public void readFromDot(Reader dotReader) throws IOException, ImportException {

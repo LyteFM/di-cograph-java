@@ -96,15 +96,24 @@ public class Main {
 
 
 //        for( int i = 20; i <= 30; i ++) {
-//            directedMDTesting(log, consoleHandler, i, i/2,true);
+//            boolean ok = directedMDTesting(log, consoleHandler, i, i/2,true);
+//            if(!ok)
+//                break;
 //        }
+
+        // todo: first - need to debug the ones with wrong undirectedMD, i.e. n=25, 26
+        String folderPath = "testGraphs/DMDtest/ERR/";
+        String n26err = folderPath + "randDigraph_n_26_edits_13_11-22_14:39:02:113_original.txt"; // here was an error in G_d.
+        MDtestFromFile(log, n26err, true);
+
+
 
         String folder = "testGraphs/";
         String weirdError = folder + "randDigraph_n_24_edits_8_11-14_18:05:20:306_original.txt";
         String smallNotAtournament = folder + "randDigraph_n_10_edits_5_11-17_14:11:11:882_original.txt";
         String test = "testy.txt";
 
-        MDtestFromFile(log, smallNotAtournament, true);
+        //MDtestFromFile(log, smallNotAtournament, true);
 
 
 //        System.out.println("From rand:\n\n");
@@ -167,7 +176,7 @@ public class Main {
 //        }
 
 
-        //testScenario(matrixGraph,randGraph);
+        //compareMatrixAndRand(matrixGraph,randGraph);
 
 
     }
@@ -308,7 +317,7 @@ public class Main {
 
     }
 
-    static void testScenario(SimpleDirectedGraph<Integer,DefaultEdge> matrixGraph, SimpleDirectedGraph<Integer,DefaultEdge> randGraph){
+    static void compareMatrixAndRand(SimpleDirectedGraph<Integer, DefaultEdge> matrixGraph, SimpleDirectedGraph<Integer, DefaultEdge> randGraph) {
         //AsUndirectedGraph<Integer,DefaultEdge> matrixUndirected = new AsUndirectedGraph<>(randGraph);
         //AsUndirectedGraph<Integer,DefaultEdge> randUndirected = new AsUndirectedGraph<>(matrixGraph);
         // same here as in MD
@@ -432,12 +441,12 @@ public class Main {
         gen.disturbDicograph(g_d, nDisturb);
 
         // export the graph for debug purposes
-        String filePath = "testGraphs/randDigraph_n_" + nVertices + "_edits_" + nDisturb + "_" + timeStamp;
+        String filePath = "testGraphs/DMDtest/randDigraph_n_" + nVertices + "_edits_" + nDisturb + "_" + timeStamp;
         File expfile = new File(filePath + "_original.txt");
         SimpleMatrixExporter<Integer, DefaultEdge> myExporter = new SimpleMatrixExporter<>();
         myExporter.exportGraph(g_d, expfile);
-        System.out.println(String.format("Generated random Dicograph with %s vertices and %s random edge-edits.", nVertices, nDisturb));
-        System.out.println("Exported Matrix to :" + filePath + "_original.txt");
+        log.info(String.format("Generated random Dicograph with %s vertices and %s random edge-edits.", nVertices, nDisturb));
+        log.info("Exported Matrix to :" + filePath + "_original.txt");
 
         // writes the log
         File logFile = new File(filePath +".log");
@@ -446,29 +455,28 @@ public class Main {
         fileHandler.setLevel( baseHandler.getLevel() );
         log.addHandler(fileHandler);
 
-        System.out.println("Started modular decomposition");
+        log.info("Started modular decomposition");
 
         try {
             DirectedMD testMD = new DirectedMD(g_d, log, true);
             testMD.computeModularDecomposition();
         } catch (IllegalStateException | AssertionError e){
             ok = false;
-            e.printStackTrace();
+            log.severe(e.toString());
         }
 
 
-
-        System.out.println("Finished modular decomposition. Log written to:");
-        System.out.println(filePath+ ".log");
+        log.info("Finished modular decomposition. Log written to:");
+        log.info(filePath + ".log");
 
         if(solveILP){
             // compute the solution via ILP
-            System.out.println("*** Starting ILP-Solver ***");
+            log.info("*** Starting ILP-Solver ***");
             int [] parameters = {0,0}; // one solution
-            CplexDiCographEditingSolver mySolver = new CplexDiCographEditingSolver(g_d, parameters);
+            CplexDiCographEditingSolver mySolver = new CplexDiCographEditingSolver(g_d, parameters, log);
             List<SimpleDirectedGraph<Integer, DefaultEdge>> solutions = mySolver.solve();
-            System.out.println("Saving solution for n = " + nVertices + " to:");
-            System.out.println(filePath + "_edited.txt");
+            log.info("Saving solution for n = " + nVertices + " to:");
+            log.info(filePath + "_edited.txt");
             File solFile = new File(filePath + "_edited.txt");
             myExporter.exportGraph(solutions.get(0), solFile);
 
@@ -502,7 +510,7 @@ public class Main {
             SimpleDirectedGraph<Integer, DefaultEdge> g_d = new SimpleDirectedGraph<>(DefaultEdge.class);
             gen.generateRandomDirectedCograph(g_d, i, true);
 
-            CplexDiCographEditingSolver mySolver = new CplexDiCographEditingSolver(g_d, parameters);
+            CplexDiCographEditingSolver mySolver = new CplexDiCographEditingSolver(g_d, parameters, log);
             List<SimpleDirectedGraph<Integer, DefaultEdge>> solutions = mySolver.solve();
             System.out.print(solutions.get(0));
             Double sol = mySolver.getEditingDistances().get(0);
@@ -561,7 +569,7 @@ public class Main {
         System.out.println("\nNew Code:\n" + MDTree.beautify(g2_res));
     }
 
-    void cplexTest() throws ExportException, IloException, IOException{
+    void cplexTest(Logger log) throws ExportException, IloException, IOException {
         String filePath = "importFiles/sz_15_pr_30";
         File importFile = new File(filePath+ ".txt");
         SimpleDirectedGraph<Integer, DefaultEdge> importGraph = SimpleMatrixImporter.importIntGraph(importFile);
@@ -569,7 +577,7 @@ public class Main {
         System.out.print(importGraph + "\n");
         int [] parameters = {0,1};
 
-        CplexDiCographEditingSolver mySolver = new CplexDiCographEditingSolver(importGraph, parameters);
+        CplexDiCographEditingSolver mySolver = new CplexDiCographEditingSolver(importGraph, parameters, log);
         List<SimpleDirectedGraph<Integer,DefaultEdge>> solutions = mySolver.solve();
 
         int count = 1;

@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.TreeSet;
+import java.util.logging.Logger;
 
 import ilog.concert.IloException;
 import ilog.concert.IloIntVar;
@@ -89,6 +90,7 @@ public class CplexDiCographEditingSolver {
 
     // orthology variables -> Adjacency Matrix?
     private IloIntVar[][] E;
+    private Logger log;
 
     // sets the time limit (default: 2h), if given by parameter #1
     private int timelimit;
@@ -100,7 +102,7 @@ public class CplexDiCographEditingSolver {
      * @throws IloException
      */
 
-    public CplexDiCographEditingSolver(SimpleDirectedGraph<Integer, DefaultEdge> inputGraph, int [] parameters ) throws IloException {
+    public CplexDiCographEditingSolver(SimpleDirectedGraph<Integer, DefaultEdge> inputGraph, int[] parameters, Logger log) throws IloException {
         this.inputGraph = inputGraph;
         // want the vertex set of the graph in sorted order for easier display and to uniquely define the matrix
         sortedVertexSet = new TreeSet<>(inputGraph.vertexSet()); // todo: not necessary!
@@ -112,6 +114,7 @@ public class CplexDiCographEditingSolver {
         editingDistances = new ArrayList<>();
 
         this.parameters = parameters;
+        this.log = log;
 
     }
 
@@ -235,7 +238,7 @@ public class CplexDiCographEditingSolver {
         }
         // free memory
         solver.end();
-        System.out.print(solution);
+        log.info(solution);
 
         return solutionGraphs;
     }
@@ -250,10 +253,10 @@ public class CplexDiCographEditingSolver {
         StringBuilder solution = new StringBuilder();
         double bestObjectiveValue = solver.getBestObjValue();
 
-        System.out.println("Solution status = " + solver.getStatus());
+        log.fine("Solution status = " + solver.getStatus());
         // todo: das hier...
         //this.gf.setCographEditDistance((int) Math.round(bestObjectiveValue));
-        System.out.println("CographEditDistance: " + bestObjectiveValue);
+        log.fine("CographEditDistance: " + bestObjectiveValue);
 
         for (int solutionId=0; solutionId<noSolutions; solutionId++){
             if (solver.getObjValue(solutionId)<=bestObjectiveValue){

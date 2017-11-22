@@ -189,7 +189,7 @@ class MDTreeLeafNode extends MDTreeNode {
 	int exportAsDot(StringBuilder output, int[] counter){
 	    counter[0]++;
 		int myCounter = counter[0];
-		output.append(myCounter).append("[label=v").append(vertexNo).append("];\n");
+		output.append(myCounter).append("[label=").append(vertexNo).append("];\n");
 		return myCounter;
 	}
 

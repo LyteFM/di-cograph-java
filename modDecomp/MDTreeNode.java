@@ -75,6 +75,26 @@ class MDTreeNode extends RootedTreeNode {
 		this.type = type;
 	}
 
+	// F.L. 22.11.17: deal with error in Adrains Code
+	boolean removeDummyPrimes() {
+		RootedTreeNode currentChild = getFirstChild();
+		boolean ret = false;
+		while (currentChild != null) {
+			MDTreeNode current = (MDTreeNode) currentChild;
+			if (current.removeDummyPrimes()) {
+				ret = true;
+			}
+			MDNodeType type = current.getType();
+			currentChild = currentChild.getRightSibling(); // do that before adding!
+
+			if (type == MDNodeType.PRIME && current.getNumChildren() == 1) {
+				ret = true;
+				current.replaceThisByItsChildren();
+			}
+		}
+		return ret;
+	}
+
 	// F.L. 09.11.: moved here
     /**
      * Using a BitSet for easy UNION-Computation lateron. Running Time: O(n (1 + Anzahl module))

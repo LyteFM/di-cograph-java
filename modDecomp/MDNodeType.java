@@ -36,13 +36,14 @@ public enum MDNodeType {
 		MDNodeType verified = determineNodeType(subgraph,isDirected);
 		if(verified != expected){
 			builder.append("Wrong verified type ").append(verified).append(" for node: ").append(node).append("\n");
-		} else if (verified == PRIME) {
+		} else {
 			// Prime: We have an error if any node has the same relation to all others.
+			// other node types: We have an error if any two nodes are prime (Other subtype cannot happen, merged modules can!)
 			boolean error = false;
 			for (int v1 : childRepresentatives) {
 				boolean first = true;
 				boolean isPrime = false;
-				MDNodeType firstNodeType = verified;
+				MDNodeType firstNodeType = PRIME;
 
 				for (int v2: childRepresentatives) {
 					if(v1 != v2) {
@@ -70,7 +71,8 @@ public enum MDNodeType {
 				if (!isPrime && firstNodeType == PRIME) {
 					isPrime = true; // no changes, always stayed prime
 				}
-				if (!isPrime) { // no error, if
+				boolean weHaveAProblem = verified == PRIME && !isPrime || verified != PRIME && isPrime;
+				if (weHaveAProblem) {
 					error = true;
 					builder.append("Found only ").append(firstNodeType).append(" for adjacencies of ").append(v1).append("\n");
 				}

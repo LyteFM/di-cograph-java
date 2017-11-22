@@ -143,12 +143,12 @@ public class DirectedMD {
         // Step 2: T(G_d) and T(G_s) with algorithm for undirected graphs
 
         // without null used Tedder's MD
-        MDTree treeForG_d = new MDTree(G_d, null);
+        MDTree treeForG_d = new MDTree(G_d, null, debugMode, log);
         log.info("computing md for G_s:");
 
-        MDTree treeForG_s = new MDTree(G_s, null);
+        MDTree treeForG_s = new MDTree(G_s, null, debugMode, log);
         log.info("md for G_d:\n" + MDTree.beautify(treeForG_d.toString()));
-        log.fine("DOT for G_d:\n" + treeForG_s.exportAsDot());
+        log.fine("DOT for G_d:\n" + treeForG_d.exportAsDot());
         log.info("md for G_s:\n" + MDTree.beautify(treeForG_s.toString()));
         log.fine("DOT for G_s:\n" + treeForG_s.exportAsDot());
 

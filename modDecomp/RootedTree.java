@@ -211,7 +211,5 @@ class RootedTree {
     }
 
 
-
-
 }
 
