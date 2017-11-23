@@ -36,8 +36,8 @@ public class DirectedMD {
 
     final boolean debugMode; // false for max speed, true for nicely sorted vertices etc.
 
-    final MDTreeLeafNode[] leavesOfT_a;
-    final MDTreeLeafNode[] leavesOfT_b;
+    final MDTreeLeafNode[] leavesOfT_s;
+    final MDTreeLeafNode[] leavesOfT_g;
     List<PartitiveFamilyTreeNode> orderNodes; // they can be merged modules and in fact contain primes.
 
 
@@ -47,8 +47,8 @@ public class DirectedMD {
         inputGraph = input;
         log = logger;
         nVertices = input.vertexSet().size();
-        leavesOfT_a = new MDTreeLeafNode[nVertices];
-        leavesOfT_b = new MDTreeLeafNode[nVertices];
+        leavesOfT_s = new MDTreeLeafNode[nVertices];
+        leavesOfT_g = new MDTreeLeafNode[nVertices];
         this.debugMode = debugMode;
 
         // Simply: vertices have the numbers from 0 to n-1. Verify that in debug mode.
@@ -216,7 +216,7 @@ public class DirectedMD {
     }
 
 
-    private PartitiveFamilyTree intersectPartitiveFamiliesOf(MDTree of_Gs_T_a, MDTree of_Gd_T_b) throws InterruptedException,IOException{
+    private PartitiveFamilyTree intersectPartitiveFamiliesOf(MDTree of_Gs_T_s, MDTree of_Gd_T_g) throws InterruptedException,IOException{
 
         // Notes from section 2:
 
@@ -243,21 +243,21 @@ public class DirectedMD {
         // much better than my current approach with BitSets of size n :)
 
         // todo: Brauche ich die corresp. TreeNode irgendwann? Muss hier auch die leaves mit Index abfragen. Könnte das BitSet auch an die Node schreiben.
-        HashMap<BitSet, RootedTreeNode> strongModulesBoolA = of_Gs_T_a.getStrongModulesBool(leavesOfT_a);
-        HashMap<BitSet, RootedTreeNode> strongModulesBoolB = of_Gd_T_b.getStrongModulesBool(leavesOfT_b);
+        HashMap<BitSet, RootedTreeNode> strongModulesBoolA = of_Gs_T_s.getStrongModulesBool(leavesOfT_s);
+        HashMap<BitSet, RootedTreeNode> strongModulesBoolB = of_Gd_T_g.getStrongModulesBool(leavesOfT_g);
 
 
         // debug option: verify if the modules are correct (kills linearity).
         if(debugMode){
-            String debug_T_a = of_Gs_T_a.verifyNodeTypes(G_s, false);
-            String debug_T_b = of_Gd_T_b.verifyNodeTypes(G_d, false);
+            String debug_T_s = of_Gs_T_s.verifyNodeTypes(G_s, false);
+            String debug_T_g = of_Gd_T_g.verifyNodeTypes(G_d, false);
             String msg = "";
-            if(!debug_T_a.isEmpty()) {
-                msg = "Error in modules of G_s:\n" + debug_T_a;
+            if(!debug_T_s.isEmpty()) {
+                msg = "Error in modules of G_s:\n" + debug_T_s;
             }
 
-            if(!debug_T_b.isEmpty()) {
-                msg += "\n\nError in modules of G_d:\n" + debug_T_b;
+            if(!debug_T_g.isEmpty()) {
+                msg += "\n\nError in modules of G_d:\n" + debug_T_g;
             }
             if(!msg.isEmpty()){
                 log.severe(msg);
@@ -280,27 +280,19 @@ public class DirectedMD {
 
         HashSet<BitSet> nontrivModulesTemp = new HashSet<>(strongModulesBoolA.keySet());
         nontrivModulesTemp.addAll(strongModulesBoolB.keySet());
-        /*
-        if(nontrivModulesBoolA.isEmpty() || strongModulesBoolB.isEmpty()){
-            // todo: also to the modules!
-            BitSet rootSet = new BitSet(nVertices);
-            rootSet.set(0,nVertices);
-            nontrivModulesTemp.add(rootSet);
-        }
-        */
+
 
         // todo: hier BucketSortBySize
         ArrayList<BitSet> allNontrivModules= new ArrayList<>(nontrivModulesTemp); // need a well-defined order
         // allNontrivModules.sort(new BitSetComparatorDesc()); // descending size
-        allNontrivModules.sort( // descending size. let's try with lamdas!
+        allNontrivModules.sort( // descending size
                 (b1, b2) -> Integer.compare(b2.cardinality(), b1.cardinality()));
 
         StringBuilder overlapInput = new StringBuilder();
 
 
-        // todo: However: I should always include root, right???
-        // especially for the case that there is only the root.
         // Since the singletons and V itself will never overlap another module, I can exclude them here and only consider the nontrivial modules
+        // The Program takes vertices separated by " " in one line, ended by a "-1".
         allNontrivModules.forEach(module -> {
             module.stream().forEach(vertexNo ->
                     overlapInput.append(vertexNo).append(" "));
@@ -308,7 +300,7 @@ public class DirectedMD {
         });
 
 
-        // 1.) use Dahlhaus algorithm to compute the overlap components (Bound: |M| <= 4m + 6n)
+        // 1.) use M.Rao's Dahlhaus algorithm to compute the overlap components (Bound: |M| <= 4m + 6n)
         log.fine("Input for Dahlhaus algorith:\n" + overlapInput);
         File dahlhausFile = new File("dahlhaus.txt");
 
@@ -331,42 +323,43 @@ public class DirectedMD {
         // 2. V
         // 3. Die oben berechneten Module
 
+        // Retrieves the overlap components and computes UNION for same numbers
         HashMap<Integer, BitSet> overlapComponents = new HashMap<>();
         for(int i = 0; i< overlapComponentNumbers.size(); i++){
 
             int componentNr = overlapComponentNumbers.get(i);
             if (overlapComponents.containsKey(componentNr)) {
-                // the UNION is computed here already
                 overlapComponents.get(componentNr).or(allNontrivModules.get(i));
             } else {
                 overlapComponents.put(componentNr, allNontrivModules.get(i));
             }
         }
+
         // What exacty _are_ the overlap Components now? number -> module
         // what do I want: number -> set with all vertices. therefore:
         //   I. Put them all in one ArrayList
         //  II. unionSort the ArrayList
         // currently with BitSets
 
-        // 2.) use booleanArray to compute σ(T_a,T_b) = the union of the overlap components in O(V).
+        // 2.) use booleanArray to compute σ(T_s,T_g) = the union of the overlap components in O(V).
         // not even necessary - σ is obtained by simply joining the components, no need to check for equality
 
-        // According to paper, V and the singleton subsets must be in σ(T_a, T_b) = { U ς | ς is overlap components of S(T_a) \cup S(T_b)
+        // According to paper, V and the singleton subsets must be in σ(T_s, T_g) = { U ς | ς is overlap components of S(T_s) \cup S(T_g)
         // Excluded them as they Don't contribute to computing the overlap components. Let's add them now.
 
 
         // Assuming now: ArrayList of ArrayList<Int> with the singletons, V and the overlapComponents
         // currently: BitSets
 
-        // 3.) @Lemma 11: compute the inclusion tree of σ(T_a, T_b)
+        // 3.) @Lemma 11: compute the inclusion tree of σ(T_s, T_g)
         // The previously ommitted V and the singleton sets are also added to the tree.
         RootedTree overlapInclusionTree = new PartitiveFamilyTree(overlapComponents.values(), log, nVertices);
-        log.fine("Inclusion tree of overlap components: " + MDTree.beautify(overlapInclusionTree.toString()));
+        log.fine(() -> "Inclusion tree of overlap components: " + MDTree.beautify(overlapInclusionTree.toString()));
         HashMap<BitSet, RootedTreeNode> bitsetToOverlapTreenNode = overlapInclusionTree.getModuleToTreenode();
 
 
-        // 4.) Algorithm 1: compute Ü(T_a,T_b) = A* \cap B*;
-        //     A* = {X | X ∈ σ(T_a, T_b) AND X node in T_a OR P_a not prime in T_a}, B analog
+        // 4.) Algorithm 1: compute Ü(T_s,T_g) = A* \cap B*;
+        //     A* = {X | X ∈ σ(T_s, T_g) AND X node in T_s OR P_a not prime in T_s}, B analog
         //     and number its members according to the number pairs from P_a, P_b
 
 
@@ -380,18 +373,18 @@ public class DirectedMD {
         HashMap<RootedTreeNode, RootedTreeNode> elementOfBToP_b = new HashMap<>();
 
 
-        log.fine("Computing nodes with complete Parent for Tree T_a of G_s");
+        log.fine("Computing nodes with complete Parent for Tree T_s of G_s");
         HashMap<RootedTreeNode, BitSet> elementsOfA = computeNodesWithCompleteParent(
                 bitsetToOverlapTreenNode, true, elementOfAToP_a, strongModulesBoolA);
 
         // Reinitialize and Compute P_b
-        log.fine("Computing nodes with complete Parent for Tree T_B of G_d");
+        log.fine("Computing nodes with complete Parent for Tree T_g of G_d");
         HashMap<RootedTreeNode, BitSet> elementsOfB = computeNodesWithCompleteParent(
                 bitsetToOverlapTreenNode, false, elementOfBToP_b, strongModulesBoolB);
 
 
         // todo: use BitSets rather than treeNodes as key!! Or: Pairs...
-        // Ü(T_a,T_b) is now simply the intersection of A* and B*
+        // Ü(T_s,T_g) is now simply the intersection of A* and B*
         HashMap<RootedTreeNode, BitSet> intersectionOfAandB = new HashMap<>();
         //HashSet<RootedTreeNode> onlyVals = new HashSet<>(elementsOfB.values());
         for (Map.Entry<RootedTreeNode, BitSet> entry : elementsOfA.entrySet()) {
@@ -407,7 +400,7 @@ public class DirectedMD {
         // - if there is only one maximum member: it's this node
         // - if there are several maximum members: it's the computed (necessarily nonprime) lca
 
-        // 5.) Bucket sort members of Ü(T_a,T_b) according to number pairs given by P_a, P_b
+        // 5.) Bucket sort members of Ü(T_s,T_g) according to number pairs given by P_a, P_b
         //     to get equivalence classes of R_U (Lem 9)
         //     -> I use a HashMap instead of Bucketsorting by the sortKey.
         //     union of each eq. class via boolean array (BitSet) to get result from Th. 10
@@ -446,7 +439,7 @@ public class DirectedMD {
         log.fine("Equivalence Classes: " + equivalenceClassesR_U.values());
 
 
-        // 6. ) the set \mathcal S(T_a, T_b) - which is the set Family of H's MD-Tree:
+        // 6. ) the set \mathcal S(T_s, T_g) - which is the set Family of H's MD-Tree:
         ArrayList<BitSet> strongModulesOfH = new ArrayList<>(
                 equivalenceClassesR_U.size() + intersectionOfAandB.size());
         strongModulesOfH.addAll(equivalenceClassesR_U.values());
@@ -456,21 +449,21 @@ public class DirectedMD {
         // 7. ) From that set Family, The Inclusion Tree can be constructed by Lem 11.
 
         PartitiveFamilyTree ret = new PartitiveFamilyTree(strongModulesOfH, log, nVertices);
-        // now we have the Tree T(H) = T_a Λ T_b which is equal to the MD Tree, exept...
+        // now we have the Tree T(H) = T_s Λ T_g which is equal to the MD Tree, exept...
 
         return ret;
     }
 
     /**
-     * Let A* := {X | X ∈ σ(T_a, T_b) AND X node in T_a OR P_a not prime in T_a}, B* analog.
-     * So these are the entries of σ(T_a,T_b) that also appear in T_a [T_b] or share a complete parent in T_a [T_b].
+     * Let A* := {X | X ∈ σ(T_s, T_g) AND X node in T_s OR P_a not prime in T_s}, B* analog.
+     * So these are the entries of σ(T_s,T_g) that also appear in T_s [T_g] or share a complete parent in T_s [T_g].
      *
      * This method use Alg 1 in order to get the desired result of Cor. 13: Testing each node
-     * of σ(T_a,T_b) for membership in A* [and B*, respectively]. Then, their intersection is returned:
+     * of σ(T_s,T_g) for membership in A* [and B*, respectively]. Then, their intersection is returned:
      *
-     * Ü(T_a,T_b) = A* \cap B*;
+     * Ü(T_s,T_g) = A* \cap B*;
      *
-     * @param bitsetToOverlapTreenNode the entries of σ(T_a,T_b)
+     * @param bitsetToOverlapTreenNode the entries of σ(T_s,T_g)
      */
     private HashMap<RootedTreeNode, BitSet> computeNodesWithCompleteParent(Map<BitSet, RootedTreeNode> bitsetToOverlapTreenNode, boolean isA,
                                                                            Map<RootedTreeNode, RootedTreeNode> elementOfAToP_a, Map<BitSet, RootedTreeNode> strongModules) {
@@ -479,28 +472,28 @@ public class DirectedMD {
         //
 
         // Compute P_a(S) for every S \in σ with alg 1.
-        // "P_a(S) is the smallest node of T_a that contains S as proper subset"
+        // "P_a(S) is the smallest node of T_s that contains S as proper subset"
         //  -> I'll compute A* and B* directly and save the LCAs for later.
         HashMap<RootedTreeNode, BitSet> elementsOfA = new HashMap<>();
 
-        // nodes of T_a:
+        // nodes of T_s:
         MDTreeLeafNode[] leaves;
         String logPrefix;
         if (isA) {
-            leaves = leavesOfT_a;
+            leaves = leavesOfT_s;
             logPrefix = "A: ";
         } else {
-            leaves = leavesOfT_b;
+            leaves = leavesOfT_g;
             logPrefix = "B: ";
         }
 
-        // outer loop: iterate over all inner nodes of σ(T_a,T_b)
-        // need to get the P_a for every node S in σ that is not directly in T_a -> lca and check if not prime.
+        // outer loop: iterate over all inner nodes of σ(T_s,T_g)
+        // need to get the P_a for every node S in σ that is not directly in T_s -> lca and check if not prime.
         for (Map.Entry<BitSet, RootedTreeNode> setEntryOfSigma : bitsetToOverlapTreenNode.entrySet()) {
 
             BitSet bits = setEntryOfSigma.getKey();
 
-            // check if already a node of T_a or T_b -> done.
+            // check if already a node of T_s or T_g -> done.
 //            RootedTreeNode easyNode = strongModules.get(bits);
 //            if( easyNode != null ){
 //                log.fine(() -> logPrefix + "Added: " + setEntryOfSigma);
@@ -518,7 +511,7 @@ public class DirectedMD {
             HashSet<RootedTreeNode> innerNodes = new HashSet<>(bits.cardinality() * 4 / 3);
             HashSet<RootedTreeNode> maximumMembers = new HashSet<>();
 
-            // Init: Mark the leaf entries of T_a corresponding to the current set of σ(T_a,T_b)
+            // Init: Mark the leaf entries of T_s corresponding to the current set of σ(T_s,T_g)
             for (int i = bits.nextSetBit(0); i >= 0; i = bits.nextSetBit(i + 1)) {
                 leaves[i].addMark();
                 maximumMembers.add(leaves[i]);
@@ -526,7 +519,7 @@ public class DirectedMD {
                 innerNodes.add(parent);
             }
 
-            // Iterate bottom-up through T_a and loop, until no parents are fully marked anymore
+            // Iterate bottom-up through T_s and loop, until no parents are fully marked anymore
             boolean completed = false;
             while (!completed) {
                 // holds the parents - to be processed in the next iteration
@@ -549,11 +542,11 @@ public class DirectedMD {
                 completed = tmpSet.isEmpty();
                 innerNodes = tmpSet;
             }
-            // now, we have the maximal members of T_a marked that are subsets of an S ⊂ σ.
+            // now, we have the maximal members of T_s marked that are subsets of an S ⊂ σ.
             // to determine if S \in A*, check if maximumMembers has only one entry OR their first shared parent is complete.
 
 
-            // Step 2: Take the initialized inclusion tree of σ(T_a, T_b) and test its nodes for membership in A* and B*
+            // Step 2: Take the initialized inclusion tree of σ(T_s, T_g) and test its nodes for membership in A* and B*
             // Saving a HashMap from element of σ to P_a allows us to compute the R_U-equivalence classes.
 
             if (maximumMembers.size() == 1) {

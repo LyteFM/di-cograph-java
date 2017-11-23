@@ -111,15 +111,15 @@ public class PartitiveFamilyTree extends RootedTree {
         // Step 0: eliminate doubles from input and add root, if not yet present.
         HashSet<BitSet> inputSetNoDoubles = new HashSet<>(inputSet);
         if (inputSetNoDoubles.size() != inputSet.size()) {
-            log.fine("Double entry in input for inclusion tree");
+            log.fine(() -> "Double entry in input for inclusion tree");
         }
         ArrayList<BitSet> inputNodeList = new ArrayList<>(inputSetNoDoubles);
 
         // Sort the array by size, using counting sort
-        // todo: Das brauche ich häufiger! Auch hier mit BucketSort...
+        // todo: Auch hier mit BucketSort...
         inputNodeList.sort( // descending size, with lamdas.
                 (b1, b2) -> Integer.compare(b2.cardinality(), b1.cardinality()));
-        log.fine("Input sorted by size: " + inputNodeList);
+        log.fine(() -> "Input sorted by size: " + inputNodeList);
 
         // add root, if not yet included
         BitSet rootSet = new BitSet(nVertices);
@@ -148,7 +148,6 @@ public class PartitiveFamilyTree extends RootedTree {
         // root is now the last element in every xList
 
 
-        // PartitiveFamilyTree ret = new PartitiveFamilyTree(); this
         PartitiveFamilyTreeNode root = new PartitiveFamilyTreeNode(rootSet);
         this.setRoot(root);
         //HashMap<BitSet, RootedTreeNode> bitsetToOverlapTreenNode = new HashMap<>(nontrivOverlapComponents.size() * 4 / 3);
@@ -212,7 +211,7 @@ public class PartitiveFamilyTree extends RootedTree {
             }
 
         }
-        setModuleToTreenode(bitsetToInclusionTreenNode);
+        moduleToTreenode = bitsetToInclusionTreenNode;
     }
 
 
