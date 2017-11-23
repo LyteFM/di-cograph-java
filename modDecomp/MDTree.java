@@ -185,7 +185,17 @@ public class MDTree extends RootedTree {
 
     // F.L. 22.11.17: removing dummy primes from adrians MD
     public boolean removeDummyPrimes() {
-        return ((MDTreeNode) root).removeDummyPrimes();
+        MDTreeNode rootNode = (MDTreeNode) root;
+        if (rootNode.getType() == MDNodeType.PRIME && rootNode.getNumChildren() == 1) {
+            RootedTreeNode newRoot = rootNode.getFirstChild();
+            newRoot.setParent(null);
+            root = newRoot;
+            rootNode = (MDTreeNode) root;
+            rootNode.removeDummyPrimes();
+            return true;
+        } else {
+            return rootNode.removeDummyPrimes();
+        }
     }
 
     public void readFromDot(Reader dotReader) throws IOException, ImportException {

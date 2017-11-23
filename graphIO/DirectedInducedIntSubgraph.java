@@ -15,19 +15,11 @@ public class DirectedInducedIntSubgraph<E> extends SimpleDirectedGraph<Integer, 
 {
 
     final SimpleDirectedGraph<Integer, E> base;
-//    //
-//    public DirectedInducedIntSubgraph(EdgeFactory<Integer, E> ef)
-//    {
-//        super(ef);
-//    }
-//
-//    public DirectedInducedIntSubgraph(Class<? extends E> edgeClass){
-//        this(new ClassBasedEdgeFactory<>(edgeClass));
-//    }
-private DirectedInducedIntSubgraph(Graph<Integer, E> baseGraph) {
+
+    private DirectedInducedIntSubgraph(Graph<Integer, E> baseGraph) {
         super(baseGraph.getEdgeFactory());
-    base = (SimpleDirectedGraph<Integer, E>) baseGraph;
-}
+        base = (SimpleDirectedGraph<Integer, E>) baseGraph;
+    }
 
     public DirectedInducedIntSubgraph(Graph<Integer, E> baseGraph, BitSet vertices) {
         this(baseGraph);

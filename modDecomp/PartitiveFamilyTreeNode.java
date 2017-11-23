@@ -50,6 +50,11 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
     void reorderAllInnerNodes(Logger log,
             BitSet[] outNeighbors, BitSet[] inNeighbors, List<PartitiveFamilyLeafNode> orderedLeaves, int[] positionInPermutation){
         if(type == MDNodeType.ORDER){
+            if (!isModuleInG) {
+                // how to delete modules? -> I think I can simply add their vertices at the correct position.
+                log.warning(() -> "Weak module found: " + this);
+                throw new IllegalStateException("Weak module found: " + this);
+            }
             log.fine(() -> type + ": computing fact perm of tournament " + inducedPartialSubgraph);
             List<Pair<Integer,Integer>> perfectFactPerm = perfFactPermFromTournament.apply(inducedPartialSubgraph);
             // results are real vertices in a new order (first) and their outdegree (second).
@@ -57,13 +62,22 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             // ok: if a merged module has been split, it's children are processed later
             reorderAccordingToPerfFactPerm(perfectFactPerm, log);
         } else if (type.isDegenerate()){
-            // todo: really only with the flag? how do I delete weak modules? How about merged modules here?
             if(isModuleInG) {
                 log.fine(() -> type + " ");
                 computeEquivalenceClassesAndReorderChildren(log, outNeighbors, inNeighbors, orderedLeaves, positionInPermutation);
+                // todo: How about merged modules here?
+
             } else {
-                // how to delete weak modules?
+                // how to delete weak modules? -> I think I can simply add their vertices at the correct position.
+                log.warning(() -> "Weak module found: " + this);
                 throw new IllegalStateException("Weak module found: " + this);
+            }
+        } else {
+            // todo: weak prime modules -> add their children!
+            if (!isModuleInG) {
+                log.warning("Weak Prime Module: " + this);
+                throw new IllegalStateException("Weak Prime Module: " + this);
+                //replaceThisByItsChildren();
             }
         }
 
@@ -263,6 +277,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         if (recoverMerged) {
             type = MDNodeType.PRIME;
             newNode.type = MDNodeType.ORDER;
+            newNode.isModuleInG = true;
             newNode.inducedPartialSubgraph = new DirectedInducedIntSubgraph<>(inducedPartialSubgraph.getBase(), newNode.vertices);
             // todo: does it need any other properties? like LC/RC?
             addChild(newNode);

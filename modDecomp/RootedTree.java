@@ -187,7 +187,7 @@ class RootedTree {
             MDNodeType currNodeType;
             if (directed) {
                 currNodeType = ((PartitiveFamilyTreeNode) node).getType();
-                subgraph = new DirectedInducedIntSubgraph<DefaultEdge>(graph, childRepresentatives);
+                subgraph = new DirectedInducedIntSubgraph<>(graph, childRepresentatives);
             } else {
                 currNodeType = ((MDTreeNode) node).getType();
                 subgraph = new UndirectedInducedIntSubgraph<>(graph, childRepresentatives);

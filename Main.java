@@ -5,6 +5,7 @@ import org.jgrapht.alg.isomorphism.VF2GraphIsomorphismInspector;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.graph.SimpleGraph;
+import org.jgrapht.io.DOTExporter;
 import org.jgrapht.io.ExportException;
 
 import java.io.BufferedReader;
@@ -13,6 +14,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.nio.file.Files;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -103,8 +106,9 @@ public class Main {
 
         // todo: first - need to debug the ones with wrong undirectedMD, i.e. n=25, 26
         String folderPath = "testGraphs/DMDtest/ERR/";
-        String n26err = folderPath + "randDigraph_n_26_edits_13_11-22_14:39:02:113_original.txt"; // here was an error in G_d.
-        MDtestFromFile(log, n26err, true);
+        String n26err = folderPath + "randDigraph_n_25_edits_12_11-22_14:38:53:932_original.txt";
+        String viceVera = "testGraphs/randDigraph_n_10_edits_5_11-17_14:13:25:176_original.txt";
+        //MDtestFromFile(log, viceVera, true);
 
 
 
@@ -113,7 +117,6 @@ public class Main {
         String smallNotAtournament = folder + "randDigraph_n_10_edits_5_11-17_14:11:11:882_original.txt";
         String test = "testy.txt";
 
-        //MDtestFromFile(log, smallNotAtournament, true);
 
 
 //        System.out.println("From rand:\n\n");
@@ -123,6 +126,9 @@ public class Main {
 
         // Error-files
         String errgraph = folder + "randDigraph_n_7_edits_3_11-17_14:04:24:233_original.txt";
+
+        MDtestFromFile(log, errgraph, true);
+
 
 
 
@@ -311,6 +317,10 @@ public class Main {
         } else {
             importGraph = JGraphAdjecencyImporter.importIntGraph(importFile);
         }
+        DOTExporter<Integer, DefaultEdge> exporter = new DOTExporter<>();
+        Writer writer = new StringWriter();
+        exporter.exportGraph(importGraph, writer);
+        log.info(".dot for Graph:\n" + writer.toString());
 
         DirectedMD testMD = new DirectedMD(importGraph, log, true);
         testMD.computeModularDecomposition();

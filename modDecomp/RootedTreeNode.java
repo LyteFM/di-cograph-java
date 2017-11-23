@@ -1,5 +1,6 @@
 package dicograph.modDecomp;
 
+import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleGraph;
 
@@ -10,6 +11,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
 
 import dicograph.graphIO.UndirectedInducedIntSubgraph;
 
@@ -310,8 +312,29 @@ class RootedTreeNode {
 		}
 		this.removeSubtree();
 	}
-	
-	
+
+    // F.L. 22.11.17: deal with error in Adrains Code
+    boolean removeDummyPrimes() {
+        RootedTreeNode currentChild = getFirstChild();
+        boolean ret = false;
+        while (currentChild != null) {
+            MDTreeNode current = (MDTreeNode) currentChild;
+            if (current.removeDummyPrimes()) {
+                ret = true;
+            }
+            MDNodeType currentType = current.getType();
+            currentChild = currentChild.getRightSibling(); // now nextChild
+
+            if (currentType == MDNodeType.PRIME && current.getNumChildren() == 1) {
+                currentChild.insertBefore(current.getFirstChild()); // takes the subtree with it
+                ret = true;
+                current.removeSubtree(); // shouldn't have anything now, just remove it
+            }
+        }
+        return ret;
+    }
+
+
 	/*
 	 * Replaces the children of this node with the node supplied.  The
 	 * children are removed from this node's tree.
@@ -424,5 +447,43 @@ class RootedTreeNode {
 
 	}
 
+    void setParent(RootedTreeNode parent) {
+        this.parent = parent;
+    }
 
+    // assuming internal type correctness, now check if truly a module.
+    void checkNodeTypesBruteForce(StringBuilder res, Graph<Integer, DefaultEdge> graph) {
+
+        // 0 - no edge
+        //
+        String msg;
+        TreeSet<Integer> otherVertices = new TreeSet<>(graph.vertexSet());
+        ArrayList<Integer> moduleVertices = new ArrayList<>(vertices.cardinality());
+        vertices.stream().forEach(moduleVertices::add);
+        otherVertices.removeAll(moduleVertices);
+        for (int otherV : otherVertices) {
+            boolean first = true;
+            boolean otherToModule = true;
+            boolean moduleToOther = true;
+
+            for (int moduleV : moduleVertices) {
+                if (first) {
+                    otherToModule = graph.containsEdge(otherV, moduleV);
+                    moduleToOther = graph.containsEdge(moduleV, otherV);
+                    first = false;
+                } else {
+                    if (otherToModule != graph.containsEdge(otherV, moduleV)) {
+                        msg = "Expected value: " + otherToModule + " for edge (" + otherV + "," + moduleV + ")\n";
+                        res.append(msg);
+                    }
+                    if (moduleToOther != graph.containsEdge(moduleV, otherV)) {
+                        msg = "Expected value: " + moduleToOther + " for edge (" + moduleV + "," + otherV + ")\n";
+                        res.append(msg);
+                    }
+                }
+            }
+        }
+
+
+    }
 }

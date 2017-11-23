@@ -71,7 +71,8 @@ public enum MDNodeType {
 				if (!isPrime && firstNodeType == PRIME) {
 					isPrime = true; // no changes, always stayed prime
 				}
-				boolean weHaveAProblem = verified == PRIME && !isPrime || verified != PRIME && isPrime;
+				boolean weHaveAProblem = verified == PRIME && !isPrime && firstNodeType != ORDER // merged order modules...
+						|| verified != PRIME && isPrime;
 				if (weHaveAProblem) {
 					error = true;
 					builder.append("Found only ").append(firstNodeType).append(" for adjacencies of ").append(v1).append("\n");
@@ -82,6 +83,8 @@ public enum MDNodeType {
 				builder.append("For node: ").append(node).append("\n");
 			}
 		}
+
+		node.checkNodeTypesBruteForce(builder, mainGraph);
 
 		return builder.toString();
 	}
@@ -133,14 +136,17 @@ public enum MDNodeType {
 					    // we have all out-degrees from 0 to n-1 -> Order.
 						return MDNodeType.ORDER;
 					} else if(allOutDegs.nextSetBit(0) == vertices.size()-1){
-					    // every node has n-1 outgoing edges -> Series.
+						// every node has n-1 outgoing edges -> Series.
 						return MDNodeType.SERIES;
+					} else {
+						// the node appeared to be ORDER, but doesn't have the correct outdegs.
+						return MDNodeType.PRIME;
 					}
 				}
-				return null; // shouldn't happen, at that point it's either series or order.
 			}
 		}
 		return MDNodeType.PRIME;
 
 	}
+
 }
