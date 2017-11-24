@@ -1,5 +1,6 @@
 package dicograph.modDecomp;
 
+import org.jgrapht.alg.util.Pair;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.graph.SimpleGraph;
@@ -405,10 +406,14 @@ public class DirectedMD {
         //     -> I use a HashMap instead of Bucketsorting by the sortKey.
         //     union of each eq. class via boolean array (BitSet) to get result from Th. 10
 
-        // get an arbitrary Index for each of the Treenodes //
+
+        /*
+        // todo: kann wohl weg, wenn ich Pair nutze
+        // get an arbitrary Index for each of the Treenodes
         ArrayList<RootedTreeNode> treeNodesOfA = new ArrayList<>(strongModulesBoolA.values());
         ArrayList<RootedTreeNode> treeNodesOfB = new ArrayList<>(strongModulesBoolB.values());
         // Also Map the TreeNode to its index
+
         HashMap<RootedTreeNode, Integer> modulesAToTreeIndex = new HashMap<>(treeNodesOfA.size() * 4 / 3);
         HashMap<RootedTreeNode, Integer> modulesBToTreeIndex = new HashMap<>(treeNodesOfB.size() * 4 / 3);
         for (int i = 0; i < treeNodesOfA.size(); i++) {
@@ -417,10 +422,11 @@ public class DirectedMD {
         for (int i = 0; i < treeNodesOfB.size(); i++) {
             modulesBToTreeIndex.put(treeNodesOfB.get(i), i);
         }
+        */
 
         // Compute the equivalence classes.
         // todo: use Pair MDTreenode...
-        HashMap<String,BitSet > equivalenceClassesR_U = new HashMap<>((elementOfAToP_a.size() + elementOfBToP_b.size()) * 2/3);
+        HashMap<Pair<RootedTreeNode, RootedTreeNode>, BitSet> equivalenceClassesR_U = new HashMap<>((elementOfAToP_a.size() + elementOfBToP_b.size()) * 2 / 3);
 
         for( Map.Entry<RootedTreeNode, BitSet> entry : intersectionOfAandB.entrySet()){
 
@@ -428,11 +434,14 @@ public class DirectedMD {
             RootedTreeNode bElement = elementOfBToP_b.get(entry.getKey());
 
             // must be contained in both maps! Generate the key:
-            String sortKey = modulesAToTreeIndex.get(aElement) + "-" + modulesBToTreeIndex.get(bElement);
-            if(equivalenceClassesR_U.containsKey(sortKey)){
-                equivalenceClassesR_U.get(sortKey).or(entry.getValue());
-            } else {
-                equivalenceClassesR_U.put(sortKey, entry.getValue());
+            if (aElement != null && bElement != null) {
+                //String sortKey = modulesAToTreeIndex.get(aElement) + "-" + modulesBToTreeIndex.get(bElement);
+                Pair<RootedTreeNode, RootedTreeNode> sortKey = new Pair<>(aElement, bElement);
+                if (equivalenceClassesR_U.containsKey(sortKey)) {
+                    equivalenceClassesR_U.get(sortKey).or(entry.getValue());
+                } else {
+                    equivalenceClassesR_U.put(sortKey, (BitSet) entry.getValue().clone());
+                }
             }
 
         }
@@ -494,12 +503,16 @@ public class DirectedMD {
             BitSet bits = setEntryOfSigma.getKey();
 
             // check if already a node of T_s or T_g -> done.
-//            RootedTreeNode easyNode = strongModules.get(bits);
-//            if( easyNode != null ){
-//                log.fine(() -> logPrefix + "Added: " + setEntryOfSigma);
-//                log.fine(() -> "   as it is node in MD Tree.");
-//                elementsOfA.put(easyNode,bits);
-//            } else {
+            MDTreeNode easyNode = (MDTreeNode) strongModules.get(bits);
+            if (easyNode != null) {
+                log.fine(() -> logPrefix + "Added: " + setEntryOfSigma);
+                log.fine(() -> "   as it is node in MD Tree.");
+                elementsOfA.put(setEntryOfSigma.getValue(), bits);
+                // if not a prime, possibly also in equiv class:
+                if (easyNode.getType().isDegenerate()) {
+                    elementOfAToP_a.put(setEntryOfSigma.getValue(), easyNode);
+                }
+            } else {
 
             // Step 1: Initialize the inclusion tree, i.e. each node must have:
             //         - a parent pointer (ok)
@@ -550,6 +563,7 @@ public class DirectedMD {
             // Saving a HashMap from element of σ to P_a allows us to compute the R_U-equivalence classes.
 
             if (maximumMembers.size() == 1) {
+                // todo: I never get here, do I??
                 elementsOfA.put(setEntryOfSigma.getValue(), setEntryOfSigma.getKey());
                 elementOfAToP_a.put(setEntryOfSigma.getValue(), maximumMembers.stream().findFirst().get());
                 log.fine(logPrefix + "Added: " + setEntryOfSigma.toString() + " directly");
@@ -581,7 +595,7 @@ public class DirectedMD {
                 node.unmarkAllChildren();
             }
         }
-        //}
+        }
 
         return elementsOfA;
     }
