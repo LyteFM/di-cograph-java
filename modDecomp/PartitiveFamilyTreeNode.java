@@ -120,46 +120,33 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         int returnVal = subgraphVertices.getFirst();
         // compute the induced subgraph and determine the node type
         inducedPartialSubgraph = new DirectedInducedIntSubgraph<>(data.inputGraph, subgraphVertices);
-        if(inducedPartialSubgraph.edgeSet().isEmpty()){
+        Set<DefaultEdge> edgeSet = inducedPartialSubgraph.edgeSet();
+        int n = inducedPartialSubgraph.vertexSet().size();
+        if (edgeSet.isEmpty()) {
             // no edges means 0-complete
             type = MDNodeType.PARALLEL;
+        } else if (edgeSet.size() == n * (n - 1)) {
+            // I don't have multi-edges, so this means it's 1-complete.
+            // two edges between every vertex pair.
+            type = MDNodeType.SERIES;
         } else {
-            int typeVal = -1;
-            int currVal;
-            boolean firstRun = true;
-            for(DefaultEdge edge : inducedPartialSubgraph.edgeSet()){
-                int source = inducedPartialSubgraph.getEdgeSource(edge);
-                int target = inducedPartialSubgraph.getEdgeTarget(edge);
-                currVal = data.getEdgeValueForH(source, target);
-                if(firstRun) {
-                    typeVal = currVal;
-                    firstRun = false;
-                } else {
-                    if(currVal != typeVal){
+            boolean isOrder = edgeSet.size() == n * (n - 1) / 2;
+            // 2-complete means: one edge between every vertex pair
+            if (isOrder) {
+                // need to brute-force check every edge
+                for (DefaultEdge edge : edgeSet) {
+                    int source = inducedPartialSubgraph.getEdgeSource(edge);
+                    int target = inducedPartialSubgraph.getEdgeTarget(edge);
+                    if (data.getEdgeValueForH(source, target) != 2) {
                         type = MDNodeType.PRIME;
                         return returnVal;
                     }
                 }
+                // not prime -> success!
+                type = MDNodeType.ORDER;
+            } else {
+                type = MDNodeType.PRIME;
             }
-            switch (typeVal){
-                case 0:
-                    type = MDNodeType.PARALLEL;
-                    data.log.warning("Unexpected parallel node " + this);
-                    break;
-                case 1:
-                    type = MDNodeType.SERIES;
-                    assert !inducedPartialSubgraph.isTournament() : type + " but node is a tournament: " + toString();
-                    break;
-                case 2:
-                    type = MDNodeType.ORDER;
-                    //assert inducedPartialSubgraph.isTournament() : type + " but node not a tournament: " + toString();
-                    // merged modules might occur here, will be taken care of later
-                    break;
-            }
-
-        }
-        if( type == null ){
-            throw new IllegalStateException("Error: No MDtype found! for " + this);
         }
 
         return returnVal;

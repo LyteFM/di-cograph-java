@@ -159,7 +159,7 @@ public class DirectedMD {
 
         PartitiveFamilyTree treeForH = intersectPartitiveFamiliesOf(treeForG_s, treeForG_d);
 
-        // I guess I should determine which node-type there is:
+        // I guess I should determine the node-type. Note: not yet the "true" node-type, just as ref. to 0/1/2-complete
         treeForH.computeAllNodeTypes(this);
         log.info("Inclusion Tree with computed types: " + MDTree.beautify(treeForH.toString()));
 
@@ -425,7 +425,6 @@ public class DirectedMD {
         */
 
         // Compute the equivalence classes.
-        // todo: use Pair MDTreenode...
         HashMap<Pair<RootedTreeNode, RootedTreeNode>, BitSet> equivalenceClassesR_U = new HashMap<>((elementOfAToP_a.size() + elementOfBToP_b.size()) * 2 / 3);
 
         for( Map.Entry<RootedTreeNode, BitSet> entry : intersectionOfAandB.entrySet()){
@@ -436,10 +435,13 @@ public class DirectedMD {
             // must be contained in both maps! Generate the key:
             if (aElement != null && bElement != null) {
                 //String sortKey = modulesAToTreeIndex.get(aElement) + "-" + modulesBToTreeIndex.get(bElement);
+                // Pair is fine, hashCode isn't overridden.
                 Pair<RootedTreeNode, RootedTreeNode> sortKey = new Pair<>(aElement, bElement);
                 if (equivalenceClassesR_U.containsKey(sortKey)) {
+                    log.fine(() -> "Adding to equivalence class " + sortKey);
                     equivalenceClassesR_U.get(sortKey).or(entry.getValue());
                 } else {
+                    log.fine(() -> "new equivalence class " + sortKey);
                     equivalenceClassesR_U.put(sortKey, (BitSet) entry.getValue().clone());
                 }
             }
@@ -453,7 +455,6 @@ public class DirectedMD {
                 equivalenceClassesR_U.size() + intersectionOfAandB.size());
         strongModulesOfH.addAll(equivalenceClassesR_U.values());
         strongModulesOfH.addAll(intersectionOfAandB.values());
-        // todo: do I need to delete the ones with several equi classes? -> others should be prime then
 
         // 7. ) From that set Family, The Inclusion Tree can be constructed by Lem 11.
 
@@ -514,87 +515,86 @@ public class DirectedMD {
                 }
             } else {
 
-            // Step 1: Initialize the inclusion tree, i.e. each node must have:
-            //         - a parent pointer (ok)
-            //         - a list of pointers to its children (firstChild, then iterate rightSibling)
-            //         - record of how many children it has (numChildren)
-            //         - an initialized field for marking (marked)
-            //         - how many children are marked (numChildrenMarked)
+                // Step 1: Initialize the inclusion tree, i.e. each node must have:
+                //         - a parent pointer (ok)
+                //         - a list of pointers to its children (firstChild, then iterate rightSibling)
+                //         - record of how many children it has (numChildren)
+                //         - an initialized field for marking (marked)
+                //         - how many children are marked (numChildrenMarked)
 
-            HashSet<RootedTreeNode> innerNodes = new HashSet<>(bits.cardinality() * 4 / 3);
-            HashSet<RootedTreeNode> maximumMembers = new HashSet<>();
+                HashSet<RootedTreeNode> innerNodes = new HashSet<>(bits.cardinality() * 4 / 3);
+                HashSet<RootedTreeNode> maximumMembers = new HashSet<>();
 
-            // Init: Mark the leaf entries of T_s corresponding to the current set of σ(T_s,T_g)
-            for (int i = bits.nextSetBit(0); i >= 0; i = bits.nextSetBit(i + 1)) {
-                leaves[i].addMark();
-                maximumMembers.add(leaves[i]);
-                RootedTreeNode parent = leaves[i].getParent();
-                innerNodes.add(parent);
-            }
+                // Init: Mark the leaf entries of T_s corresponding to the current set of σ(T_s,T_g)
+                for (int v = bits.nextSetBit(0); v >= 0; v = bits.nextSetBit(v + 1)) {
+                    leaves[v].addMark();
+                    maximumMembers.add(leaves[v]);
+                    RootedTreeNode parent = leaves[v].getParent();
+                    innerNodes.add(parent);
+                }
 
-            // Iterate bottom-up through T_s and loop, until no parents are fully marked anymore
-            boolean completed = false;
-            while (!completed) {
-                // holds the parents - to be processed in the next iteration
-                HashSet<RootedTreeNode> tmpSet = new HashSet<>(innerNodes.size());
+                // Iterate bottom-up through T_s and loop, until no parents are fully marked anymore
+                boolean completed = false;
+                while (!completed) {
+                    // holds the parents - to be processed in the next iteration
+                    HashSet<RootedTreeNode> tmpSet = new HashSet<>(innerNodes.size());
 
-                innerNodes.stream().filter(tnode -> tnode.getNumChildren() == tnode.getNumMarkedChildren()).forEach(node -> {
-                    node.unmarkAllChildren();
-                    node.mark();
-                    // nodes might have same parent.
-                    tmpSet.add(node.getParent());
-                    // update maximum members:
-                    maximumMembers.add(node.getParent());
-                    RootedTreeNode child = node.getFirstChild();
-                    while (child != null) {
-                        maximumMembers.remove(child);
-                        child = child.getRightSibling();
-                    }
-                });
+                    innerNodes.stream().filter(tnode -> tnode.getNumChildren() == tnode.getNumMarkedChildren()).forEach(node -> {
+                        node.unmarkAllChildren();
+                        node.mark();
+                        // nodes might have same parent.
+                        tmpSet.add(node.getParent());
+                        // update maximum members:
+                        maximumMembers.add(node.getParent());
+                        RootedTreeNode child = node.getFirstChild();
+                        while (child != null) {
+                            maximumMembers.remove(child);
+                            child = child.getRightSibling();
+                        }
+                    });
 
-                completed = tmpSet.isEmpty();
-                innerNodes = tmpSet;
-            }
-            // now, we have the maximal members of T_s marked that are subsets of an S ⊂ σ.
-            // to determine if S \in A*, check if maximumMembers has only one entry OR their first shared parent is complete.
+                    completed = tmpSet.isEmpty();
+                    innerNodes = tmpSet;
+                }
+                // now, we have the maximal members of T_s marked that are subsets of an S ⊂ σ.
+                // to determine if S \in A*, check if maximumMembers has only one entry OR their first shared parent is complete.
 
 
-            // Step 2: Take the initialized inclusion tree of σ(T_s, T_g) and test its nodes for membership in A* and B*
-            // Saving a HashMap from element of σ to P_a allows us to compute the R_U-equivalence classes.
+                // Step 2: Take the initialized inclusion tree of σ(T_s, T_g) and test its nodes for membership in A* and B*
+                // Saving a HashMap from element of σ to P_a allows us to compute the R_U-equivalence classes.
 
-            if (maximumMembers.size() == 1) {
-                // todo: I never get here, do I??
-                elementsOfA.put(setEntryOfSigma.getValue(), setEntryOfSigma.getKey());
-                elementOfAToP_a.put(setEntryOfSigma.getValue(), maximumMembers.stream().findFirst().get());
-                log.fine(logPrefix + "Added: " + setEntryOfSigma.toString() + " directly");
-
-            } else if (maximumMembers.size() == 0) {
-                log.warning(logPrefix + "Strange: no max member for " + setEntryOfSigma.toString());
-
-            } else {
-                // compute the LCA of all maximum members and check if it is root. Note: one entry itself could be that.
-                // LCA can be found in O(h), h height of the tree, at least.
-                MDTreeNode lca = (MDTreeNode) RootedTree.computeLCA(maximumMembers, log);
-                if (lca == null || lca.hasNoChildren()) {
-                    throw new IllegalStateException("LCA computation failed for: " + setEntryOfSigma);
-                } else if (lca.getType().isDegenerate()) {
-
+                if (maximumMembers.size() == 1) {
+                    // todo: I never get here, do I??
                     elementsOfA.put(setEntryOfSigma.getValue(), setEntryOfSigma.getKey());
-                    elementOfAToP_a.put(setEntryOfSigma.getValue(), lca);
-                    log.fine(() -> logPrefix + "Added: " + setEntryOfSigma);
-                    log.fine(() -> "   with complete LCA: " + lca);
+                    elementOfAToP_a.put(setEntryOfSigma.getValue(), maximumMembers.stream().findFirst().get());
+                    log.fine(logPrefix + "Added: " + setEntryOfSigma.toString() + " directly");
+
+                } else if (maximumMembers.size() == 0) {
+                    log.warning(logPrefix + "Strange: no max member for " + setEntryOfSigma.toString());
+
                 } else {
-                    log.fine(() -> logPrefix + "Discarded: " + setEntryOfSigma);
-                    log.fine(() -> "   with prime LCA: " + lca);
+                    // compute the LCA of all maximum members and check if it is root. Note: one entry itself could be that.
+                    // LCA can be found in O(h), h height of the tree, at least.
+                    MDTreeNode lca = (MDTreeNode) RootedTree.computeLCA(maximumMembers, log);
+                    if (lca == null || lca.hasNoChildren()) {
+                        throw new IllegalStateException("LCA computation failed for: " + setEntryOfSigma);
+                    } else if (lca.getType().isDegenerate()) {
+
+                        elementsOfA.put(setEntryOfSigma.getValue(), setEntryOfSigma.getKey());
+                        elementOfAToP_a.put(setEntryOfSigma.getValue(), lca);
+                        log.fine(() -> logPrefix + "Added: " + setEntryOfSigma);
+                        log.fine(() -> "   with complete LCA: " + lca);
+                    } else {
+                        log.fine(() -> logPrefix + "Discarded: " + setEntryOfSigma);
+                        log.fine(() -> "   with prime LCA: " + lca);
+                    }
+                }
+
+                // Cleaup. I need to unmark all nodes. Marked nodes are now only among children of the maximum Members!
+                for (RootedTreeNode node : maximumMembers) {
+                    node.unmarkAllChildren();
                 }
             }
-
-            // Cleaup. I need to unmark all nodes. Marked nodes are now only among children of the maximum Members!
-            // todo: verify!
-            for (RootedTreeNode node : maximumMembers) {
-                node.unmarkAllChildren();
-            }
-        }
         }
 
         return elementsOfA;
