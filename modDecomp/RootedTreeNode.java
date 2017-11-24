@@ -303,7 +303,9 @@ class RootedTreeNode {
 	 * node is removed from its tree.
 	 */
 	protected void replaceThisByItsChildren() {
-		
+
+		// todo: is this the error source???
+		System.out.println("Warning: replacing " + this + " by its children!");
 		RootedTreeNode currentChild = getFirstChild();
 		while (currentChild != null) {
 			RootedTreeNode nextChild = currentChild.getRightSibling();
@@ -312,27 +314,6 @@ class RootedTreeNode {
 		}
 		this.removeSubtree();
 	}
-
-    // F.L. 22.11.17: deal with error in Adrains Code
-    boolean removeDummyPrimes() {
-        RootedTreeNode currentChild = getFirstChild();
-        boolean ret = false;
-        while (currentChild != null) {
-            MDTreeNode current = (MDTreeNode) currentChild;
-            if (current.removeDummyPrimes()) {
-                ret = true;
-            }
-            MDNodeType currentType = current.getType();
-            currentChild = currentChild.getRightSibling(); // now nextChild
-
-            if (currentType == MDNodeType.PRIME && current.getNumChildren() == 1) {
-                currentChild.insertBefore(current.getFirstChild()); // takes the subtree with it
-                ret = true;
-                current.removeSubtree(); // shouldn't have anything now, just remove it
-            }
-        }
-        return ret;
-    }
 
 
 	/*
@@ -450,6 +431,42 @@ class RootedTreeNode {
     void setParent(RootedTreeNode parent) {
         this.parent = parent;
     }
+
+	// F.L. 22.11.17: deal with error in Adrains Code
+	boolean removeDummyPrimes() {
+		RootedTreeNode currentChild = getFirstChild();
+		boolean ret = false;
+		while (currentChild != null) {
+			MDTreeNode current = (MDTreeNode) currentChild;
+			if (current.removeDummyPrimes()) {
+				ret = true;
+			}
+			MDNodeType currentType = current.getType();
+			currentChild = currentChild.getRightSibling(); // now nextChild
+
+			if (currentType == MDNodeType.PRIME && current.getNumChildren() == 1) {
+				currentChild.insertBefore(current.getFirstChild()); // takes the subtree with it
+				ret = true;
+				current.removeSubtree(); // shouldn't have anything now, just remove it
+			}
+		}
+		return ret;
+	}
+
+    // F.L. 24.11.17:
+	void removeThis(){
+
+     	RootedTreeNode stillRightSibling = rightSibling;
+     	RootedTreeNode currentChild = firstChild;
+     	RootedTreeNode nextChild;
+     	while (currentChild != null){
+     		nextChild = currentChild.rightSibling;
+     		currentChild.insertBefore(stillRightSibling);
+     		currentChild = nextChild;
+		}
+		removeSubtree();
+
+	}
 
     // assuming internal type correctness, now check if truly a module.
     void checkNodeTypesBruteForce(StringBuilder res, Graph<Integer, DefaultEdge> graph) {

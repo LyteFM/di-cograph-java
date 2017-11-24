@@ -12,8 +12,8 @@ public class PartitiveFamilyLeafNode extends PartitiveFamilyTreeNode {
 
     private int vertex;
 
-    protected PartitiveFamilyLeafNode(int vertexNo) {
-        super();
+    protected PartitiveFamilyLeafNode(int vertexNo,PartitiveFamilyTree tree) {
+        super(tree);
         vertex = vertexNo;
     }
 

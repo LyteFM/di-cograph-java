@@ -148,7 +148,7 @@ public class PartitiveFamilyTree extends RootedTree {
         // root is now the last element in every xList
 
 
-        PartitiveFamilyTreeNode root = new PartitiveFamilyTreeNode(rootSet);
+        PartitiveFamilyTreeNode root = new PartitiveFamilyTreeNode(rootSet, this);
         this.setRoot(root);
         //HashMap<BitSet, RootedTreeNode> bitsetToOverlapTreenNode = new HashMap<>(nontrivOverlapComponents.size() * 4 / 3);
         bitsetToInclusionTreenNode.put(rootSet, root);
@@ -163,7 +163,7 @@ public class PartitiveFamilyTree extends RootedTree {
 
             // retrieve List and create leafNode
             LinkedList<BitSet> currVertexList = xLists.get(vertexNr);
-            PartitiveFamilyLeafNode leafNode = new PartitiveFamilyLeafNode(vertexNr);
+            PartitiveFamilyLeafNode leafNode = new PartitiveFamilyLeafNode(vertexNr,this);
 
             boolean firstEntry = true;
             ListIterator<BitSet> vListIter = currVertexList.listIterator(0);
@@ -173,7 +173,7 @@ public class PartitiveFamilyTree extends RootedTree {
                 // create Trenode if not yet present
                 PartitiveFamilyTreeNode currTreenode = (PartitiveFamilyTreeNode) bitsetToInclusionTreenNode.getOrDefault(currModule, null);
                 if (currTreenode == null) {
-                    currTreenode =  new PartitiveFamilyTreeNode(currModule);
+                    currTreenode =  new PartitiveFamilyTreeNode(currModule,this);
                     bitsetToInclusionTreenNode.put(currModule, currTreenode);
                 }
 
@@ -193,7 +193,7 @@ public class PartitiveFamilyTree extends RootedTree {
 
                     // create parent if not yet present
                     if (parentTreeNode == null) {
-                        parentTreeNode = new PartitiveFamilyTreeNode(parentModule);
+                        parentTreeNode = new PartitiveFamilyTreeNode(parentModule,this);
                         bitsetToInclusionTreenNode.put(parentModule, parentTreeNode);
                         log.fine("Vertex " + vertexNr + ": Created Parent " + parentModule);
                     }

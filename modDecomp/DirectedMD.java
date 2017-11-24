@@ -159,7 +159,8 @@ public class DirectedMD {
 
         PartitiveFamilyTree treeForH = intersectPartitiveFamiliesOf(treeForG_s, treeForG_d);
 
-        // I guess I should determine the node-type. Note: not yet the "true" node-type, just as ref. to 0/1/2-complete
+        // I guess I should determine the node-type. Note: Due to possibly merged modules, this is
+        // not yet the "true" node-type, just a reference to 0/1/2-completeness.
         treeForH.computeAllNodeTypes(this);
         log.info("Inclusion Tree with computed types: " + MDTree.beautify(treeForH.toString()));
 

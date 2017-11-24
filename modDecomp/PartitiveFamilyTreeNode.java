@@ -30,37 +30,45 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
     private boolean isModuleInG;
     private MDNodeType type;
     private DirectedInducedIntSubgraph<DefaultEdge> inducedPartialSubgraph;
+    final PartitiveFamilyTree treeContext; // reference to Tree Object
 
 
 
     // only needed for leaf
-    PartitiveFamilyTreeNode(){
+    protected PartitiveFamilyTreeNode(PartitiveFamilyTree tree){
         super();
+        treeContext = tree;
         isModuleInG = false;
         type = null;
     }
 
-    PartitiveFamilyTreeNode(BitSet vertexModule){
-        super();
-        isModuleInG = false;
+    PartitiveFamilyTreeNode(BitSet vertexModule, PartitiveFamilyTree tree){
+        this(tree);
         vertices = vertexModule;
-        type = null;
+    }
+
+    @Override
+    void removeThis() {
+        super.removeThis();
+        treeContext.moduleToTreenode.remove(vertices);
     }
 
     void reorderAllInnerNodes(Logger log,
-            BitSet[] outNeighbors, BitSet[] inNeighbors, List<PartitiveFamilyLeafNode> orderedLeaves, int[] positionInPermutation){
+                              BitSet[] outNeighbors, BitSet[] inNeighbors, List<PartitiveFamilyLeafNode> orderedLeaves, int[] positionInPermutation){
         if(type == MDNodeType.ORDER){
             if (!isModuleInG) {
-                // how to delete modules? -> I think I can simply add their vertices at the correct position.
+                // delete module weak modules: ->  Replace with their children.
                 log.warning(() -> "Weak module found: " + this);
-                throw new IllegalStateException("Weak module found: " + this);
+                //throw new IllegalStateException("Weak module found: " + this);
+                removeThis();
+            } else {
+                log.fine(() -> type + ": computing fact perm of tournament " + inducedPartialSubgraph);
+                List<Pair<Integer, Integer>> perfectFactPerm = perfFactPermFromTournament.apply(inducedPartialSubgraph);
+                // results are real vertices in a new order (first) and their outdegree (second).
+                log.fine(() -> type + ": reordering and splitting merged modules according to permutation: " + perfectFactPerm);
+                // ok: if a merged module has been split, it's children are processed later
+                reorderAccordingToPerfFactPerm(perfectFactPerm, log);
             }
-            log.fine(() -> type + ": computing fact perm of tournament " + inducedPartialSubgraph);
-            List<Pair<Integer,Integer>> perfectFactPerm = perfFactPermFromTournament.apply(inducedPartialSubgraph);
-            // results are real vertices in a new order (first) and their outdegree (second).
-            log.fine(() -> type + ": reordering and splitting merged modules according to permutation: " + perfectFactPerm);
-            // ok: if a merged module has been split, it's children are processed later
-            reorderAccordingToPerfFactPerm(perfectFactPerm, log);
         } else if (type.isDegenerate()){
             if(isModuleInG) {
                 log.fine(() -> type + " ");
@@ -94,7 +102,6 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
     }
 
     /**
-     * todo: need to distinguish this from method in MDNodeType!
      * Initialization for Step 4 and 5: computes the induced subgraphs to determine the node types.
      * Based only on the Edge type of the 2-Structure H
      * @param data the data from Modular decomposition
@@ -230,7 +237,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         BitSet trueModule;
         PartitiveFamilyTreeNode newNode;
         trueModule = new BitSet();
-        newNode = new PartitiveFamilyTreeNode(trueModule);
+        newNode = new PartitiveFamilyTreeNode(trueModule, treeContext);
 
         // ordering is still valid, but might need to split merged module.
         ArrayList<PartitiveFamilyTreeNode> orderedChildren = new ArrayList<>(getNumChildren());

@@ -94,8 +94,8 @@ public class Main {
 //        System.out.println(paperGraph);
 //        DOTExporter<Integer,DefaultEdge> exporter =new DOTExporter<>();
 //        exporter.exportGraph(paperGraph, new File(fromPaper+ ".dot"));
-        DirectedMD paperMD = new DirectedMD(paperGraph, log, true);
-        paperMD.computeModularDecomposition();
+        //DirectedMD paperMD = new DirectedMD(paperGraph, log, true);
+        //paperMD.computeModularDecomposition();
 
 
 //        for( int i = 20; i <= 30; i ++) {
@@ -125,9 +125,9 @@ public class Main {
 //        MDtestFromFile(log, weirdError,true);
 
         // Error-files
-        String errgraph = folder + "randDigraph_n_7_edits_3_11-17_14:04:24:233_original.txt";
+        String smallTourErrgraph = folder + "randDigraph_n_7_edits_3_11-17_14:04:24:233_original.txt";
 
-        //MDtestFromFile(log, errgraph, true);
+        MDtestFromFile(log, smallTourErrgraph, true);
 
 
 
