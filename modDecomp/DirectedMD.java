@@ -170,7 +170,7 @@ public class DirectedMD {
         // AND
         // Step 5: At each  2-complete node Y, select an arbitrary set S of representatives from the children.
         //         order the children of Y according to a perfect factorizing permutation of G[S].
-        treeForH.computeFactorizingPermutationAndReorderAccordingly(log, inputGraph, nVertices );
+        treeForH.computeFactorizingPermutationAndReorderAccordingly(this );
 
 
         // Step 6: Resulting leaf order of T(H) is a factorizing permutation of G by Lem 20,21. Use algorithm

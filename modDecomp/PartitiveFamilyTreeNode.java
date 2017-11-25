@@ -48,20 +48,34 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
     }
 
     @Override
-    void removeThis() {
-        super.removeThis();
+    PartitiveFamilyTreeNode removeThis() {
         treeContext.moduleToTreenode.remove(vertices);
+        return  (PartitiveFamilyTreeNode) super.removeThis();
     }
 
-    void reorderAllInnerNodes(Logger log,
+    void reorderAllInnerNodes(DirectedMD data,
                               BitSet[] outNeighbors, BitSet[] inNeighbors, List<PartitiveFamilyLeafNode> orderedLeaves, int[] positionInPermutation){
-        if(type == MDNodeType.ORDER){
-            if (!isModuleInG) {
+
+        Logger log =data.log;
+        PartitiveFamilyTreeNode currentChild = (PartitiveFamilyTreeNode) getFirstChild();
+        if(currentChild != null) {
+            while (currentChild != null) {
+                if(!currentChild.isALeaf()){
+                    currentChild.reorderAllInnerNodes(data, outNeighbors, inNeighbors, orderedLeaves, positionInPermutation);
+                }
+
+                currentChild = (PartitiveFamilyTreeNode) currentChild.getRightSibling();
+            }
+        }
+
+        // Note: I need to inspect bottom-up, as merging/deleting of lower nodes might change the upper ones.
+        if (type == MDNodeType.ORDER) {
+            if(!isModuleInG){
                 // delete module weak modules: ->  Replace with their children.
-                log.warning(() -> "Weak module found: " + this);
-                //throw new IllegalStateException("Weak module found: " + this);
+                log.fine(() -> "Weak module found: " + this);
                 removeThis();
             } else {
+                // todo: the merged module from paper was a strong module! Does this ever happen for weak?
                 log.fine(() -> type + ": computing fact perm of tournament " + inducedPartialSubgraph);
                 List<Pair<Integer, Integer>> perfectFactPerm = perfFactPermFromTournament.apply(inducedPartialSubgraph);
                 // results are real vertices in a new order (first) and their outdegree (second).
@@ -69,36 +83,26 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                 // ok: if a merged module has been split, it's children are processed later
                 reorderAccordingToPerfFactPerm(perfectFactPerm, log);
             }
-        } else if (type.isDegenerate()){
-            if(isModuleInG) {
-                log.fine(() -> type + " ");
-                computeEquivalenceClassesAndReorderChildren(log, outNeighbors, inNeighbors, orderedLeaves, positionInPermutation);
-                // todo: How about merged modules here?
-
-            } else {
-                // how to delete weak modules? -> I think I can simply add their vertices at the correct position.
-                log.warning(() -> "Weak module found: " + this);
-                throw new IllegalStateException("Weak module found: " + this);
-            }
+        } else if (type.isDegenerate()) {
+            // todo: How about merged modules here?
+            log.fine(() -> type + ": computing equivalence classes");
+            computeEquivalenceClassesAndReorderChildren(log, outNeighbors, inNeighbors, orderedLeaves, positionInPermutation);
         } else {
-            // todo: weak prime modules -> add their children!
-            if (!isModuleInG) {
-                log.warning("Weak Prime Module: " + this);
-                throw new IllegalStateException("Weak Prime Module: " + this);
-                //replaceThisByItsChildren();
-            }
-        }
-
-        PartitiveFamilyTreeNode currentChild = (PartitiveFamilyTreeNode) getFirstChild();
-        if(currentChild != null) {
-            while (currentChild != null) {
-                if(!currentChild.isALeaf()){
-                    currentChild.reorderAllInnerNodes(log,outNeighbors, inNeighbors, orderedLeaves, positionInPermutation);
+            if(!isModuleInG){
+                // According to Proof of Cor 19, a weak prime module's children don't constitute a merged module, only a complete
+                // module's children. Simply delete module weak modules: ->  Replace with their children.
+                log.fine(() -> "Weak module to remove: " + this);
+                PartitiveFamilyTreeNode parentNode = removeThis();
+                MDNodeType oldType = parentNode.getType();
+                parentNode.determineNodeTypeForH(data); // also resets the induced subgraph
+                if (parentNode.getType() != oldType){
+                    log.fine(() -> "Its parent arent changed from " + oldType + " to " + parentNode.getType());
                 }
-
-                currentChild = (PartitiveFamilyTreeNode) currentChild.getRightSibling();
             }
         }
+
+
+
     }
 
     /**
@@ -173,6 +177,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         HashMap<Integer,Integer> positionInPermutation = new HashMap<>(sz*4/3);
 
         // detect merged modules here. According to Th3 of the fact.perm. paper, the "true" module appears consecutively
+        // => the true module is a transitive tournament, it has a total order.
         // therefore, there is only room for mergers at start end end of the fact.perm.
         int outScore = sz - 1;
         HashMap<Integer,Integer> primeMemberIndexInPerm = new HashMap<>();
@@ -228,10 +233,6 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             }
         }
 
-
-
-
-
         boolean first = true;
         boolean recoverMerged = !primeMemberIndexInPerm.isEmpty();
         BitSet trueModule;
@@ -263,16 +264,17 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                 }
 
             } else {
-                //if (node != null) todo: warum darf das?
+                //if (node != null) todo: darf das?
                 orderedChildren.add(node);
             }
         }
 
         if (recoverMerged) {
-            type = MDNodeType.PRIME;
+            type = MDNodeType.PRIME; // todo: verify.
             newNode.type = MDNodeType.ORDER;
             newNode.isModuleInG = true;
             newNode.inducedPartialSubgraph = new DirectedInducedIntSubgraph<>(inducedPartialSubgraph.getBase(), newNode.vertices);
+            treeContext.moduleToTreenode.put(newNode.vertices,newNode);
             // todo: does it need any other properties? like LC/RC?
             addChild(newNode);
             log.fine(() -> "new child created: " + newNode.toString());
@@ -285,7 +287,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
     /**
      * Computes a perfect factorizing permutation of the given tournament.
-     * Assertion if it is a tournament - already verified. todo: may be a merged module!!! will it be in order here???
+     * Assertion if it is a tournament - already verified.
      * "The ordering of the vertices in σ is exactly the ordering induced by the order node, otherwise there would exist some cutter."
      */
     private Function<SimpleDirectedGraph<Integer, DefaultEdge>, List<Pair<Integer,Integer>>> perfFactPermFromTournament = tournament -> {
@@ -313,12 +315,12 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             vertexToOutdegree.put(realVertexNo,outgoing.size());
 
 
-            // skip singletons
+            // skip singletons. We're done if we have n singletons.
             if (cPartition.size() > 1 && partitions.size() < n) {
                 // neighborhood N_- and N_+:
                 Set <DefaultEdge> incoming = tournament.incomingEdgesOf(realVertexNo);
 
-                assert incoming.size() + outgoing.size() == n-1 : "Not a tournament: " + tournament; // may be still true for merger. Happened in small tError.
+                assert incoming.size() + outgoing.size() == n-1 : "Not a tournament: " + tournament; // still true for merger.
 
                 HashSet<Integer> inNeighbors = new HashSet<>(incoming.size()*4/3);
                 for( DefaultEdge edge : incoming){

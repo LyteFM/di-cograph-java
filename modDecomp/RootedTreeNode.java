@@ -454,18 +454,27 @@ class RootedTreeNode {
 	}
 
     // F.L. 24.11.17:
-	void removeThis(){
+	RootedTreeNode removeThis(){
 
+     	// default: insert before right sibling
      	RootedTreeNode stillRightSibling = rightSibling;
+     	// if node is rightmost node: need to insert after left sibling.
+		RootedTreeNode fallBackLeftSibling = leftSibling;
+
+		RootedTreeNode myParent = parent;
      	RootedTreeNode currentChild = firstChild;
      	RootedTreeNode nextChild;
      	while (currentChild != null){
      		nextChild = currentChild.rightSibling;
-     		currentChild.insertBefore(stillRightSibling);
+     		if(stillRightSibling != null) {
+				currentChild.insertBefore(stillRightSibling);
+			} else {
+     			currentChild.insertAfter(fallBackLeftSibling);
+			}
      		currentChild = nextChild;
 		}
 		removeSubtree();
-
+     	return myParent;
 	}
 
     // assuming internal type correctness, now check if truly a module.

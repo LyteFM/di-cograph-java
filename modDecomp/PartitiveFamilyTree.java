@@ -45,18 +45,18 @@ public class PartitiveFamilyTree extends RootedTree {
         rootNode.determineNodeTypeForH(data);
     }
 
-    public void computeFactorizingPermutationAndReorderAccordingly(Logger log, SimpleDirectedGraph<Integer,DefaultEdge> inputGraph, int nVertices){
+    public void computeFactorizingPermutationAndReorderAccordingly(DirectedMD data){
 
         // First step: order the leaves in accordance of their left-right appearance in the Tree
-        List<PartitiveFamilyLeafNode> orderedLeaves = new ArrayList<>(nVertices);
+        List<PartitiveFamilyLeafNode> orderedLeaves = new ArrayList<>(data.nVertices);
         this.getLeavesInLeftToRightOrder(orderedLeaves);
-        ArrayList<Integer> permutationAsIntegers = new ArrayList<>(nVertices);
+        ArrayList<Integer> permutationAsIntegers = new ArrayList<>(data.nVertices);
         for(PartitiveFamilyLeafNode leaf : orderedLeaves){
             permutationAsIntegers.add(leaf.getVertex());
         }
-        log.fine(() -> "Initial leaf order: " + permutationAsIntegers);
+        data.log.fine(() -> "Initial leaf order: " + permutationAsIntegers);
         // the position of every element in the permutation
-        int[] positionInPermutation = new int[nVertices];
+        int[] positionInPermutation = new int[data.nVertices];
         for(int i = 0; i< permutationAsIntegers.size(); i++){
             positionInPermutation[permutationAsIntegers.get(i)] = i;
         }
@@ -75,26 +75,26 @@ public class PartitiveFamilyTree extends RootedTree {
             leaf.re_X = i;
         }
         // compute
-        rootNode.computeReAndLe(log);
+        rootNode.computeReAndLe(data.log);
 
 
         //   - lc(X), rc(X): the leftmost/rightmost of its cutters
         // Therefore: "BucketSort" edges of G according to σ. BitSets guarantee easy symdiff operation.:
 
         // This is for N_{+}: 1st key is outVertex, 2nd key is destVertex
-        BitSet[] sortedOutEgdes = SortAndCompare.edgesSortedByPerm(permutationAsIntegers, positionInPermutation, inputGraph, true);
+        BitSet[] sortedOutEgdes = SortAndCompare.edgesSortedByPerm(permutationAsIntegers, positionInPermutation, data.inputGraph, true);
         // This is for N_{-}: 1st key is destVertex, 2nd outVertex
-        BitSet[] sortedInEdges = SortAndCompare.edgesSortedByPerm(permutationAsIntegers, positionInPermutation,  inputGraph, false);
+        BitSet[] sortedInEdges = SortAndCompare.edgesSortedByPerm(permutationAsIntegers, positionInPermutation,  data.inputGraph, false);
 
 
 
         // now, compute the cutters:
-        rootNode.computeLeftRightCutter(sortedOutEgdes, sortedInEdges, positionInPermutation, log);
+        rootNode.computeLeftRightCutter(sortedOutEgdes, sortedInEdges, positionInPermutation, data.log);
 
         // remember: X is a module iff le(X) == lc(X) and re(X) == rc(X)
         // next step: use N_{+} and N_{-} to separate the children of a 0/1-complete node that is a module into R_X-classes
         // According to step 5, I can select any representative of its children, as they have uniform relationship to other nodes
-        rootNode.reorderAllInnerNodes( log, sortedOutEgdes, sortedInEdges,  orderedLeaves, positionInPermutation);
+        rootNode.reorderAllInnerNodes( data, sortedOutEgdes, sortedInEdges,  orderedLeaves, positionInPermutation);
 
     }
 
