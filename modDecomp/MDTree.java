@@ -215,6 +215,9 @@ public class MDTree extends RootedTree {
                         case "Prime":
                             node = new MDTreeNode();
                             break;
+                        case "Spider":
+                            node = new MDTreeNode();
+                            break;
                         case "Series":
                             node = new MDTreeNode(MDNodeType.SERIES);
                             break;

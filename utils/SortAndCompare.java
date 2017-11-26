@@ -1,14 +1,18 @@
 package dicograph.utils;
 
+import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import dicograph.graphIO.IntegerVertexFactory;
@@ -28,6 +32,27 @@ public class SortAndCompare {
             input[i] = input[newIndex];
             input[newIndex] = tmp;
         }
+    }
+
+    public static List<List<Integer>> computeAllSubsets(List<Integer> inputSet){
+        List<List<Integer>> retList = new LinkedList<>();
+        if(inputSet.size() == 0) {
+            retList.add(new ArrayList<>());
+        } else {
+            int singleElement = inputSet.get(0);
+            List<Integer> subList = inputSet.subList(1,inputSet.size());
+            List<List<Integer>> subSets = computeAllSubsets(subList);
+            retList.addAll(subSets);
+
+            for(List<Integer> subSet : subSets){
+                List<Integer> addList = new ArrayList<>(subSet.size() + 1);
+                addList.add(singleElement);
+                addList.addAll(subSet);
+                retList.add(addList);
+            }
+        }
+
+        return retList;
     }
 
     public static ArrayList<Set<Integer>> bucketSortBySize(ArrayList<Set<Integer>> input) {
@@ -137,5 +162,59 @@ public class SortAndCompare {
         A_cap_B.and(B); // ∩
         A_cup_B.andNot(A_cap_B); // \
         return A_cup_B;
+    }
+
+
+    // assuming internal type correctness, now check if truly a module.
+    public static String checkModuleBruteForce( Graph<Integer, DefaultEdge> graph, Collection<Integer> moduleVertices, boolean expectModule) {
+
+        // 0 - no edge
+        //
+        String msg;
+        StringBuilder res = new StringBuilder();
+        TreeSet<Integer> otherVertices = new TreeSet<>(graph.vertexSet());
+
+        otherVertices.removeAll(moduleVertices);
+        boolean isModule = true;
+        boolean otherToModule = true;
+        boolean moduleToOther = true;
+
+        for (int otherV : otherVertices) {
+            boolean first = true;
+            //boolean isUniformToOtherV = true;
+
+            for (int moduleV : moduleVertices) {
+                if (first) {
+                    otherToModule = graph.containsEdge(otherV, moduleV);
+                    moduleToOther = graph.containsEdge(moduleV, otherV);
+                    first = false;
+                } else {
+                    if (otherToModule != graph.containsEdge(otherV, moduleV)) {
+                        isModule = false;
+                        if(expectModule) {
+                            msg = "Expected value: " + otherToModule + " for edge (" + otherV + "," + moduleV + ")\n";
+                            res.append(msg);
+                        }
+                        break;
+                    }
+                    if (moduleToOther != graph.containsEdge(moduleV, otherV)) {
+                        isModule = false;
+                        if(expectModule) {
+                            msg = "Expected value: " + moduleToOther + " for edge (" + moduleV + "," + otherV + ")\n";
+                            res.append(msg);
+                        }
+                        break;
+                    }
+                }
+            }
+
+        }
+
+        if(isModule && !expectModule){
+            // err: subset-module inside supposed prime found.
+            msg = "Found only uniform adjacencies.\n";
+            res.append(msg);
+        }
+        return res.toString();
     }
 }

@@ -4,12 +4,11 @@ import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
 
 import java.util.BitSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import dicograph.graphIO.DirectedInducedIntSubgraph;
-import dicograph.graphIO.UndirectedInducedIntSubgraph;
+import dicograph.utils.SortAndCompare;
 
 /*
  * The different types of nodes in a modular decomposition tree. 
@@ -37,56 +36,37 @@ public enum MDNodeType {
 		if(verified != expected){
 			builder.append("Wrong verified type ").append(verified).append(" for node: ").append(node).append("\n");
 		} else {
-			// Prime: We have an error if any node has the same relation to all others.
-			// other node types: We have an error if any two nodes are prime (Other subtype cannot happen, merged modules can!)
-			boolean error = false;
-			for (int v1 : childRepresentatives) {
-				boolean first = true;
-				boolean isPrime = false;
-				MDNodeType firstNodeType = PRIME;
+			// Prime: We have an error if any vertex subset has the same relation to all other vertices of G.
+			if(expected == PRIME) {
+				List<List<Integer>> validSubsets = SortAndCompare.computeAllSubsets(childRepresentatives).stream().filter(
+						l -> l.size() > 1 && l.size() < childRepresentatives.size()
+				).collect(Collectors.toList());
+				String result;
+				System.out.println("For node " + node);
+				//System.out.println("All subsets: " + validSubsets);
+				for(int i = 0; i< validSubsets.size(); i++) {
 
-				for (int v2: childRepresentatives) {
-					if(v1 != v2) {
-						LinkedList<Integer> subSet = new LinkedList<>();
-						subSet.add(v1);
-						subSet.add(v2);
-						Graph<Integer, DefaultEdge> subsetSubgraph;
-						if (isDirected) {
-							subsetSubgraph = new DirectedInducedIntSubgraph<>(mainGraph, subSet);
-						} else {
-							subsetSubgraph = new UndirectedInducedIntSubgraph<>(mainGraph, subSet);
-						}
-						MDNodeType innerType = determineNodeType(subsetSubgraph, isDirected);
-						if (first) {
-							firstNodeType = innerType;
-							first = false;
-						} else {
-							if (firstNodeType != innerType) {
-								isPrime = true;
-								break;
-							}
-						}
+					List<Integer> subSet = validSubsets.get(i);
+					result = SortAndCompare.checkModuleBruteForce(mainGraph, subSet,false);
+					if(!result.isEmpty()){
+						builder.append("For vertices: ").append(subSet).append("\n").append(result);
+						//break;
+					}
+					if( i % 100000 == 0) {
+						System.out.println("verified subset " + (i+1) + " of " + validSubsets.size());
 					}
 				}
-				if (!isPrime && firstNodeType == PRIME) {
-					isPrime = true; // no changes, always stayed prime
-				}
-				boolean weHaveAProblem = verified == PRIME && !isPrime && firstNodeType != ORDER // merged order modules...
-						|| verified != PRIME && isPrime;
-				if (weHaveAProblem) {
-					error = true;
-					builder.append("Found only ").append(firstNodeType).append(" for adjacencies of ").append(v1).append("\n");
-				}
 			}
-
-			if(error){
-				builder.append("For node: ").append(node).append("\n");
-			}
+			// Internal relations are determined, now check verify relations to all other nodes.
+			node.verifyModuleStatus(builder, mainGraph);
 		}
 
-		node.checkNodeTypesBruteForce(builder, mainGraph);
+		String ret = builder.toString();
+		if(!ret.isEmpty()){
+			return "For node: " + node +"\n" + ret;
+		}
 
-		return builder.toString();
+		return ret;
 	}
 
 	// if it's none of these two cases, it should be prime. However, in order to detect "false primes",

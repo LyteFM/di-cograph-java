@@ -56,6 +56,12 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
     void reorderAllInnerNodes(DirectedMD data,
                               BitSet[] outNeighbors, BitSet[] inNeighbors, List<PartitiveFamilyLeafNode> orderedLeaves, int[] positionInPermutation){
 
+        // todo: before merging/deleting, I should verify that no subset of the deleted weak module is a module! that means:
+        //      - take any possible subset. If {1,2,3,4,5}, then: {1,2},{1,3},{1,4},{1,5},{2,3},{2,4},{2,5},{3,4},{3,5},{4,5};{1,2,3},{1,2,4},{1,2,5},{2,3,4},{2,3,5},...
+        //      - check, if this subset only has same adjacencies towards the rest of the graph
+        //          - first step: Only take the 2-Pairs and check for only outside the module. Safe if fails there already.
+        // Otherwise, I generate huge prime modules and cannot verify them :(
+
         Logger log =data.log;
         PartitiveFamilyTreeNode currentChild = (PartitiveFamilyTreeNode) getFirstChild();
         if(currentChild != null) {
@@ -73,7 +79,13 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             if(!isModuleInG){
                 // delete module weak modules: ->  Replace with their children.
                 log.fine(() -> "Weak module found: " + this);
-                removeThis();
+                PartitiveFamilyTreeNode parentNode = removeThis();
+                MDNodeType oldType = parentNode.getType();
+                parentNode.determineNodeTypeForH(data); // also resets the induced subgraph
+                if (parentNode.getType() != oldType){
+                    log.fine(() -> "Its parent was changed from " + oldType + " to " + parentNode.getType());
+                }
+
             } else {
                 // todo: the merged module from paper was a strong module! Does this ever happen for weak?
                 log.fine(() -> type + ": computing fact perm of tournament " + inducedPartialSubgraph);
@@ -84,19 +96,32 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                 reorderAccordingToPerfFactPerm(perfectFactPerm, log);
             }
         } else if (type.isDegenerate()) {
-            // todo: How about merged modules here?
-            log.fine(() -> type + ": computing equivalence classes");
-            computeEquivalenceClassesAndReorderChildren(log, outNeighbors, inNeighbors, orderedLeaves, positionInPermutation);
+            if(!isModuleInG){
+                // delete module weak modules: ->  Replace with their children.
+                log.fine(() -> "Weak module found: " + this);
+                PartitiveFamilyTreeNode parentNode = removeThis();
+                MDNodeType oldType = parentNode.getType();
+                parentNode.determineNodeTypeForH(data); // also resets the induced subgraph
+                if (parentNode.getType() != oldType){
+                    log.fine(() -> "Its parent was changed from " + oldType + " to " + parentNode.getType());
+                }
+
+            } else {
+                // todo: How about merged modules here?
+                log.fine(() -> type + ": computing equivalence classes");
+                computeEquivalenceClassesAndReorderChildren(log, outNeighbors, inNeighbors, orderedLeaves, positionInPermutation);
+            }
         } else {
             if(!isModuleInG){
                 // According to Proof of Cor 19, a weak prime module's children don't constitute a merged module, only a complete
                 // module's children. Simply delete module weak modules: ->  Replace with their children.
+                // todo: Doch, problem mit dem SERIES innen drin :/
                 log.fine(() -> "Weak module to remove: " + this);
                 PartitiveFamilyTreeNode parentNode = removeThis();
                 MDNodeType oldType = parentNode.getType();
                 parentNode.determineNodeTypeForH(data); // also resets the induced subgraph
                 if (parentNode.getType() != oldType){
-                    log.fine(() -> "Its parent arent changed from " + oldType + " to " + parentNode.getType());
+                    log.fine(() -> "Its parent was changed from " + oldType + " to " + parentNode.getType());
                 }
             }
         }
@@ -451,8 +476,18 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             }
         }
 
+        boolean recoverMerged = equivClassByBits.size() > 1;
         // todo: need to spot and handle merged modules here!
-        if (equivClassByBits.size() > 1) {
+        PartitiveFamilyTreeNode parentNode = (PartitiveFamilyTreeNode) getParent();
+        if(recoverMerged) {
+            // todo: add according to order in factPerm!!!
+            for (List<PartitiveFamilyTreeNode> children : equivClassByBits.values()) {
+                if (children.size() > 1) {
+                    // create a new node from these children
+                } else {
+                    // simply add to parent
+                }
+            }
             throw new IllegalStateException("Found several equiv classes in step 5 :)");
         }
 
@@ -461,6 +496,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         for(List<PartitiveFamilyTreeNode> children : equivClassByBits.values()){
             orderedChildren.addAll(children);
         }
+
         log.fine( () -> type + " Reordering children of " + toString());
         log.fine( () -> type + " according to: " + orderedChildren.toString() );
         reorderChildren(orderedChildren);
@@ -659,5 +695,9 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
     public MDNodeType getType() {
         return type;
+    }
+
+    public void setType(MDNodeType type){
+         this.type = type; // debug only
     }
 }

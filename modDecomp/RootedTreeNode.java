@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.TreeSet;
 
 import dicograph.graphIO.UndirectedInducedIntSubgraph;
+import dicograph.utils.SortAndCompare;
 
 /*
  * A node in a rooted tree.
@@ -477,39 +478,10 @@ class RootedTreeNode {
      	return myParent;
 	}
 
-    // assuming internal type correctness, now check if truly a module.
-    void checkNodeTypesBruteForce(StringBuilder res, Graph<Integer, DefaultEdge> graph) {
+	void verifyModuleStatus(StringBuilder res, Graph<Integer, DefaultEdge> graph){
+		ArrayList<Integer> moduleVertices = new ArrayList<>(vertices.cardinality());
+		vertices.stream().forEach(moduleVertices::add);
+		res.append(SortAndCompare.checkModuleBruteForce(graph,moduleVertices, true));
+	}
 
-        // 0 - no edge
-        //
-        String msg;
-        TreeSet<Integer> otherVertices = new TreeSet<>(graph.vertexSet());
-        ArrayList<Integer> moduleVertices = new ArrayList<>(vertices.cardinality());
-        vertices.stream().forEach(moduleVertices::add);
-        otherVertices.removeAll(moduleVertices);
-        for (int otherV : otherVertices) {
-            boolean first = true;
-            boolean otherToModule = true;
-            boolean moduleToOther = true;
-
-            for (int moduleV : moduleVertices) {
-                if (first) {
-                    otherToModule = graph.containsEdge(otherV, moduleV);
-                    moduleToOther = graph.containsEdge(moduleV, otherV);
-                    first = false;
-                } else {
-                    if (otherToModule != graph.containsEdge(otherV, moduleV)) {
-                        msg = "Expected value: " + otherToModule + " for edge (" + otherV + "," + moduleV + ")\n";
-                        res.append(msg);
-                    }
-                    if (moduleToOther != graph.containsEdge(moduleV, otherV)) {
-                        msg = "Expected value: " + moduleToOther + " for edge (" + moduleV + "," + otherV + ")\n";
-                        res.append(msg);
-                    }
-                }
-            }
-        }
-
-
-    }
 }

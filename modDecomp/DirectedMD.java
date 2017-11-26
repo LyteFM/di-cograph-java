@@ -457,6 +457,7 @@ public class DirectedMD {
         strongModulesOfH.addAll(equivalenceClassesR_U.values());
         strongModulesOfH.addAll(intersectionOfAandB.values());
 
+
         // 7. ) From that set Family, The Inclusion Tree can be constructed by Lem 11.
 
         PartitiveFamilyTree ret = new PartitiveFamilyTree(strongModulesOfH, log, nVertices);
@@ -569,9 +570,11 @@ public class DirectedMD {
                     elementsOfA.put(setEntryOfSigma.getValue(), setEntryOfSigma.getKey());
                     elementOfAToP_a.put(setEntryOfSigma.getValue(), maximumMembers.stream().findFirst().get());
                     log.fine(logPrefix + "Added: " + setEntryOfSigma.toString() + " directly");
+                    throw new IllegalStateException("Shouldn't happen.");
 
                 } else if (maximumMembers.size() == 0) {
                     log.warning(logPrefix + "Strange: no max member for " + setEntryOfSigma.toString());
+                    throw new IllegalStateException("Shouldn't happen.");
 
                 } else {
                     // compute the LCA of all maximum members and check if it is root. Note: one entry itself could be that.
@@ -588,6 +591,7 @@ public class DirectedMD {
                     } else {
                         log.fine(() -> logPrefix + "Discarded: " + setEntryOfSigma);
                         log.fine(() -> "   with prime LCA: " + lca);
+                        // also not needed of P_a: "...and neither of these nodes is prime".
                     }
                 }
 
