@@ -156,7 +156,8 @@ class RootedTree {
 
         StringBuilder builder = new StringBuilder();
         LinkedList<RootedTreeNode> allNodes = new LinkedList<>(moduleToTreenode.values());
-        allNodes.add(root);
+        if(!allNodes.contains(root))
+            allNodes.add(root);
 
         for (RootedTreeNode node : allNodes) {
 

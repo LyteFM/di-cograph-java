@@ -16,6 +16,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -91,11 +92,13 @@ public class Main {
 
         String fromPaper = "fromFactPermPaper.txt";
         SimpleDirectedGraph<Integer, DefaultEdge> paperGraph = JGraphAdjecencyImporter.importIntGraph(new File(fromPaper), false);
+        //DirectedMD paperMD = new DirectedMD(paperGraph, log, true);        paperMD.computeModularDecomposition();
+
 //        System.out.println(paperGraph);
 //        DOTExporter<Integer,DefaultEdge> exporter =new DOTExporter<>();
 //        exporter.exportGraph(paperGraph, new File(fromPaper+ ".dot"));
-        //DirectedMD paperMD = new DirectedMD(paperGraph, log, true);
-        //paperMD.computeModularDecomposition();
+
+
 
 
 //        for( int i = 20; i <= 30; i ++) {
@@ -104,18 +107,7 @@ public class Main {
 //                break;
 //        }
 
-        // todo: first - need to debug the ones with wrong undirectedMD, i.e. n=25, 26
-        String folderPath = "testGraphs/DMDtest/ERR/";
-        String n26err = folderPath + "randDigraph_n_25_edits_12_11-22_14:38:53:932_original.txt";
-        String viceVera = "testGraphs/randDigraph_n_10_edits_5_11-17_14:13:25:176_original.txt";
-        //MDtestFromFile(log, viceVera, true);
 
-
-
-        String folder = "testGraphs/";
-        String weirdError = folder + "randDigraph_n_24_edits_8_11-14_18:05:20:306_original.txt";
-        String smallNotAtournament = folder + "randDigraph_n_10_edits_5_11-17_14:11:11:882_original.txt";
-        String test = "testy.txt";
 
 
 
@@ -124,10 +116,52 @@ public class Main {
 //        System.out.println("From Matrix:\n\n");
 //        MDtestFromFile(log, weirdError,true);
 
-        // Error-files
+        String folderPath = "testGraphs/DMDtest/ERR/";
+        String folder = "testGraphs/";
+
+
+        // OK:
+        String smallNotAtournament = folder + "randDigraph_n_10_edits_5_11-17_14:11:11:882_original.txt";
         String smallTourErrgraph = folder + "randDigraph_n_7_edits_3_11-17_14:04:24:233_original.txt";
 
-        MDtestFromFile(log, smallTourErrgraph, true);
+        String n21err = folderPath +"randDigraph_n_21_edits_10_11-22_14:38:33:813_original.txt";
+        String n24err = folderPath + "randDigraph_n_24_edits_12_11-22_14:38:47:196_original.txt"; // EXTREM fette prim :/ aber ok
+        String n23err = folderPath + "randDigraph_n_23_edits_11_11-22_14:38:41:882_original.txt"; // several weak.
+
+
+        // ERR:
+        String viceVera = "testGraphs/randDigraph_n_10_edits_5_11-17_14:13:25:176_original.txt"; // more than 1 eqiv class :) - Höh, passt. aso...
+
+        // Once, this had more than 1 equiv class. Hmm. Now, [3,4,5,23,24] is an undetected SERIES module.
+        // happened, when there was a WEAK series module :) -> wut, where though???
+        String n25err = folderPath + "randDigraph_n_25_edits_12_11-22_14:38:53:932_original.txt";
+
+        // here: [12, 1, 0] is parallel module.
+        String n23err2 = folderPath + "randDigraph_n_23_edits_11_11-22_14:32:56:841_original.txt";
+
+        // here: [5,6] is parallel module.
+        String n22err= folderPath + "randDigraph_n_22_edits_11_11-22_14:32:52:354_original.txt";
+
+        //
+        // here: [3,4] - ORDER and fully disconnected; [9,13] - SERIES and arcs to 6,...,14 ; [20,21,23] - PARALLEL and fully disconnected.
+        String weirdError = folder + "randDigraph_n_24_edits_8_11-14_18:05:20:306_original.txt"; // corresp matrix
+        // here: [11,12], [17,20], [6,7,9].
+        String test = "testy.txt"; // not matrix
+        //
+
+        // not a tournament: after deletion of weak, parent still order???
+        // parent for sure is a module in G. (by RC/LC)
+        // wtf, where is my new "determine node type" method???
+
+
+        MDtestFromFile(log,  smallTourErrgraph, true);
+
+        // todo: Teste ich meine Prim-Module genug??? die sehen mir so groß aus :(
+
+//        ArrayList<Integer> baseSet = new ArrayList<>(Arrays.asList(1,2,3,4,5,6));
+//        List<List<Integer>> allSubsets = SortAndCompare.computeAllSubsets(baseSet);
+//        System.out.println("size: " + allSubsets.size());
+
 
 
 

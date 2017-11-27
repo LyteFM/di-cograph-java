@@ -87,7 +87,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                 }
 
             } else {
-                // todo: the merged module from paper was a strong module! Does this ever happen for weak?
+                // todo: the merged module from paper was a strong module! Does this ever happen for weak? -> smallErrgraph...
                 log.fine(() -> type + ": computing fact perm of tournament " + inducedPartialSubgraph);
                 List<Pair<Integer, Integer>> perfectFactPerm = perfFactPermFromTournament.apply(inducedPartialSubgraph);
                 // results are real vertices in a new order (first) and their outdegree (second).
@@ -128,6 +128,71 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
 
 
+    }
+
+
+    int determineNodeTypeForHOld(final DirectedMD data){
+        // node type can be efficiently computed bottom-up: only take one vertex of each child to construct the module
+        PartitiveFamilyTreeNode currentChild = (PartitiveFamilyTreeNode) getFirstChild();
+        LinkedList<Integer> subgraphVertices = new LinkedList<>();
+        if(currentChild != null) {
+            while (currentChild != null) {
+
+                if(currentChild.isALeaf()){
+                    subgraphVertices.add( ((PartitiveFamilyLeafNode) currentChild).getVertex() );
+                } else  {
+                    subgraphVertices.add(currentChild.determineNodeTypeForH(data)); // recursion
+                }
+
+                currentChild = (PartitiveFamilyTreeNode) currentChild.getRightSibling();
+            }
+        }
+        int returnVal = subgraphVertices.getFirst();
+        // compute the induced subgraph and determine the node type
+        inducedPartialSubgraph = new DirectedInducedIntSubgraph<>(data.inputGraph, subgraphVertices);
+        if(inducedPartialSubgraph.edgeSet().isEmpty()){
+            // no edges means 0-complete
+            type = MDNodeType.PARALLEL;
+        } else {
+            int typeVal = -1;
+            int currVal;
+            boolean firstRun = true;
+            for(DefaultEdge edge : inducedPartialSubgraph.edgeSet()){
+                int source = inducedPartialSubgraph.getEdgeSource(edge);
+                int target = inducedPartialSubgraph.getEdgeTarget(edge);
+                currVal = data.getEdgeValueForH(source, target);
+                if(firstRun) {
+                    typeVal = currVal;
+                    firstRun = false;
+                } else {
+                    if(currVal != typeVal){
+                        type = MDNodeType.PRIME;
+                        return returnVal;
+                    }
+                }
+            }
+            switch (typeVal){
+                case 0:
+                    type = MDNodeType.PARALLEL;
+                    data.log.warning("Unexpected parallel node " + this);
+                    break;
+                case 1:
+                    type = MDNodeType.SERIES;
+                    assert !inducedPartialSubgraph.isTournament() : type + " but node is a tournament: " + toString();
+                    break;
+                case 2:
+                    type = MDNodeType.ORDER;
+                    //assert inducedPartialSubgraph.isTournament() : type + " but node not a tournament: " + toString();
+                    // merged modules might occur here, will be taken care of later
+                    break;
+            }
+
+        }
+        if( type == null ){
+            throw new IllegalStateException("Error: No MDtype found! for " + this);
+        }
+
+        return returnVal;
     }
 
     /**
