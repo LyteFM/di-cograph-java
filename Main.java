@@ -101,11 +101,16 @@ public class Main {
 
 
 
-        for( int i = 10; i <= 30; i ++) {
-            boolean ok = directedMDTesting(log, consoleHandler, i, i/2,false);
-            if(!ok)
-                break;
-        }
+//        for( int i = 10; i <= 30; i ++) {
+//            boolean ok = directedMDTesting(log, consoleHandler, i, i/2,false);
+//            if(!ok)
+//                break;
+//        }
+
+        String reTestPath = "testGraphs/DMDvery/";
+        String weakOrderWithStrongChildren = reTestPath + "randDigraph_n_22_edits_11_11-28_15:49:46:254_original.txt";
+        MDtestFromFile(log, weakOrderWithStrongChildren, true);
+
 
 
 
@@ -154,7 +159,6 @@ public class Main {
 
         // ERR:
 
-        //MDtestFromFile(log, smallNotAtournament, true);
 
 
 //

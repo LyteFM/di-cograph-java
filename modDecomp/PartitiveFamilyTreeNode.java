@@ -78,19 +78,20 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
         PartitiveFamilyTreeNode myRightSibling = (PartitiveFamilyTreeNode) getRightSibling();
 
-        if (type.isDegenerate()) {
+        if (type.isDegenerate() || type == MDNodeType.ORDER) {
             // According to Lem 20:
             log.fine(() -> type + ": computing equivalence classes");
             computeEquivalenceClassesAndReorderChildren(log, outNeighbors, inNeighbors, orderedLeaves, positionInPermutation);
-        }
-        else if (type == MDNodeType.ORDER && isModuleInG) {
-            // According to Lem 21:
-            log.fine(() -> type + ": computing fact perm of tournament " + inducedPartialSubgraph);
-            List<Pair<Integer, Integer>> perfectFactPerm = perfFactPermFromTournament.apply(inducedPartialSubgraph);
-            // results are real vertices in a new order (first) and their outdegree (second).
-            log.fine(() -> type + ": reordering and splitting merged modules according to permutation: " + perfectFactPerm);
-            // ok: if a merged module has been split, it's children are processed later
-            reorderAccordingToPerfFactPerm(perfectFactPerm, log);
+            // todo: if weak, delete! if strong, reorder!
+            if (isModuleInG && type == MDNodeType.ORDER) {
+                // According to Lem 21:
+                log.fine(() -> type + ": computing fact perm of tournament " + inducedPartialSubgraph);
+                List<Pair<Integer, Integer>> perfectFactPerm = perfFactPermFromTournament.apply(inducedPartialSubgraph);
+                // results are real vertices in a new order (first) and their outdegree (second).
+                log.fine(() -> type + ": reordering and splitting merged modules according to permutation: " + perfectFactPerm);
+                // ok: if a merged module has been split, it's children are processed later
+                reorderAccordingToPerfFactPerm(perfectFactPerm, log);
+            }
         }
 
         if(!isModuleInG){
@@ -249,6 +250,8 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         // detect merged modules here. According to Th3 of the fact.perm. paper, the "true" module appears consecutively
         // => the true module is a transitive tournament, it has a total order.
         // therefore, there is only room for mergers at start end end of the fact.perm.
+        // todo: unfortunately, weak module might be orderered nicely and contain a strong one
+        // idea: use outDegs and inDegs of REAL GRAPH -> not enough, need true adjacencies.
         int outScore = sz - 1;
         HashMap<Integer,Integer> primeMemberIndexInPerm = new HashMap<>();
 
@@ -464,7 +467,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         // for the sake of simplicity, I use strings and compare if they are equal.
         // running time is same as worst case when comparing the lists element by element.
 
-        if( !type.isDegenerate() ){
+        if( type == MDNodeType.PRIME ){
             throw new IllegalStateException("Wrong type in step 4: " + type + " for node\n" + toString());
         }
 
@@ -528,7 +531,6 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             }
             ArrayList<PartitiveFamilyTreeNode> orderedChildren = new ArrayList<>(getNumChildren());
 
-            // todo: add according to order in factPerm!!!
             for (List<PartitiveFamilyTreeNode> children : equivClassByBits.values()) {
 
 
