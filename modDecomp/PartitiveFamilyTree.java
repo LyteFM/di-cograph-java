@@ -12,6 +12,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import dicograph.utils.SortAndCompare;
 
@@ -20,18 +21,8 @@ import dicograph.utils.SortAndCompare;
  */
 public class PartitiveFamilyTree extends RootedTree {
 
-    private PartitiveFamilyTree(){
+    public PartitiveFamilyTree(){
         super();
-    }
-
-    /**
-     * Creates a new Tree reprenstation from the given vertices-Bitset (Lemma 13)
-     * @param inputSet the BitSet of input vertices representing a partitive family
-     * @param nVertices the number of vertices
-     */
-    public PartitiveFamilyTree(Collection<BitSet> inputSet, Logger log, int nVertices){
-        this();
-        createInclusionTreeFromBitsets(inputSet, log, nVertices);
     }
 
     public void getLeavesInLeftToRightOrder(List<PartitiveFamilyLeafNode> orderedLeaves){
@@ -97,14 +88,14 @@ public class PartitiveFamilyTree extends RootedTree {
         rootNode.reorderAllInnerNodes( data, sortedOutEgdes, sortedInEdges,  orderedLeaves, positionInPermutation);
 
     }
-
     /**
-     * Implementation of the Inclusion tree according to Lemma 11
-     *
-     * @param inputSet a Collection of BitSets representing a partitive set family
-     * @return The rooted tree of the input set
+     * Creates a new Tree reprenstation from the given vertices-Bitset (Lemma 13)
+     * @param inputSet the BitSet of input vertices representing a partitive family
+     * @param nVertices the number of vertices
+     * @return the leaves of the Tree
      */
-    private void createInclusionTreeFromBitsets(Collection<BitSet> inputSet, Logger log, int nVertices) {
+
+    public PartitiveFamilyLeafNode[] createInclusionTreeFromBitsets(Collection<BitSet> inputSet, Logger log, int nVertices) {
 
         HashMap<BitSet, RootedTreeNode> bitsetToInclusionTreenNode = new HashMap<>(inputSet.size()*4/3);
 
@@ -113,20 +104,17 @@ public class PartitiveFamilyTree extends RootedTree {
         if (inputSetNoDoubles.size() != inputSet.size()) {
             log.fine(() -> "Double entry in input for inclusion tree");
         }
-        ArrayList<BitSet> inputNodeList = new ArrayList<>(inputSetNoDoubles);
-
-        // Sort the array by size, using counting sort
-        // todo: Auch hier mit BucketSort...
-        inputNodeList.sort( // descending size, with lamdas.
-                (b1, b2) -> Integer.compare(b2.cardinality(), b1.cardinality()));
-        log.fine(() -> "Input sorted by size: " + inputNodeList);
-
         // add root, if not yet included
         BitSet rootSet = new BitSet(nVertices);
-        rootSet.set(0, nVertices); // toIndex must be n
+        rootSet.set(0, nVertices);
         if(!inputSetNoDoubles.contains(rootSet)) {
-            inputNodeList.add(0, rootSet);
+            inputSetNoDoubles.add(rootSet);
         }
+        ArrayList<BitSet> inputNodeList = new ArrayList<>(inputSetNoDoubles);
+
+        // Sort the array by size, using bucket sort (w/o singletons)
+        SortAndCompare.bucketSortBySize(inputNodeList,true);
+        log.fine(() -> "Input sorted by size: " + inputNodeList);
 
 
         // Create a List for each v ∈ V of the members of F (i.e. the elements of σ) containing v in ascending order of their size:
@@ -157,7 +145,7 @@ public class PartitiveFamilyTree extends RootedTree {
         // - visit each x ∈ V, put a parent pointer from each member of x's list to its successor in x's list (if not already done)
         //      -> these are chains of ancestors of {x}
 
-        PartitiveFamilyLeafNode[] allLeafs = new PartitiveFamilyLeafNode[nVertices]; // todo: was damit? Muss ja mal bottom-up?
+        PartitiveFamilyLeafNode[] allLeafs = new PartitiveFamilyLeafNode[nVertices];
         int relationCount = 0;
         for (int vertexNr = 0; vertexNr < nVertices; vertexNr++) {
 
@@ -212,6 +200,7 @@ public class PartitiveFamilyTree extends RootedTree {
 
         }
         moduleToTreenode = bitsetToInclusionTreenNode;
+        return allLeafs;
     }
 
 

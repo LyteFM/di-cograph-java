@@ -122,53 +122,54 @@ public class Main {
 
         // OK:
         String smallNotAtournament = folder + "randDigraph_n_10_edits_5_11-17_14:11:11:882_original.txt";
+
+        // not a tournament: after deletion of weak, parent still order -> only with old detNodeType. Prime with new.
         String smallTourErrgraph = folder + "randDigraph_n_7_edits_3_11-17_14:04:24:233_original.txt";
+
+        // For vertices: [9, 8, 7, 6, 2, 1, 0]... -> Ok, sind die Leaves an prim root -> todo: abfangen
+        String viceVera = "testGraphs/randDigraph_n_10_edits_5_11-17_14:13:25:176_original.txt"; // more than 1 eqiv class :) - Höh, passt. aso...
+
 
         String n21err = folderPath +"randDigraph_n_21_edits_10_11-22_14:38:33:813_original.txt";
         String n24err = folderPath + "randDigraph_n_24_edits_12_11-22_14:38:47:196_original.txt"; // EXTREM fette prim :/ aber ok
-        String n23err = folderPath + "randDigraph_n_23_edits_11_11-22_14:38:41:882_original.txt"; // several weak.
-
-
-        // ERR:
-        String viceVera = "testGraphs/randDigraph_n_10_edits_5_11-17_14:13:25:176_original.txt"; // more than 1 eqiv class :) - Höh, passt. aso...
-
-        // Once, this had more than 1 equiv class. Hmm. Now, [3,4,5,23,24] is an undetected SERIES module.
-        // happened, when there was a WEAK series module :) -> wut, where though???
-        String n25err = folderPath + "randDigraph_n_25_edits_12_11-22_14:38:53:932_original.txt";
-
-        // here: [12, 1, 0] is parallel module.
-        String n23err2 = folderPath + "randDigraph_n_23_edits_11_11-22_14:32:56:841_original.txt";
-
-        // here: [5,6] is parallel module.
-        String n22err= folderPath + "randDigraph_n_22_edits_11_11-22_14:32:52:354_original.txt";
+        String n23err = folderPath + "randDigraph_n_23_edits_11_11-22_14:38:41:882_original.txt"; // several weak. Fat, but ok
 
         //
+        // Konsistenter Fehler. No weak modules here. -> Ursache waren weggelassene leaves.
         // here: [3,4] - ORDER and fully disconnected; [9,13] - SERIES and arcs to 6,...,14 ; [20,21,23] - PARALLEL and fully disconnected.
         String weirdError = folder + "randDigraph_n_24_edits_8_11-14_18:05:20:306_original.txt"; // corresp matrix
-        // here: [11,12], [17,20], [6,7,9].
+        // here: [11,12] - ORDER and full dc; [17,20] - SERIES and arcs to 14,...,21; [6,7,9] - PARALLEL and full dc.
+        // - all in one overlapC!
         String test = "testy.txt"; // not matrix
         //
 
-        // not a tournament: after deletion of weak, parent still order???
-        // parent for sure is a module in G. (by RC/LC)
-        // wtf, where is my new "determine node type" method???
+
+        // ERR:
 
 
-        MDtestFromFile(log,  smallTourErrgraph, true);
-
-        // todo: Teste ich meine Prim-Module genug??? die sehen mir so groß aus :(
-
-//        ArrayList<Integer> baseSet = new ArrayList<>(Arrays.asList(1,2,3,4,5,6));
-//        List<List<Integer>> allSubsets = SortAndCompare.computeAllSubsets(baseSet);
-//        System.out.println("size: " + allSubsets.size());
+        // Once, this had more than 1 equiv class.
+        // Hmm. Now, [3,4,5,23,24] is an undetected SERIES module. -> below a weak prime :/
+        // happened, when there was a WEAK series module :) -> wut, where though???
+        // note: apperently, the old "determineNodeTypeForH" was still running. Still undetected SERIES.
+        String n25err = folderPath + "randDigraph_n_25_edits_12_11-22_14:38:53:932_original.txt";
 
 
+        // here: [5,6] is parallel module and not recognized. They are children of a weak prime...
+        // [5,6] here were in a par mod together with 3 in T_s - also in a Par mod in T_d, but without 3! -> Overlap???
+        // unfortunately, they both get aggregated in one overlap component that will constitute the weak module.
+        String n22err= folderPath + "randDigraph_n_22_edits_11_11-22_14:32:52:354_original.txt";
+
+        // todo: investigate the ones w/o weak modules first!
+
+
+        // here: [12, 1, 0] is parallel module, but added as leaves of prime.
+        // no weak modules, but discarded a former node of incl tree due to prime LCA.
+        String n23err2 = folderPath + "randDigraph_n_23_edits_11_11-22_14:32:56:841_original.txt";
 
 
 
 
-
-
+        MDtestFromFile(log, test, false);
 
 
 //
@@ -183,6 +184,7 @@ public class Main {
 
         int sz = 10;
 
+        // This was to reproduce Tedder's MD-Err
 //        Integer[] start = new Integer[sz];
 //        for (int i = 0; i < sz; i++) {
 //            start[i] = i;

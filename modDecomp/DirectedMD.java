@@ -22,6 +22,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
+import dicograph.utils.SortAndCompare;
 
 
 /**
@@ -175,8 +178,6 @@ public class DirectedMD {
 
         // Step 6: Resulting leaf order of T(H) is a factorizing permutation of G by Lem 20,21. Use algorithm
         //         [2] to find the modular decomposition of G.
-        // todo: wat? the left-to-right-order?
-        // todo: I already have more than just the permutation (as Tedder says!). Use that Tree!
         ArrayList<PartitiveFamilyLeafNode> trueLeafOrder =  new ArrayList<>(nVertices);
         treeForH.getLeavesInLeftToRightOrder( trueLeafOrder );
 
@@ -185,6 +186,8 @@ public class DirectedMD {
         log.info(() ->"Leaves ordered as factorizing permutation: " + leafNumbers);
         log.info("Reordered Tree: " + MDTree.beautify(treeForH.toString()));
         log.info("As .dot:\n" + treeForH.exportAsDot());
+
+
 
         if (debugMode) {
             String msg = treeForH.verifyNodeTypes(inputGraph, true);
@@ -232,9 +235,8 @@ public class DirectedMD {
 
         // F = F_a \cap F_b is family of sets which are members in both F_a and F_b.
 
-        // 0.) get the sets from the tree and compute their union. (initialized bool array???)
+        // 0.) get the sets from the tree and compute their union.
         // -> Iteration über die Bäume liefert die Eingabe-Daten für DH
-        // todo: Das alles irgendwie in Linearzeit hinbekommen x)
 
         // Not a problem according to Th 22. Just retrieve the vertices unsorted as arraylist -> |M| < 2m + 3n
         // 1. bucket sort the array lists by size (bound met)
@@ -245,8 +247,8 @@ public class DirectedMD {
         // much better than my current approach with BitSets of size n :)
 
         // todo: Brauche ich die corresp. TreeNode irgendwann? Muss hier auch die leaves mit Index abfragen. Könnte das BitSet auch an die Node schreiben.
-        HashMap<BitSet, RootedTreeNode> strongModulesBoolA = of_Gs_T_s.getStrongModulesBool(leavesOfT_s);
-        HashMap<BitSet, RootedTreeNode> strongModulesBoolB = of_Gd_T_g.getStrongModulesBool(leavesOfT_g);
+        HashMap<BitSet, RootedTreeNode> strongModulesBoolT_s = of_Gs_T_s.getStrongModulesBool(leavesOfT_s);
+        HashMap<BitSet, RootedTreeNode> strongModulesBoolT_d = of_Gd_T_g.getStrongModulesBool(leavesOfT_g);
 
 
         // debug option: verify if the modules are correct (kills linearity).
@@ -267,31 +269,15 @@ public class DirectedMD {
             }
         }
 
+        // union, no doubles.
+        HashSet<BitSet> nontrivModulesTemp = new HashSet<>(strongModulesBoolT_s.keySet());
+        nontrivModulesTemp.addAll(strongModulesBoolT_d.keySet());
 
-        // other way round for later
-
-//        HashMap<RootedTreeNode, BitSet> modulesAToBitset = new HashMap<>(nontrivModulesBoolA.size() * 4 / 3);
-//        for (Map.Entry<BitSet, RootedTreeNode> entry : nontrivModulesBoolA.entrySet()) {
-//            modulesAToBitset.put(entry.getValue(), entry.getKey());
-//        }
-//        HashMap<RootedTreeNode, BitSet> modulesBToBitset = new HashMap<>(strongModulesBoolB.size() * 4 / 3);
-//        for (Map.Entry<BitSet, RootedTreeNode> entry : strongModulesBoolB.entrySet()) {
-//            modulesBToBitset.put(entry.getValue(), entry.getKey());
-//        }
-
-
-        HashSet<BitSet> nontrivModulesTemp = new HashSet<>(strongModulesBoolA.keySet());
-        nontrivModulesTemp.addAll(strongModulesBoolB.keySet());
-
-
-        // todo: hier BucketSortBySize
-        ArrayList<BitSet> allNontrivModules= new ArrayList<>(nontrivModulesTemp); // need a well-defined order
-        // allNontrivModules.sort(new BitSetComparatorDesc()); // descending size
-        allNontrivModules.sort( // descending size
-                (b1, b2) -> Integer.compare(b2.cardinality(), b1.cardinality()));
+        // Sets need to be ordered for the algorithm
+        ArrayList<BitSet> allNontrivModules= new ArrayList<>(nontrivModulesTemp);
+        SortAndCompare.bucketSortBySize(allNontrivModules,false);
 
         StringBuilder overlapInput = new StringBuilder();
-
 
         // Since the singletons and V itself will never overlap another module, I can exclude them here and only consider the nontrivial modules
         // The Program takes vertices separated by " " in one line, ended by a "-1".
@@ -314,7 +300,7 @@ public class DirectedMD {
             e.printStackTrace();
         }
 
-        // I need to make sure that the program breaks if the char-Buffer would overflow
+        // I need to make sure that the program breaks if the char-Buffer would overflow // todo: edit code to get rid of this.
         if (nVertices > 324)
             throw new IndexOutOfBoundsException("Error: adapt the size of the char buff[1000] in OverlapComponentProg/main.cc and recompile.");
 
@@ -347,7 +333,7 @@ public class DirectedMD {
         // not even necessary - σ is obtained by simply joining the components, no need to check for equality
 
         // According to paper, V and the singleton subsets must be in σ(T_s, T_g) = { U ς | ς is overlap components of S(T_s) \cup S(T_g)
-        // Excluded them as they Don't contribute to computing the overlap components. Let's add them now.
+        // Excluded them as they Don't contribute to computing the overlap components. Added in the next step.
 
 
         // Assuming now: ArrayList of ArrayList<Int> with the singletons, V and the overlapComponents
@@ -355,7 +341,8 @@ public class DirectedMD {
 
         // 3.) @Lemma 11: compute the inclusion tree of σ(T_s, T_g)
         // The previously ommitted V and the singleton sets are also added to the tree.
-        RootedTree overlapInclusionTree = new PartitiveFamilyTree(overlapComponents.values(), log, nVertices);
+        PartitiveFamilyTree overlapInclusionTree = new PartitiveFamilyTree();
+        PartitiveFamilyLeafNode[] leafNodes = overlapInclusionTree.createInclusionTreeFromBitsets(overlapComponents.values(),log,nVertices);
         log.fine(() -> "Inclusion tree of overlap components: " + MDTree.beautify(overlapInclusionTree.toString()));
         HashMap<BitSet, RootedTreeNode> bitsetToOverlapTreenNode = overlapInclusionTree.getModuleToTreenode();
 
@@ -376,16 +363,15 @@ public class DirectedMD {
 
 
         log.fine("Computing nodes with complete Parent for Tree T_s of G_s");
-        HashMap<RootedTreeNode, BitSet> elementsOfA = computeNodesWithCompleteParent(
-                bitsetToOverlapTreenNode, true, elementOfAToP_a, strongModulesBoolA);
+        HashMap<RootedTreeNode, BitSet> elementsOfA = computeNodesWithCompleteParent(bitsetToOverlapTreenNode,
+                true, leafNodes, elementOfAToP_a, strongModulesBoolT_s);
 
         // Reinitialize and Compute P_b
         log.fine("Computing nodes with complete Parent for Tree T_g of G_d");
-        HashMap<RootedTreeNode, BitSet> elementsOfB = computeNodesWithCompleteParent(
-                bitsetToOverlapTreenNode, false, elementOfBToP_b, strongModulesBoolB);
+        HashMap<RootedTreeNode, BitSet> elementsOfB = computeNodesWithCompleteParent(bitsetToOverlapTreenNode,
+                false, leafNodes,elementOfBToP_b, strongModulesBoolT_d);
 
 
-        // todo: use BitSets rather than treeNodes as key!! Or: Pairs...
         // Ü(T_s,T_g) is now simply the intersection of A* and B*
         HashMap<RootedTreeNode, BitSet> intersectionOfAandB = new HashMap<>();
         //HashSet<RootedTreeNode> onlyVals = new HashSet<>(elementsOfB.values());
@@ -408,22 +394,6 @@ public class DirectedMD {
         //     union of each eq. class via boolean array (BitSet) to get result from Th. 10
 
 
-        /*
-        // todo: kann wohl weg, wenn ich Pair nutze
-        // get an arbitrary Index for each of the Treenodes
-        ArrayList<RootedTreeNode> treeNodesOfA = new ArrayList<>(strongModulesBoolA.values());
-        ArrayList<RootedTreeNode> treeNodesOfB = new ArrayList<>(strongModulesBoolB.values());
-        // Also Map the TreeNode to its index
-
-        HashMap<RootedTreeNode, Integer> modulesAToTreeIndex = new HashMap<>(treeNodesOfA.size() * 4 / 3);
-        HashMap<RootedTreeNode, Integer> modulesBToTreeIndex = new HashMap<>(treeNodesOfB.size() * 4 / 3);
-        for (int i = 0; i < treeNodesOfA.size(); i++) {
-            modulesAToTreeIndex.put(treeNodesOfA.get(i), i);
-        }
-        for (int i = 0; i < treeNodesOfB.size(); i++) {
-            modulesBToTreeIndex.put(treeNodesOfB.get(i), i);
-        }
-        */
 
         // Compute the equivalence classes.
         HashMap<Pair<RootedTreeNode, RootedTreeNode>, BitSet> equivalenceClassesR_U = new HashMap<>((elementOfAToP_a.size() + elementOfBToP_b.size()) * 2 / 3);
@@ -433,9 +403,8 @@ public class DirectedMD {
             RootedTreeNode aElement = elementOfAToP_a.get(entry.getKey());
             RootedTreeNode bElement = elementOfBToP_b.get(entry.getKey());
 
-            // must be contained in both maps! Generate the key:
+            // must be contained in both maps!
             if (aElement != null && bElement != null) {
-                //String sortKey = modulesAToTreeIndex.get(aElement) + "-" + modulesBToTreeIndex.get(bElement);
                 // Pair is fine, hashCode isn't overridden.
                 Pair<RootedTreeNode, RootedTreeNode> sortKey = new Pair<>(aElement, bElement);
                 if (equivalenceClassesR_U.containsKey(sortKey)) {
@@ -443,7 +412,7 @@ public class DirectedMD {
                     equivalenceClassesR_U.get(sortKey).or(entry.getValue());
                 } else {
                     log.fine(() -> "new equivalence class " + sortKey);
-                    equivalenceClassesR_U.put(sortKey, (BitSet) entry.getValue().clone());
+                    equivalenceClassesR_U.put(sortKey, (BitSet) entry.getValue().clone()); // need clone, else chaos
                 }
             }
 
@@ -452,16 +421,17 @@ public class DirectedMD {
 
 
         // 6. ) the set \mathcal S(T_s, T_g) - which is the set Family of H's MD-Tree:
+        // (not quite, might also contain singletons. Filtered in 7.)
         ArrayList<BitSet> strongModulesOfH = new ArrayList<>(
                 equivalenceClassesR_U.size() + intersectionOfAandB.size());
         strongModulesOfH.addAll(equivalenceClassesR_U.values());
         strongModulesOfH.addAll(intersectionOfAandB.values());
 
-
         // 7. ) From that set Family, The Inclusion Tree can be constructed by Lem 11.
 
-        PartitiveFamilyTree ret = new PartitiveFamilyTree(strongModulesOfH, log, nVertices);
-        // now we have the Tree T(H) = T_s Λ T_g which is equal to the MD Tree, exept...
+        PartitiveFamilyTree ret = new PartitiveFamilyTree();
+        ret.createInclusionTreeFromBitsets(strongModulesOfH, log, nVertices);
+        // now we have the Tree T(H) = T_s Λ T_g which is equal to the MD Tree, exept for weak and merged modules.
 
         return ret;
     }
@@ -477,7 +447,7 @@ public class DirectedMD {
      *
      * @param bitsetToOverlapTreenNode the entries of σ(T_s,T_g)
      */
-    private HashMap<RootedTreeNode, BitSet> computeNodesWithCompleteParent(Map<BitSet, RootedTreeNode> bitsetToOverlapTreenNode, boolean isA,
+    private HashMap<RootedTreeNode, BitSet> computeNodesWithCompleteParent(Map<BitSet, RootedTreeNode> bitsetToOverlapTreenNode, boolean isA, PartitiveFamilyLeafNode[] leavesOfOverlapTree,
                                                                            Map<RootedTreeNode, RootedTreeNode> elementOfAToP_a, Map<BitSet, RootedTreeNode> strongModules) {
 
         // todo: note - usually only use the nodes not Bitsets: Except for the leavesOf...
@@ -489,13 +459,13 @@ public class DirectedMD {
         HashMap<RootedTreeNode, BitSet> elementsOfA = new HashMap<>();
 
         // nodes of T_s:
-        MDTreeLeafNode[] leaves;
+        MDTreeLeafNode[] mdTreeLeaves;
         String logPrefix;
         if (isA) {
-            leaves = leavesOfT_s;
+            mdTreeLeaves = leavesOfT_s;
             logPrefix = "A: ";
         } else {
-            leaves = leavesOfT_g;
+            mdTreeLeaves = leavesOfT_g;
             logPrefix = "B: ";
         }
 
@@ -529,9 +499,9 @@ public class DirectedMD {
 
                 // Init: Mark the leaf entries of T_s corresponding to the current set of σ(T_s,T_g)
                 for (int v = bits.nextSetBit(0); v >= 0; v = bits.nextSetBit(v + 1)) {
-                    leaves[v].addMark();
-                    maximumMembers.add(leaves[v]);
-                    RootedTreeNode parent = leaves[v].getParent();
+                    mdTreeLeaves[v].addMark();
+                    maximumMembers.add(mdTreeLeaves[v]);
+                    RootedTreeNode parent = mdTreeLeaves[v].getParent();
                     innerNodes.add(parent);
                 }
 
@@ -600,9 +570,45 @@ public class DirectedMD {
                     node.unmarkAllChildren();
                 }
             }
+            // Handling of the single vertices which I skipped during overlap computation
+            for(PartitiveFamilyLeafNode overlapLeaf : leavesOfOverlapTree){
+                int vertexNo = overlapLeaf.getVertex();
+                MDTreeLeafNode leafOfMDTree = mdTreeLeaves[vertexNo];
+                MDTreeNode mdParent = (MDTreeNode) leafOfMDTree.getParent();
+                //For the following equivalence class computation, add those complete parent node in the MD Tree
+                if(mdParent.getType().isDegenerate()){
+                    BitSet leafBit = new BitSet();
+                    leafBit.set(vertexNo);
+                    elementOfAToP_a.put(overlapLeaf,mdParent);
+                    elementsOfA.put(overlapLeaf,leafBit);
+                }
+            }
+
         }
 
         return elementsOfA;
+    }
+
+    /**
+     * Attempt to fix small missing modules that are directly attached to the root of the undirected MD trees.
+     * Adds every subset of direct leaves of size >= 2.
+     * @param moduleToTreeNode
+     * @param t
+     */
+    private static void addCompleteRootSubsets(HashMap<BitSet,RootedTreeNode> moduleToTreeNode, MDTree t){
+        MDTreeNode rootNode = (MDTreeNode) t.root;
+        List<Integer> directLeafNumbers = rootNode.getDirectLeaves().stream()
+                .map( l -> (  (MDTreeLeafNode) l).getVertexNo() )
+                .collect(Collectors.toList());
+        List<List<Integer>> allSubsets = SortAndCompare.computeAllSubsets(directLeafNumbers).stream()
+                .filter( l -> l.size() > 1 ).collect( Collectors.toList() );
+        for( List<Integer> myList : allSubsets){
+            BitSet subSet = new BitSet();
+            for( int v : myList){
+                subSet.set(v);
+            }
+            moduleToTreeNode.putIfAbsent(subSet, rootNode);
+        }
     }
 
 }

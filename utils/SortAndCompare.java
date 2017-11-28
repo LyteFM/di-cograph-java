@@ -55,7 +55,12 @@ public class SortAndCompare {
         return retList;
     }
 
-    public static ArrayList<Set<Integer>> bucketSortBySize(ArrayList<Set<Integer>> input) {
+    /**
+     * Sorts BitSets according to their cardinality in descending size.
+     * @param input the list of input sets
+     * @param eliminateSingletons if singleton elements should be excluded
+     */
+    public static void bucketSortBySize(ArrayList<BitSet> input, boolean eliminateSingletons) {
 
         int[] sizes = new int[input.size()];
         int max = 0;
@@ -63,7 +68,7 @@ public class SortAndCompare {
 
         // initialize size
         for (int i = 0; i < input.size(); i++) {
-            int size = input.get(i).size();
+            int size = input.get(i).cardinality();
             sizes[i] = size;
             if (size > max)
                 max = size;
@@ -71,10 +76,10 @@ public class SortAndCompare {
 
         // initialize bucket
         int[] bucket = new int[max + 1];
-        ArrayList<ArrayList<Set<Integer>>> bucketSets = new ArrayList<>(max + 1);
+        ArrayList<LinkedList<BitSet>> bucketSets = new ArrayList<>(max + 1);
         for (int j = 0; j < bucket.length; j++) {
             bucket[j] = 0;
-            bucketSets.add(j, new ArrayList<>());
+            bucketSets.add(j, new LinkedList<>());
         }
         // add entries for the existing sizes
         for (int i = 0; i < sizes.length; i++) {
@@ -85,17 +90,19 @@ public class SortAndCompare {
         }
 
         int returnPos = 0;
-        ArrayList<Set<Integer>> ret = new ArrayList<>(input.size());
+        input.clear();
 
-        for (int i = 0; i < bucket.length; i++) {
-            for (int j = 0; j < bucket[i]; j++) {
-                // Hier rein, wenn's Eintrag gibt
-                Set<Integer> retSet = bucketSets.get(i).get(j);
-                ret.add(returnPos++, retSet);
+        for (int i = bucket.length-1; i >= 0 ; i--) {
+            if(bucket[i] > 0){
+                LinkedList<BitSet> bucketList = bucketSets.get(i);
+                while (!bucketList.isEmpty()) {
+                    BitSet retSet = bucketList.removeFirst();
+                    if(!eliminateSingletons || retSet.cardinality() > 1) {
+                        input.add(returnPos++, retSet);
+                    }
+                }
             }
         }
-
-        return ret;
     }
 
     /**

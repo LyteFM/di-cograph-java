@@ -484,4 +484,29 @@ class RootedTreeNode {
 		res.append(SortAndCompare.checkModuleBruteForce(graph,moduleVertices, true));
 	}
 
+
+
+	// F.L. 27.11.17: trying to fix the directed MD
+
+	/* Returns a List of leaves directly attached to this node. */
+	protected List<RootedTreeNode> getDirectLeaves() {
+
+		LinkedList<RootedTreeNode> leaves = new LinkedList<>();
+
+		if (isALeaf()) {
+			leaves.add(this);
+		}
+		else {
+			RootedTreeNode currentChild = firstChild;
+			while (currentChild != null) {
+				if (currentChild.isALeaf()) {
+					leaves.add(currentChild);
+				}
+				currentChild = currentChild.rightSibling;
+			}
+		}
+
+		return leaves;
+	}
+
 }

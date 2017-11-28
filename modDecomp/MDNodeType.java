@@ -3,6 +3,7 @@ package dicograph.modDecomp;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
 
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Set;
@@ -50,7 +51,7 @@ public enum MDNodeType {
 					result = SortAndCompare.checkModuleBruteForce(mainGraph, subSet,false);
 					if(!result.isEmpty()){
 						builder.append("For vertices: ").append(subSet).append("\n").append(result);
-						//break;
+						//break; // todo: not if I want all
 					}
 					if( i % 100000 == 0) {
 						System.out.println("verified subset " + (i+1) + " of " + validSubsets.size());
