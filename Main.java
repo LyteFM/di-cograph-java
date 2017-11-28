@@ -101,20 +101,13 @@ public class Main {
 
 
 
-//        for( int i = 20; i <= 30; i ++) {
-//            boolean ok = directedMDTesting(log, consoleHandler, i, i/2,true);
-//            if(!ok)
-//                break;
-//        }
+        for( int i = 10; i <= 30; i ++) {
+            boolean ok = directedMDTesting(log, consoleHandler, i, i/2,false);
+            if(!ok)
+                break;
+        }
 
 
-
-
-
-//        System.out.println("From rand:\n\n");
-//        MDtestFromFile(log, test, false);
-//        System.out.println("From Matrix:\n\n");
-//        MDtestFromFile(log, weirdError,true);
 
         String folderPath = "testGraphs/DMDtest/ERR/";
         String folder = "testGraphs/";
@@ -143,33 +136,25 @@ public class Main {
         String test = "testy.txt"; // not matrix
         //
 
+        // here: [12, 1, 0] is parallel module, but added as leaves of prime. -> ok:)
+        // no weak modules, but discarded a former node of incl tree due to prime LCA.
+        String n23err2 = folderPath + "randDigraph_n_23_edits_11_11-22_14:32:56:841_original.txt";
 
-        // ERR:
-
-
-        // Once, this had more than 1 equiv class.
-        // Hmm. Now, [3,4,5,23,24] is an undetected SERIES module. -> below a weak prime :/
-        // happened, when there was a WEAK series module :) -> wut, where though???
-        // note: apperently, the old "determineNodeTypeForH" was still running. Still undetected SERIES.
-        String n25err = folderPath + "randDigraph_n_25_edits_12_11-22_14:38:53:932_original.txt";
-
-
-        // here: [5,6] is parallel module and not recognized. They are children of a weak prime...
+        // here: [5,6] is parallel module and not recognized. They are children of a weak prime. -> ok :)
         // [5,6] here were in a par mod together with 3 in T_s - also in a Par mod in T_d, but without 3! -> Overlap???
         // unfortunately, they both get aggregated in one overlap component that will constitute the weak module.
         String n22err= folderPath + "randDigraph_n_22_edits_11_11-22_14:32:52:354_original.txt";
 
-        // todo: investigate the ones w/o weak modules first!
+        // Hmm. Now, [3,4,5,23,24] is an undetected SERIES module. -> below a weak prime :/
+        // happened, when there was a WEAK series module :)
+        // after leaves-fix: also "22" is in this SERIES module, but it has wrong edge to 10.
+        // OK after adaptation for merged complete nodes for more than 1 eq class :)
+        String n25err = folderPath + "randDigraph_n_25_edits_12_11-22_14:38:53:932_original.txt";
 
 
-        // here: [12, 1, 0] is parallel module, but added as leaves of prime.
-        // no weak modules, but discarded a former node of incl tree due to prime LCA.
-        String n23err2 = folderPath + "randDigraph_n_23_edits_11_11-22_14:32:56:841_original.txt";
+        // ERR:
 
-
-
-
-        MDtestFromFile(log, test, false);
+        //MDtestFromFile(log, smallNotAtournament, true);
 
 
 //
@@ -480,19 +465,7 @@ public class Main {
 
         boolean ok = true;
         String timeStamp = new SimpleDateFormat("MM-dd_HH:mm:ss:SSS").format(Calendar.getInstance().getTime());
-
-        GraphGenerator gen = new GraphGenerator(log);
-        SimpleDirectedGraph<Integer, DefaultEdge> g_d = new SimpleDirectedGraph<>(DefaultEdge.class);
-        gen.generateRandomDirectedCograph(g_d, nVertices, true);
-        gen.disturbDicograph(g_d, nDisturb);
-
-        // export the graph for debug purposes
-        String filePath = "testGraphs/DMDtest/randDigraph_n_" + nVertices + "_edits_" + nDisturb + "_" + timeStamp;
-        File expfile = new File(filePath + "_original.txt");
-        SimpleMatrixExporter<Integer, DefaultEdge> myExporter = new SimpleMatrixExporter<>();
-        myExporter.exportGraph(g_d, expfile);
-        log.info(String.format("Generated random Dicograph with %s vertices and %s random edge-edits.", nVertices, nDisturb));
-        log.info("Exported Matrix to :" + filePath + "_original.txt");
+        String filePath = "testGraphs/DMDvery/randDigraph_n_" + nVertices + "_edits_" + nDisturb + "_" + timeStamp;
 
         // writes the log
         File logFile = new File(filePath +".log");
@@ -501,8 +474,19 @@ public class Main {
         fileHandler.setLevel( baseHandler.getLevel() );
         log.addHandler(fileHandler);
 
-        log.info("Started modular decomposition");
+        GraphGenerator gen = new GraphGenerator(log);
+        SimpleDirectedGraph<Integer, DefaultEdge> g_d = new SimpleDirectedGraph<>(DefaultEdge.class);
+        gen.generateRandomDirectedCograph(g_d, nVertices, true);
+        gen.disturbDicograph(g_d, nDisturb);
 
+        // export the graph for debug purposes
+        File expfile = new File(filePath + "_original.txt");
+        SimpleMatrixExporter<Integer, DefaultEdge> myExporter = new SimpleMatrixExporter<>();
+        myExporter.exportGraph(g_d, expfile);
+        log.info(String.format("Generated random Dicograph with %s vertices and %s random edge-edits.", nVertices, nDisturb));
+        log.info("Exported Matrix to :" + filePath + "_original.txt");
+
+        log.info("Started modular decomposition");
         try {
             DirectedMD testMD = new DirectedMD(g_d, log, true);
             testMD.computeModularDecomposition();
