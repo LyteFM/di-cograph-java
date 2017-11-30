@@ -364,12 +364,12 @@ public class DirectedMD {
 
         log.fine("Computing nodes with complete Parent for Tree T_s of G_s");
         HashMap<RootedTreeNode, BitSet> elementsOfA = computeNodesWithCompleteParent(bitsetToOverlapTreenNode,
-                true, leafNodes, elementOfAToP_a, strongModulesBoolT_s);
+                true, leafNodes, elementOfAToP_a, strongModulesBoolT_s, of_Gs_T_s);
 
         // Reinitialize and Compute P_b
         log.fine("Computing nodes with complete Parent for Tree T_g of G_d");
         HashMap<RootedTreeNode, BitSet> elementsOfB = computeNodesWithCompleteParent(bitsetToOverlapTreenNode,
-                false, leafNodes,elementOfBToP_b, strongModulesBoolT_d);
+                false, leafNodes,elementOfBToP_b, strongModulesBoolT_d, of_Gd_T_g);
 
 
         // Ü(T_s,T_g) is now simply the intersection of A* and B*
@@ -394,8 +394,7 @@ public class DirectedMD {
         //     union of each eq. class via boolean array (BitSet) to get result from Th. 10
 
 
-
-        // Compute the equivalence classes.
+        // Compute the equivalence classes. todo: what if nice smaller classes get eaten up???
         HashMap<Pair<RootedTreeNode, RootedTreeNode>, BitSet> equivalenceClassesR_U = new HashMap<>((elementOfAToP_a.size() + elementOfBToP_b.size()) * 2 / 3);
 
         for( Map.Entry<RootedTreeNode, BitSet> entry : intersectionOfAandB.entrySet()){
@@ -408,10 +407,10 @@ public class DirectedMD {
                 // Pair is fine, hashCode isn't overridden.
                 Pair<RootedTreeNode, RootedTreeNode> sortKey = new Pair<>(aElement, bElement);
                 if (equivalenceClassesR_U.containsKey(sortKey)) {
-                    log.fine(() -> "Adding to equivalence class " + sortKey);
+                    log.fine(() -> "Adding " + entry.getValue() + " to equivalence class " + sortKey);
                     equivalenceClassesR_U.get(sortKey).or(entry.getValue());
                 } else {
-                    log.fine(() -> "new equivalence class " + sortKey);
+                    log.fine(() -> "For " + entry.getValue() + ", create new equivalence class " + sortKey);
                     equivalenceClassesR_U.put(sortKey, (BitSet) entry.getValue().clone()); // need clone, else chaos
                 }
             }
@@ -447,8 +446,8 @@ public class DirectedMD {
      *
      * @param bitsetToOverlapTreenNode the entries of σ(T_s,T_g)
      */
-    private HashMap<RootedTreeNode, BitSet> computeNodesWithCompleteParent(Map<BitSet, RootedTreeNode> bitsetToOverlapTreenNode, boolean isA, PartitiveFamilyLeafNode[] leavesOfOverlapTree,
-                                                                           Map<RootedTreeNode, RootedTreeNode> elementOfAToP_a, Map<BitSet, RootedTreeNode> strongModules) {
+    private HashMap<RootedTreeNode, BitSet> computeNodesWithCompleteParent(Map<BitSet, RootedTreeNode> bitsetToOverlapTreenNode, boolean isT_s, PartitiveFamilyLeafNode[] leavesOfOverlapTree,
+                                                                           Map<RootedTreeNode, RootedTreeNode> elementOfAToP_a, Map<BitSet, RootedTreeNode> strongModules, MDTree mdTree) {
 
         // todo: note - usually only use the nodes not Bitsets: Except for the leavesOf...
         //
@@ -461,12 +460,12 @@ public class DirectedMD {
         // nodes of T_s:
         MDTreeLeafNode[] mdTreeLeaves;
         String logPrefix;
-        if (isA) {
+        if (isT_s) {
             mdTreeLeaves = leavesOfT_s;
-            logPrefix = "A: ";
+            logPrefix = "G_s: ";
         } else {
             mdTreeLeaves = leavesOfT_g;
-            logPrefix = "B: ";
+            logPrefix = "G_d: ";
         }
 
         // outer loop: iterate over all inner nodes of σ(T_s,T_g)
@@ -547,9 +546,14 @@ public class DirectedMD {
                     throw new IllegalStateException("Shouldn't happen.");
 
                 } else {
-                    // compute the LCA of all maximum members and check if it is root. Note: one entry itself could be that.
+                    // compute the LCA of all maximum members and check if it is complete.
                     // LCA can be found in O(h), h height of the tree, at least.
-                    MDTreeNode lca = (MDTreeNode) RootedTree.computeLCA(maximumMembers, log);
+                    MDTreeNode lca;
+                    if(maximumMembers.size() == nVertices){
+                        lca = (MDTreeNode) mdTree.root;
+                    } else {
+                        lca = (MDTreeNode) RootedTree.computeLCA(maximumMembers, log);
+                    }
                     if (lca == null || lca.hasNoChildren()) {
                         throw new IllegalStateException("LCA computation failed for: " + setEntryOfSigma);
                     } else if (lca.getType().isDegenerate()) {

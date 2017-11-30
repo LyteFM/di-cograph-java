@@ -1,6 +1,7 @@
 package dicograph.modDecomp;
 
 import org.jgrapht.Graph;
+import org.jgrapht.alg.util.Pair;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleGraph;
 
@@ -73,14 +74,6 @@ class RootedTree {
         this.moduleToTreenode = moduleToTreenode;
     }
 
-    // F.L. 13.11.17: moved here
-    /**
-     * Computes the lowest common ancestor for a set of RootedTreeNodes.
-     *
-     * @param lowerNodesCollection the treenodes
-     * @param log                  the logger
-     * @return the LCA. null indicates an error.
-     */
     public static RootedTreeNode computeLCA(Collection<RootedTreeNode> lowerNodesCollection, Logger log) {
 
         boolean alreadyReachedRoot = false;
@@ -98,6 +91,7 @@ class RootedTree {
             inputNodeToAncestor.put(i, list);
             lastNodeRemaining.add(i);
         }
+        log.fine("List: " + lowerNodes);
         int currDistance = 0;
         // Traverse the Tree bottom-up
 
@@ -106,7 +100,7 @@ class RootedTree {
             while (nodesIter.hasNext()) {
                 Map.Entry<Integer, LinkedList<RootedTreeNode>> currEntry = nodesIter.next();
                 RootedTreeNode parent = currEntry.getValue().peekLast().getParent();
-                if (allTraversedNodes.containsKey(parent)) {
+                if (allTraversedNodes.containsKey(parent)) { // ignore root
 
                     // already present: close this list.
                     lastNodeRemaining.remove(currEntry.getKey());
@@ -124,19 +118,142 @@ class RootedTree {
                     nodesIter.remove();
                     // We're done if this was the last.
                     if (lastNodeRemaining.size() == 1) {
-                        return parent;
+                        int lastIndex = lastNodeRemaining.stream().findFirst().get();
+                        LinkedList<RootedTreeNode> lastList = inputNodeToAncestor.get(lastIndex);
+                        // now, the question is: which is the correct element??? Additional problem: length could have changed or not...
+                        if(lastList.contains(parent)) {
+                            log.fine("Found: return parent.");
+                            return parent;
+                        } else {
+                            log.fine("Not found: return first inner node entry of last list.");
+                            log.fine(lastList.toString());
+                            for(RootedTreeNode lastListNode : lastList){
+                                if(!lastListNode.isALeaf()){
+                                    return lastListNode;
+                                }
+                            }
+                        }
                     }
 
-                } else {
+                } else if (parent != null){
                     // add the parent
+                    log.fine("Adding: " + currEntry + ", parent: " + parent);
                     currEntry.getValue().addLast(parent);
                     allTraversedNodes.put(parent, currEntry.getKey());
+                } else {
+                    log.fine("Ignoring root.");
                 }
             }
             currDistance++;
+            log.fine("dist " + currDistance + " all: " + allTraversedNodes);
+            log.fine("next Iteration: " + inputNodeToAncestor);
 
         }
         log.warning("Error: Unexpected Exit! current Distance: " + currDistance);
+        return null;
+    }
+
+    // F.L. 13.11.17: moved here
+    /**
+     * Computes the lowest common ancestor for a set of RootedTreeNodes.
+     *
+     * @param lowerNodesCollection the treenodes
+     * @param log                  the logger
+     * @return the LCA. null indicates an error.
+     */
+    public static RootedTreeNode computeLCAfals(Collection<RootedTreeNode> lowerNodesCollection, Logger log) {
+
+        boolean alreadyReachedRoot = false;
+
+        // active initial nodes and possible parent nodes might be LCAs
+        HashMap<RootedTreeNode,RootedTreeNode> inputNodeToLCA = new HashMap<>(lowerNodesCollection.size() * 4 / 3);
+        HashMap<RootedTreeNode, RootedTreeNode> parentNodeToInputNode = new HashMap<>(lowerNodesCollection.size() * 4 / 3); // value ist immer inputNode!
+        for(RootedTreeNode lowerNode : lowerNodesCollection){
+            parentNodeToInputNode.put(lowerNode,lowerNode);
+            inputNodeToLCA.put(lowerNode,lowerNode);
+        }
+
+        // not necessary with new approach
+        /*
+        HashMap<RootedTreeNode, Integer> allTraversedNodes = new HashMap<>();
+        HashSet<Integer> lastNodeRemaining = new HashSet<>();
+
+        for (int i = 0; i < lowerNodesToRemember.size(); i++) {
+            LinkedList<RootedTreeNode> list = new LinkedList<>();
+            list.add(lowerNodesToRemember.get(i));
+            allTraversedNodes.put(lowerNodesToRemember.get(i), i);
+            parentNodeToLowerNode.put(i, list);
+            lastNodeRemaining.add(i);
+        }
+        */
+        int currDistance = 0;
+        int count = lowerNodesCollection.size();
+        // Traverse the Tree bottom-up
+        // todo: can parent ever be null?
+
+        while (count > 1) {
+            Iterator<Map.Entry<RootedTreeNode, RootedTreeNode>> nodesIter = parentNodeToInputNode.entrySet().iterator();
+            LinkedList<Pair<RootedTreeNode,RootedTreeNode>> possibleLCAsToAdd = new LinkedList<>();
+            // 1st iteration: all initial nodes
+            while (nodesIter.hasNext()) {
+                Map.Entry<RootedTreeNode, RootedTreeNode> currEntry = nodesIter.next();
+                RootedTreeNode currLCAcandidate = currEntry.getKey();
+                RootedTreeNode inputNode = currEntry.getValue();
+                RootedTreeNode currParent = currLCAcandidate.getParent();
+                final int remCount = count;
+                if(currParent == null){
+                    log.fine(() -> remCount + " - reached parent of root: " + currLCAcandidate);
+
+                } else {
+
+                    if (parentNodeToInputNode.containsKey(currParent)) {
+                        if (currParent.isRoot()) {
+                            log.fine(() -> remCount + " - reached root: " + currLCAcandidate);
+                            // If two paths reach root, root is LCA.
+                            if (alreadyReachedRoot) {
+                                log.fine("Root is LCA.");
+                                return currParent;
+                            }
+                            alreadyReachedRoot = true;
+                        } else {
+                            log.fine(() -> remCount + " - closing: " + currLCAcandidate);
+                        }
+                        // already present: remove this entry and its corresponding input node
+                        count--;
+                        // replace returns the old val
+                        RootedTreeNode prevLCA = inputNodeToLCA.replace(inputNode, currParent); // update the LCA for the inputNode
+                        nodesIter.remove();
+                        // We're done if this was the last.
+                        if (count == 0) {
+
+                            //if(currParent == prevLCA) {
+                                return currParent;
+                            //} else {
+                                // problem: parent of last element might not necessarily be the LCA, but simply the last found (lower) element
+
+                            //}
+                        }
+
+                    } else {
+                        log.fine(() -> remCount + " - adding: " + currLCAcandidate);
+                        possibleLCAsToAdd.add(new Pair<>(currParent, inputNode ));
+                        // inputNodeToLCA.put() // todo: or also update here??? but maybe inputNode itself is LCA.
+                    }
+                }
+
+            }
+
+            // add the parent and the corresp. lower node
+            for(Pair<RootedTreeNode,RootedTreeNode> toAdd : possibleLCAsToAdd){
+                parentNodeToInputNode.put(toAdd.getFirst(),toAdd.getSecond());
+                if(count == 1){
+                    return toAdd.getFirst();
+                }
+            }
+            currDistance++;
+        }
+
+        log.warning(() -> "Error: Unexpected Exit!");
         return null;
     }
 

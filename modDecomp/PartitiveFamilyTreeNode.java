@@ -82,7 +82,9 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             // According to Lem 20:
             log.fine(() -> type + ": computing equivalence classes");
             computeEquivalenceClassesAndReorderChildren(log, outNeighbors, inNeighbors, orderedLeaves, positionInPermutation);
-            // todo: if weak, delete! if strong, reorder!
+
+            // A module identified as order might be strong, but not have a transitive tournament
+            // i.e. it's not a strong order, but a prime with an order module as child
             if (isModuleInG && type == MDNodeType.ORDER) {
                 // According to Lem 21:
                 log.fine(() -> type + ": computing fact perm of tournament " + inducedPartialSubgraph);
@@ -97,6 +99,8 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         if(!isModuleInG){
             // According to Proof of Cor 19, a weak prime module's children don't constitute a merged module, only a complete
             // module's children. Simply delete module weak modules: ->  Replace with their children.
+            // todo: if the parent node is doesn't have the same type (and esp.: is complete), that's not enough!!!
+            // E.g. a complete root might need to  be checked again!
             log.fine(() -> "Weak module to remove: " + this);
             PartitiveFamilyTreeNode parentNode = removeThis();
             MDNodeType oldType = parentNode.getType();

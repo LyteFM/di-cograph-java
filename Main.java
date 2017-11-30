@@ -100,7 +100,7 @@ public class Main {
 
 
 
-
+//
 //        for( int i = 10; i <= 30; i ++) {
 //            boolean ok = directedMDTesting(log, consoleHandler, i, i/2,false);
 //            if(!ok)
@@ -108,11 +108,6 @@ public class Main {
 //        }
 
         String reTestPath = "testGraphs/DMDvery/";
-        String weakOrderWithStrongChildren = reTestPath + "randDigraph_n_22_edits_11_11-28_15:49:46:254_original.txt";
-        MDtestFromFile(log, weakOrderWithStrongChildren, true);
-
-
-
 
         String folderPath = "testGraphs/DMDtest/ERR/";
         String folder = "testGraphs/";
@@ -143,7 +138,7 @@ public class Main {
 
         // here: [12, 1, 0] is parallel module, but added as leaves of prime. -> ok:)
         // no weak modules, but discarded a former node of incl tree due to prime LCA.
-        String n23err2 = folderPath + "randDigraph_n_23_edits_11_11-22_14:32:56:841_original.txt";
+        String n23err2 = folderPath + "randDigraph_n_23_edits_11_11-22_14:32:56:841_original.txt"; // todo
 
         // here: [5,6] is parallel module and not recognized. They are children of a weak prime. -> ok :)
         // [5,6] here were in a par mod together with 3 in T_s - also in a Par mod in T_d, but without 3! -> Overlap???
@@ -156,10 +151,30 @@ public class Main {
         // OK after adaptation for merged complete nodes for more than 1 eq class :)
         String n25err = folderPath + "randDigraph_n_25_edits_12_11-22_14:38:53:932_original.txt";
 
+        // OK now!
+        String n_12_ordersplit = reTestPath + "randDigraph_n_12_edits_6_11-28_16:10:39:274_original.txt";
 
+        List<String> allOKToCheck = Arrays.asList(n_12_ordersplit, n25err, n22err, n23err2, weirdError, n21err, n23err, n24err, viceVera, smallNotAtournament, smallTourErrgraph);
+        for( String s : allOKToCheck){
+            MDtestFromFile(log,s,true);
+        }
+
+        //
         // ERR:
+        //
+
+        // here: weak order module was deleted, but it two of its children are still an order module.
+        String weakOrderWithStrongChildren = reTestPath + "randDigraph_n_22_edits_11_11-28_15:49:46:254_original.txt";
+
+        // here: root order with weak prime -> deleted, root becomes prime -> 2 vertices of root should still be order.
+        String n13_fail_muchprime = reTestPath + "randDigraph_n_13_edits_6_11-28_17:18:29:275_original.txt";
+
+        //
+        String n10falsePrime = reTestPath + "rand_n_10_false_Prime.txt";
 
 
+
+        //MDtestFromFile(log, n10falsePrime, true);
 
 //
 //        File importFile = new File("testy.txt");
