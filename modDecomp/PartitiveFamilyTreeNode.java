@@ -238,6 +238,82 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         return returnVal;
     }
 
+
+
+
+    private void handleWeakChildOfStrongOrder(List<Pair<Integer,Integer>> perfFactPerm, List<PartitiveFamilyLeafNode> initialPermutation, Logger log) {
+
+        int sz = perfFactPerm.size();
+        HashMap<Integer,Integer> positionInPermutation = new HashMap<>(sz*4/3);
+
+        for(int i = 0; i<sz; i++){
+            Pair<Integer,Integer> element = perfFactPerm.get(i);
+            int vertex = element.getFirst();
+            positionInPermutation.put(vertex, i);
+        }
+        PartitiveFamilyTreeNode[] orderedNodes = new PartitiveFamilyTreeNode[sz];
+
+        List<Integer> weakNodePositions = new LinkedList<>();
+        HashMap<Integer, RootedTreeNode> vertexPosToNode = new HashMap<>(); // or: posInPerm to ...
+
+        PartitiveFamilyTreeNode currentChild = (PartitiveFamilyTreeNode) getFirstChild();
+        if (currentChild != null) {
+            while (currentChild != null) {
+
+                int position = -1; // want an error if not found
+                int realV;
+                // computes the first position of any vertex in the child module
+                if (currentChild.isALeaf()) {
+                    realV = ((PartitiveFamilyLeafNode) currentChild).getVertex();
+                    position = positionInPermutation.get(realV);
+                } else {
+                    int skipCount = 0;
+                    for (realV = currentChild.vertices.nextSetBit(0); realV >= 0; realV = currentChild.vertices.nextSetBit(realV + 1)) {
+                        if (positionInPermutation.containsKey(realV)) {
+                            position = positionInPermutation.get(realV);
+                            break;
+                        } else {
+                            skipCount++;
+                        }
+                    }
+                    log.fine("Checked " + skipCount + " of " + currentChild.getNumChildren() + " vertices to find position " + position);
+                    if(!currentChild.isModuleInG){
+                        weakNodePositions.add(position);
+                    }
+                }
+
+                if (orderedNodes[position] != null) {
+                    throw new IllegalStateException("Vertex for position " + position + " already present for node\n" + toString());
+                }
+                orderedNodes[position] = currentChild;
+                vertexPosToNode.put(position,currentChild);
+
+                currentChild = (PartitiveFamilyTreeNode) currentChild.getRightSibling();
+            }
+        }
+        // ok, have the nodes in order now.
+
+        for(int wPos : weakNodePositions){
+            PartitiveFamilyTreeNode weakNode = orderedNodes[wPos];
+            // add the missing ones!
+            if(weakNode.le_X != weakNode.lc_X){
+                if(le_X - lc_X == 1){
+                    // just one leaf: simply add at first pos
+                    initialPermutation.get(lc_X).insertBefore(weakNode.getFirstChild());
+                } else {
+                    for (int i = lc_X; i < le_X; i++) {
+                        // create new ORDER node and add.
+                    }
+                }
+            }
+            if(weakNode.re_X != weakNode.rc_X){
+
+            }
+        }
+
+    }
+
+
     /**
      * reorders the children of this vertex accound to the perfect factorizing permutation
      * @param perfFactPerm the computed perfect factorizing permutation of the corresponding tournament
@@ -253,6 +329,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
         // detect merged modules here. According to Th3 of the fact.perm. paper, the "true" module appears consecutively
         // => the true module is a transitive tournament, it has a total order.
+
         // therefore, there is only room for mergers at start end end of the fact.perm.
         // todo: unfortunately, weak module might be orderered nicely and contain a strong one
         // idea: use outDegs and inDegs of REAL GRAPH -> not enough, need true adjacencies.
@@ -346,7 +423,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         }
 
         if (recoverMerged) {
-            type = MDNodeType.PRIME; // todo: verify.
+            type = MDNodeType.PRIME; // todo: determineNodeType.
 
             newNode.type = MDNodeType.ORDER;
             newNode.isModuleInG = true;
@@ -645,9 +722,9 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
         if(lc_X == le_X && rc_X == re_X){
             isModuleInG = true;
-            log.fine( () -> "Module found - LC: " + lc_X + ", RC: " + rc_X + " for node: " + toString());
+            log.fine( () -> "Module found - LC & LE: " + lc_X + ", RC & RE: " + rc_X + " for node: " + toString());
         } else {
-            log.fine( () -> "Not a module - LC: " + lc_X + ", RC: " + rc_X + " for node: " + toString());
+            log.fine( () -> "Not a module - LC: " + lc_X + ", LE: " + le_X +  ", RC: " + rc_X + ", RE: " + re_X + " for node: " + toString());
         }
 
         return new Pair<>(lc_X,rc_X);
