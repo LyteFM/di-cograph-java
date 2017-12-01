@@ -103,48 +103,52 @@ class RootedTree {
                 Map.Entry<RootedTreeNode, LinkedList<RootedTreeNode>> currEntry = nodesIter.next();
                 RootedTreeNode parent = currEntry.getValue().peekLast().getParent();
 
-                if (parent.isRoot()) {
-                    log.fine(() -> "Reached root: " + currEntry.toString());
-                    // No problem if just one went up to root.
-                    if (alreadyReachedRoot) {
-                        log.fine("Root is LCA.");
-                        return parent;
-                    }
-                    alreadyReachedRoot = true;
-                }
 
-                if (allTraversedNodes.containsKey(parent)) {
-
-                    // already present: close this list.
-                    remainingNodes --;
-                    log.fine(() -> "Closing: " + currEntry.toString());
-
-                    nodesIter.remove();
-                    // We're done if this was the last.
-                    if (remainingNodes == 1) {
-                        if(inputNodeToAncestors.size() != 1){
-                            throw new IllegalStateException("Multiple ancestry lists: " + inputNodeToAncestors);
-                        }
-                        LinkedList<RootedTreeNode> lastList = inputNodeToAncestors.values().stream().findFirst().get();
-                        if(lastList.contains(parent)) {
+                if(parent != null) {
+                    if (parent.isRoot()) {
+                        log.fine(() -> "Reached root: " + currEntry.toString());
+                        // No problem if just one went up to root.
+                        if (alreadyReachedRoot) {
+                            log.fine("Root is LCA.");
                             return parent;
-                        } else {
-                            log.fine(() -> "Not found: return first inner node entry of last list:");
-                            log.fine( lastList::toString );
-                            for(RootedTreeNode lastListNode : lastList){
-                                if(!lastListNode.isALeaf()){
-                                    return lastListNode;
+                        }
+                        alreadyReachedRoot = true;
+                    }
+
+                    if (allTraversedNodes.containsKey(parent)) {
+
+                        // already present: close this list.
+                        remainingNodes--;
+                        log.fine(() -> "Closing: " + currEntry.toString());
+
+                        nodesIter.remove();
+                        // We're done if this was the last.
+                        if (remainingNodes == 1) {
+                            if (inputNodeToAncestors.size() != 1) {
+                                throw new IllegalStateException("Multiple ancestry lists: " + inputNodeToAncestors);
+                            }
+                            LinkedList<RootedTreeNode> lastList = inputNodeToAncestors.values().stream().findFirst().get();
+                            if (lastList.contains(parent)) {
+                                return parent;
+                            } else {
+                                log.fine(() -> "Not found: return first inner node entry of last list:");
+                                log.fine(lastList::toString);
+                                for (RootedTreeNode lastListNode : lastList) {
+                                    if (!lastListNode.isALeaf()) {
+                                        return lastListNode;
+                                    }
                                 }
                             }
                         }
-                    }
 
-                } else if (parent != null){
-                    // add the parent
-                    log.fine(() -> "Adding: " + currEntry + ", parent: " + parent);
-                    currEntry.getValue().addLast(parent);
-                    allTraversedNodes.put(parent, currEntry.getKey());
-                } else {
+                    } else {
+                        // add the parent
+                        log.fine(() -> "Adding: " + currEntry + ", parent: " + parent);
+                        currEntry.getValue().addLast(parent);
+                        allTraversedNodes.put(parent, currEntry.getKey());
+                    }
+                }
+                else {
                     log.fine(() -> "Ignoring root.");
                 }
             }
