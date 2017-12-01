@@ -102,21 +102,23 @@ class RootedTree {
             while (nodesIter.hasNext()) {
                 Map.Entry<RootedTreeNode, LinkedList<RootedTreeNode>> currEntry = nodesIter.next();
                 RootedTreeNode parent = currEntry.getValue().peekLast().getParent();
+
+                if (parent.isRoot()) {
+                    log.fine(() -> "Reached root: " + currEntry.toString());
+                    // No problem if just one went up to root.
+                    if (alreadyReachedRoot) {
+                        log.fine("Root is LCA.");
+                        return parent;
+                    }
+                    alreadyReachedRoot = true;
+                }
+
                 if (allTraversedNodes.containsKey(parent)) {
 
                     // already present: close this list.
                     remainingNodes --;
-                    if (parent.isRoot()) {
-                        log.fine(() -> "Reached root: " + currEntry.toString());
-                        // No problem if just one went up to root.
-                        if (alreadyReachedRoot) {
-                            log.fine("Root is LCA.");
-                            return parent;
-                        }
-                        alreadyReachedRoot = true;
-                    } else {
-                        log.fine(() -> "Closing: " + currEntry.toString());
-                    }
+                    log.fine(() -> "Closing: " + currEntry.toString());
+
                     nodesIter.remove();
                     // We're done if this was the last.
                     if (remainingNodes == 1) {

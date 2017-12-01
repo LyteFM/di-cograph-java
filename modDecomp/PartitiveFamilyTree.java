@@ -4,6 +4,7 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.HashMap;
@@ -107,18 +108,37 @@ public class PartitiveFamilyTree extends RootedTree {
 
             // This is for N_{+}: 1st key is outVertex, 2nd key is destVertex
             BitSet[] outEgdes = SortAndCompare.edgesSortedByPerm(integers, posiperm, data.inputGraph, true);
+
+            // This is for N_{-}: 1st key is destVertex, 2nd outVertex
+            BitSet[] inEdges = SortAndCompare.edgesSortedByPerm(integers, posiperm,  data.inputGraph, false);
+
+            // Now, let's test the equivalence classes of leaves 9,10 and 12:
+            // how should I know who is forming a prime and who not?
+            // Remember the usally OK default: directly adding the prime vertices
+
+            List<Integer> leavesAndStrongVertices = Arrays.asList(0,1,12);
+//            for( int el : leavesAndStrongVertices){
+//                BitSet outs = outEgdes[el];
+//                BitSet ins = inEdges[el];
+//                for( int j : leavesAndStrongVertices) {
+//                    outs.set(j, false);
+//                    ins.set(j, false);
+//                }
+//            }
+
             data.log.fine("Out-Edges:");
             for(int i = 0; i< outEgdes.length; i++){
                 BitSet edge = outEgdes[i];
                 data.log.fine(integers.get(i).toString() + ": " + edge);
             }
-            // This is for N_{-}: 1st key is destVertex, 2nd outVertex
-            BitSet[] inEdges = SortAndCompare.edgesSortedByPerm(integers, posiperm,  data.inputGraph, false);
+
             data.log.fine("In-Edges:");
             for(int i = 0; i< inEdges.length; i++){
                 BitSet edge = inEdges[i];
                 data.log.fine(integers.get(i).toString() + ": " + edge);
             }
+
+
         }
 
     }

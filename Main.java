@@ -84,27 +84,51 @@ public class Main {
         log.setLevel( Level.FINEST );
         log.fine( "Alles ist fein!" );
 
-//        boolean morePls = true;
-//        while (morePls){
-//            morePls = directedMDTesting(log,consoleHandler,10,5,false);
-//        }
+
 
 
         String fromPaper = "fromFactPermPaper.txt";
         SimpleDirectedGraph<Integer, DefaultEdge> paperGraph = JGraphAdjecencyImporter.importIntGraph(new File(fromPaper), false);
         //DirectedMD paperMD = new DirectedMD(paperGraph, log, true);        paperMD.computeModularDecomposition();
-
-//        System.out.println(paperGraph);
-//        DOTExporter<Integer,DefaultEdge> exporter =new DOTExporter<>();
-//        exporter.exportGraph(paperGraph, new File(fromPaper+ ".dot"));
-
+        //System.out.println(paperGraph);
+        DOTExporter<Integer,DefaultEdge> exporter =new DOTExporter<>();
+        exporter.exportGraph(paperGraph, new File(fromPaper+ ".dot"));
 
 
-//
-//        for( int i = 10; i <= 30; i ++) {
-//            boolean ok = directedMDTesting(log, consoleHandler, i, i/2,false);
-//            if(!ok)
+       StringBuilder allPaths = new StringBuilder();
+
+//        boolean morePls = true;
+//        while (morePls){
+//            morePls = directedMDTesting(log,consoleHandler,20,8,false, allPaths);
+//        }
+
+//        for( int i = 8; i <= 25; i ++) {
+//            boolean ok = directedMDTesting(log, consoleHandler, i, i/2 - 2,false, allPaths);
+//            if(!ok) {
+//                System.err.println("Error for n = " + i);
 //                break;
+//            }
+//        }
+
+//        System.out.println("All Paths:");
+//        System.out.println(allPaths.toString().substring(0,allPaths.length()-1));
+
+
+        // 1st testrun: n = 22 has error if I
+/*
+        List<String> all = Arrays.asList("testGraphs/DMDvery/randDigraph_n_8_edits_3_11-30_15:34:02:289_original.txt", "testGraphs/DMDvery/randDigraph_n_9_edits_4_11-30_15:34:02:948_original.txt", "testGraphs/DMDvery/randDigraph_n_10_edits_4_11-30_15:34:03:091_original.txt", "testGraphs/DMDvery/randDigraph_n_11_edits_4_11-30_15:34:03:245_original.txt", "testGraphs/DMDvery/randDigraph_n_12_edits_5_11-30_15:34:03:406_original.txt", "testGraphs/DMDvery/randDigraph_n_13_edits_5_11-30_15:34:03:486_original.txt", "testGraphs/DMDvery/randDigraph_n_14_edits_5_11-30_15:34:03:633_original.txt", "testGraphs/DMDvery/randDigraph_n_15_edits_6_11-30_15:34:03:740_original.txt", "testGraphs/DMDvery/randDigraph_n_16_edits_6_11-30_15:34:04:047_original.txt", "testGraphs/DMDvery/randDigraph_n_17_edits_6_11-30_15:34:04:173_original.txt", "testGraphs/DMDvery/randDigraph_n_18_edits_7_11-30_15:34:04:452_original.txt", "testGraphs/DMDvery/randDigraph_n_19_edits_7_11-30_15:34:04:930_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_7_11-30_15:34:05:320_original.txt", "testGraphs/DMDvery/randDigraph_n_21_edits_8_11-30_15:34:06:154_original.txt", "testGraphs/DMDvery/randDigraph_n_22_edits_8_11-30_15:34:06:683_original.txt", "testGraphs/DMDvery/randDigraph_n_23_edits_8_11-30_15:34:07:608_original.txt", "testGraphs/DMDvery/randDigraph_n_24_edits_9_11-30_15:34:13:773_original.txt", "testGraphs/DMDvery/randDigraph_n_25_edits_9_11-30_15:34:14:899_original.txt");
+
+        List<String> all = Arrays.asList("testGraphs/DMDvery/randDigraph_n_8_edits_3_11-30_15:48:34:482_original.txt", "testGraphs/DMDvery/randDigraph_n_9_edits_4_11-30_15:48:35:165_original.txt", "testGraphs/DMDvery/randDigraph_n_10_edits_4_11-30_15:48:35:378_original.txt", "testGraphs/DMDvery/randDigraph_n_11_edits_4_11-30_15:48:35:547_original.txt", "testGraphs/DMDvery/randDigraph_n_12_edits_5_11-30_15:48:35:683_original.txt", "testGraphs/DMDvery/randDigraph_n_13_edits_5_11-30_15:48:35:789_original.txt", "testGraphs/DMDvery/randDigraph_n_14_edits_5_11-30_15:48:36:003_original.txt", "testGraphs/DMDvery/randDigraph_n_15_edits_6_11-30_15:48:36:273_original.txt", "testGraphs/DMDvery/randDigraph_n_16_edits_6_11-30_15:48:36:435_original.txt", "testGraphs/DMDvery/randDigraph_n_17_edits_6_11-30_15:48:36:668_original.txt", "testGraphs/DMDvery/randDigraph_n_18_edits_7_11-30_15:48:36:972_original.txt", "testGraphs/DMDvery/randDigraph_n_19_edits_7_11-30_15:48:37:621_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_7_11-30_15:48:38:268_original.txt", "testGraphs/DMDvery/randDigraph_n_21_edits_8_11-30_15:48:38:673_original.txt", "testGraphs/DMDvery/randDigraph_n_22_edits_8_11-30_15:48:39:572_original.txt", "testGraphs/DMDvery/randDigraph_n_23_edits_8_11-30_15:48:40:975_original.txt", "testGraphs/DMDvery/randDigraph_n_24_edits_9_11-30_15:48:41:752_original.txt", "testGraphs/DMDvery/randDigraph_n_25_edits_9_11-30_15:48:41:911_original.txt"
+                );
+                */
+
+
+
+
+
+
+//        for(String s : all){
+//            MDtestFromFile(log, s, true);
 //        }
 
         String reTestPath = "testGraphs/DMDvery/";
@@ -154,27 +178,60 @@ public class Main {
         // OK now!
         String n_12_ordersplit = reTestPath + "randDigraph_n_12_edits_6_11-28_16:10:39:274_original.txt";
 
-        List<String> allOKToCheck = Arrays.asList(n_12_ordersplit, n25err, n22err, n23err2, weirdError, n21err, n23err, n24err, viceVera, smallNotAtournament, smallTourErrgraph);
-        for( String s : allOKToCheck){
-            MDtestFromFile(log,s,true);
-        }
-
-        //
-        // ERR:
-        //
-
-        // here: weak order module was deleted, but it two of its children are still an order module.
-        String weakOrderWithStrongChildren = reTestPath + "randDigraph_n_22_edits_11_11-28_15:49:46:254_original.txt";
-
-        // here: root order with weak prime -> deleted, root becomes prime -> 2 vertices of root should still be order.
-        String n13_fail_muchprime = reTestPath + "randDigraph_n_13_edits_6_11-28_17:18:29:275_original.txt";
-
-        //
+        // LCA computation failed sometimes. Should be fine now.
         String n10falsePrime = reTestPath + "rand_n_10_false_Prime.txt";
 
+        // here: weak order module was deleted, but it two of its children are still an order module. -> OK with new equivClass-Check!
+        String weakOrderWithStrongChildren = reTestPath + "randDigraph_n_22_edits_11_11-28_15:49:46:254_original.txt";
+
+        List<String> allOKToCheck = Arrays.asList(n_12_ordersplit, n25err, n22err, n23err2, weirdError, n21err, n23err, n24err, viceVera, smallNotAtournament, smallTourErrgraph, n10falsePrime,weakOrderWithStrongChildren);
+//        for( String s : allOKToCheck){
+//            MDtestFromFile(log,s,true);
+//        }
 
 
-        //MDtestFromFile(log, n10falsePrime, true);
+
+        //
+        // ERR, aber fact perm ist korrekt:
+        //
+
+
+
+        // here: root order with weak prime -> deleted, root becomes prime -> 2 vertices of root should still be order.
+        String n13_orderWeakPrime = reTestPath + "randDigraph_n_13_edits_6_11-28_17:18:29:275_original.txt";
+
+        // 14,15 -> vorher direkt an root order.
+        String next = "testGraphs/DMDvery/randDigraph_n_20_edits_8_11-30_20:51:17:462_original.txt";
+
+        // root order, had weak prime
+        String more = "testGraphs/DMDvery/randDigraph_n_20_edits_8_11-30_20:56:07:983_original.txt";
+
+        // root order, became prime when weak prime removed...
+        String boring = "testGraphs/DMDvery/randDigraph_n_20_edits_8_11-30_21:01:33:401_original.txt";
+
+        // lower weak order node with weak series child got removed
+        String moreInteresting = "testGraphs/DMDvery/randDigraph_n_20_edits_8_11-30_20:58:34:509_original.txt";
+
+        //
+        //
+        // SEVERE:
+
+        // interessanter: 3 zusammen unter prim (14,1,13) - schon inclusion tree is prim. Nicht richtig geordnet!
+
+        // Anfangs im inclusion tree: hängen direkt unter root...
+        // in den Bäumen: 14,13,1 (und 11) bilden eine equiv-Klasse und hängen erst auch alleine unter root vom Overlap inclusion tree
+        // Das große innere module OHNE die 4 wird DISCARDED. Fehler LCA -> first entry of inner list...
+        // PRIME for  {0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 16, 17, 18, 19} -> falsch, müsste die par. root sein.
+        // Problem: Das PA (0,...) erreicht root, SE (8,9) als letztes
+
+        // problem: der pfad, der erreicht werden müsste, wird geschlossen! (von no10?)
+        // letzter ( count = 2, dann ende) eintrag ist von 0 -> PA2 und sucht parent SE2(no=10...)
+        // findet ihn aber nicht... letzte Liste kommt von woanders... eigentlicher Eintrag geschlossen...
+        String n20_err = "testGraphs/DMDvery/randDigraph_n_20_edits_8_11-30_20:48:03:974_original.txt";
+
+
+
+        MDtestFromFile(log, n20_err, true);
 
 //
 //        File importFile = new File("testy.txt");
@@ -480,7 +537,7 @@ public class Main {
         }
     }
 
-    static boolean directedMDTesting(Logger log, Handler baseHandler, int nVertices, int nDisturb, boolean solveILP) throws Exception{
+    static boolean directedMDTesting(Logger log, Handler baseHandler, int nVertices, int nDisturb, boolean solveILP, StringBuilder allPaths) throws Exception{
 
         boolean ok = true;
         String timeStamp = new SimpleDateFormat("MM-dd_HH:mm:ss:SSS").format(Calendar.getInstance().getTime());
@@ -499,7 +556,9 @@ public class Main {
         gen.disturbDicograph(g_d, nDisturb);
 
         // export the graph for debug purposes
-        File expfile = new File(filePath + "_original.txt");
+        String matrixPath = filePath + "_original.txt";
+        allPaths.append("\"").append(matrixPath).append("\", ");
+        File expfile = new File(matrixPath);
         SimpleMatrixExporter<Integer, DefaultEdge> myExporter = new SimpleMatrixExporter<>();
         myExporter.exportGraph(g_d, expfile);
         log.info(String.format("Generated random Dicograph with %s vertices and %s random edge-edits.", nVertices, nDisturb));

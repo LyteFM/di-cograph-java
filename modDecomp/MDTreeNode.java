@@ -538,7 +538,10 @@ class MDTreeNode extends RootedTreeNode {
 	 */	
 	public String toString() {
 		
-		String result = "(" + type + ", numChildren=" + getNumChildren();
+		String result ="(" ;
+		if(isRoot())
+			result += "ROOT ";
+		result += type + ", numChildren=" + getNumChildren();
 		
 		RootedTreeNode current = getFirstChild();
 		if (current != null) { 
