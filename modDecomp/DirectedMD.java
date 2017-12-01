@@ -148,11 +148,15 @@ public class DirectedMD {
 
         // without null used Tedder's MD
         MDTree treeForG_d = new MDTree(G_d, null, debugMode, log);
-        treeForG_d.removeDummyPrimes();
+        if(treeForG_d.removeDummyPrimes()){
+            log.warning("Removed dummy primes for G_d");
+        }
         log.info("computing md for G_s:");
 
         MDTree treeForG_s = new MDTree(G_s, null, debugMode, log);
-        treeForG_s.removeDummyPrimes();
+        if(treeForG_s.removeDummyPrimes()){
+            log.warning("Removed dummy primes for G_s");
+        }
         log.info("md for G_d:\n" + MDTree.beautify(treeForG_d.toString()));
         log.fine("DOT for G_d:\n" + treeForG_d.exportAsDot());
         log.info("md for G_s:\n" + MDTree.beautify(treeForG_s.toString()));

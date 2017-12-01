@@ -84,8 +84,42 @@ public class PartitiveFamilyTree extends RootedTree {
 
         // remember: X is a module iff le(X) == lc(X) and re(X) == rc(X)
         // next step: use N_{+} and N_{-} to separate the children of a 0/1-complete node that is a module into R_X-classes
-        // According to step 5, I can select any representative of its children, as they have uniform relationship to other nodes
+        // According to step 5, for the tournament I can select any representative of its children.
+        // todo: Problem - they have uniform relationship to other nodes ONLY IF the child is a strong node!!! Must make them Strong, if they aren't!!!
         rootNode.reorderAllInnerNodes( data, sortedOutEgdes, sortedInEdges,  orderedLeaves, positionInPermutation);
+
+        if(data.debugMode){
+            // vielleicht nützlich:
+
+            // First step: order the leaves in accordance of their left-right appearance in the Tree
+            List<PartitiveFamilyLeafNode> ordered = new ArrayList<>(data.nVertices);
+            this.getLeavesInLeftToRightOrder(ordered);
+            ArrayList<Integer> integers = new ArrayList<>(data.nVertices);
+            for(PartitiveFamilyLeafNode leaf : ordered){
+                integers.add(leaf.getVertex());
+            }
+            data.log.fine(() -> "Final leaf order: " + integers);
+            // the position of every element in the permutation
+            int[] posiperm = new int[data.nVertices];
+            for(int i = 0; i< integers.size(); i++){
+                posiperm[integers.get(i)] = i;
+            }
+
+            // This is for N_{+}: 1st key is outVertex, 2nd key is destVertex
+            BitSet[] outEgdes = SortAndCompare.edgesSortedByPerm(integers, posiperm, data.inputGraph, true);
+            data.log.fine("Out-Edges:");
+            for(int i = 0; i< outEgdes.length; i++){
+                BitSet edge = outEgdes[i];
+                data.log.fine(integers.get(i).toString() + ": " + edge);
+            }
+            // This is for N_{-}: 1st key is destVertex, 2nd outVertex
+            BitSet[] inEdges = SortAndCompare.edgesSortedByPerm(integers, posiperm,  data.inputGraph, false);
+            data.log.fine("In-Edges:");
+            for(int i = 0; i< inEdges.length; i++){
+                BitSet edge = inEdges[i];
+                data.log.fine(integers.get(i).toString() + ": " + edge);
+            }
+        }
 
     }
     /**
