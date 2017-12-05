@@ -102,6 +102,19 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             // todo: if the parent node is doesn't have the same type (and esp.: is complete), that's not enough!!!
             // E.g. a complete root might need to  be checked again!
             log.fine(() -> "Weak module to remove: " + this);
+            PartitiveFamilyTreeNode parentNote = (PartitiveFamilyTreeNode) getParent();
+            if(parentNote.getType() == MDNodeType.ORDER){
+                // todo: here is the difficult case: weak prime below strong order.
+                // process först
+                // Doesn't do anything - root is a module ofc.
+                // parentNote.computeEquivalenceClassesAndReorderChildren(log, outNeighbors, inNeighbors, orderedLeaves, positionInPermutation);
+                log.fine(() -> type + ": computing fact perm of tournament " + parentNote.inducedPartialSubgraph);
+                List<Pair<Integer, Integer>> perfectFactPerm = perfFactPermFromTournament.apply(parentNote.inducedPartialSubgraph);
+                // results are real vertices in a new order (first) and their outdegree (second).
+                log.fine(() -> type + ": reordering and splitting merged modules according to permutation: " + perfectFactPerm);
+                // ok: if a merged module has been split, it's children are processed later
+                parentNote.reorderAccordingToPerfFactPerm(perfectFactPerm, log);
+            }
             PartitiveFamilyTreeNode parentNode = removeThis();
             MDNodeType oldType = parentNode.getType();
             parentNode.determineNodeTypeForH(data); // also resets the induced subgraph

@@ -16,7 +16,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -89,7 +88,7 @@ public class Main {
 
         String fromPaper = "fromFactPermPaper.txt";
         SimpleDirectedGraph<Integer, DefaultEdge> paperGraph = JGraphAdjecencyImporter.importIntGraph(new File(fromPaper), false);
-        //DirectedMD paperMD = new DirectedMD(paperGraph, log, true);        paperMD.computeModularDecomposition();
+        DirectedMD paperMD = new DirectedMD(paperGraph, log, true);        paperMD.computeModularDecomposition();
         //System.out.println(paperGraph);
         DOTExporter<Integer,DefaultEdge> exporter =new DOTExporter<>();
         exporter.exportGraph(paperGraph, new File(fromPaper+ ".dot"));
@@ -97,9 +96,9 @@ public class Main {
 
        StringBuilder allPaths = new StringBuilder();
 
-//        boolean morePls = true;
+        boolean morePls = true;
 //        while (morePls){
-//            morePls = directedMDTesting(log,consoleHandler,20,8,false, allPaths);
+//            morePls = directedMDTesting(log,consoleHandler,21,8,false, allPaths);
 //        }
 
 //        for( int i = 8; i <= 25; i ++) {
@@ -109,6 +108,7 @@ public class Main {
 //                break;
 //            }
 //        }
+
 
 //        System.out.println("All Paths:");
 //        System.out.println(allPaths.toString().substring(0,allPaths.length()-1));
@@ -185,7 +185,8 @@ public class Main {
         String weakOrderWithStrongChildren = reTestPath + "randDigraph_n_22_edits_11_11-28_15:49:46:254_original.txt";
 
         List<String> allOKToCheck = Arrays.asList(n_12_ordersplit, n25err, n22err, n23err2, weirdError, n21err, n23err, n24err, viceVera, smallNotAtournament, smallTourErrgraph, n10falsePrime,weakOrderWithStrongChildren);
-//        for( String s : allOKToCheck){
+
+        //        for( String s : allOKToCheck){
 //            MDtestFromFile(log,s,true);
 //        }
 
@@ -209,29 +210,42 @@ public class Main {
         // root order, became prime when weak prime removed...
         String boring = "testGraphs/DMDvery/randDigraph_n_20_edits_8_11-30_21:01:33:401_original.txt";
 
-        // lower weak order node with weak series child got removed
-        String moreInteresting = "testGraphs/DMDvery/randDigraph_n_20_edits_8_11-30_20:58:34:509_original.txt";
-
-        //
-        //
-        // SEVERE:
-
-        // interessanter: 3 zusammen unter prim (14,1,13) - schon inclusion tree is prim. Nicht richtig geordnet!
-
-        // Anfangs im inclusion tree: hängen direkt unter root...
-        // in den Bäumen: 14,13,1 (und 11) bilden eine equiv-Klasse und hängen erst auch alleine unter root vom Overlap inclusion tree
-        // Das große innere module OHNE die 4 wird DISCARDED. Fehler LCA -> first entry of inner list...
-        // PRIME for  {0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 16, 17, 18, 19} -> falsch, müsste die par. root sein.
-        // Problem: Das PA (0,...) erreicht root, SE (8,9) als letztes
-
-        // problem: der pfad, der erreicht werden müsste, wird geschlossen! (von no10?)
-        // letzter ( count = 2, dann ende) eintrag ist von 0 -> PA2 und sucht parent SE2(no=10...)
-        // findet ihn aber nicht... letzte Liste kommt von woanders... eigentlicher Eintrag geschlossen...
+        // interessanter: 3 zusammen unter prim (14,1,13) - schon inclusion tree is prim. Nicht richtig geordnet! -> LCA fixed.
+        // jetzt normaler root order + weak prime- Fehler.
         String n20_err = "testGraphs/DMDvery/randDigraph_n_20_edits_8_11-30_20:48:03:974_original.txt";
 
+        // order root fucked up...
+        String anotherRoot = "testGraphs/DMDvery/randDigraph_n_21_edits_8_12-01_18:28:22:811_original.txt";
+
+        // LOWER weak order node with weak series child got removed -> the first two should stay order.
+        String moreInteresting = "testGraphs/DMDvery/randDigraph_n_20_edits_8_11-30_20:58:34:509_original.txt";
+
+        // FUBAR: root war bereits prim, alles darunter aufgeräumt. ORDER war module + 3,12 (direkt drunter).
+        // Entfernen der schwachen order & prime darunter hat's schwache ORDER auch kaputt gemacht. Andere weaks: ok so
+        // [15, 16, 8, 7, 19, 17, 18, 20, 6] -> module. (Reihenfolge stimmt
+        String fubar = "testGraphs/DMDvery/randDigraph_n_21_edits_8_12-01_18:23:35:714_original.txt";
+
+        // weak series plus one directly below former ORDER are still a module. (not root :))
+        String moreErrs = "testGraphs/DMDvery/randDigraph_n_21_edits_8_12-01_17:41:24:542_original.txt";
 
 
-        MDtestFromFile(log, n20_err, true);
+        String nextWeek = "testGraphs/DMDvery/randDigraph_n_21_edits_8_12-05_15:55:20:659_original.txt";
+
+        //
+        // SEVERE:
+        //
+
+
+        // ERR in undirected MD for G_d: 6,8,9 (below prime) is module. was SPIDER
+        // With Tedder's MD: recognized correctly. Is PARALLEL.
+        String uMDErr = "testGraphs/DMDvery/randDigraph_n_21_edits_8_12-01_17:50:19:217_original.txt";
+
+        // another Spider error:
+        String spiderman = "testGraphs/DMDvery/randDigraph_n_21_edits_8_12-01_18:32:12:959_original.txt";
+
+
+
+        //MDtestFromFile(log, anotherRoot, true);
 
 //
 //        File importFile = new File("testy.txt");
@@ -662,6 +676,14 @@ public class Main {
         System.out.println("\n*** Rand case: file " + filePath2 + " ***\n");
 
         mdTestOldNew(filePath2);
+    }
+
+    static void mdTestOld(String filePath){
+        System.out.println("Loading:\n"+ filePath);
+        GraphHandle g = new GraphHandle(filePath);
+
+        String g_res = g.getMDTreeOld().toString();
+        System.out.println("Result:\n" + MDTree.beautify(g_res) + "\n");
     }
 
     static void mdTestOldNew(String filePath){
