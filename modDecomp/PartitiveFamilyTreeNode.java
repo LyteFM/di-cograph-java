@@ -712,7 +712,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             reorderChildren(orderedChildren);
         } else {
             log.fine( () -> type + " has only one equiv class, it's a module." );
-            assert isModuleInG : "Error: should not be weak!\n" + this;
+            //assert isModuleInG : "Error: should not be weak!\n" + this;
         }
 
 
