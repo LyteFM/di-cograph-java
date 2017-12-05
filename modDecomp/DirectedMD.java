@@ -177,10 +177,10 @@ public class DirectedMD {
         // AND
         // Step 5: At each  2-complete node Y, select an arbitrary set S of representatives from the children.
         //         order the children of Y according to a perfect factorizing permutation of G[S].
-        treeForH.computeFactorizingPermutationAndReorderAccordingly(this );
+        treeForH.computeFactorizingPermutationAndReorderAccordingly(this, true );
 
 
-        // Step 6: Resulting leaf order of T(H) is a factorizing permutation of G by Lem 20,21. Use algorithm
+        // Step 6 a): Resulting leaf order of T(H) is a factorizing permutation of G by Lem 20,21. Use algorithm
         //         [2] to find the modular decomposition of G.
         ArrayList<PartitiveFamilyLeafNode> trueLeafOrder =  new ArrayList<>(nVertices);
         treeForH.getLeavesInLeftToRightOrder( trueLeafOrder );
@@ -189,18 +189,20 @@ public class DirectedMD {
         trueLeafOrder.forEach( l ->  leafNumbers.add(l.getVertex()));
         log.info(() ->"Leaves ordered as factorizing permutation: " + leafNumbers);
         log.info("Reordered Tree: " + MDTree.beautify(treeForH.toString()));
-        log.info("As .dot:\n" + treeForH.exportAsDot());
+        //log.info("As .dot:\n" + treeForH.exportAsDot());
+
+        // Step 6 b): Deletion of weak modules and recovering of merged modules
 
 
 
-        if (debugMode) {
-            String msg = treeForH.verifyNodeTypes(inputGraph, true);
-
-            if (!msg.isEmpty()) {
-                msg = "Error in modules of G:\n" + msg;
-                throw new IllegalStateException(msg);
-            }
-        }
+//        if (debugMode) {
+//            String msg = treeForH.verifyNodeTypes(inputGraph, true);
+//
+//            if (!msg.isEmpty()) {
+//                msg = "Error in modules of G:\n" + msg;
+//                throw new IllegalStateException(msg);
+//            }
+//        }
 
         return treeForH;
 

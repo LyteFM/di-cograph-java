@@ -37,7 +37,7 @@ public class PartitiveFamilyTree extends RootedTree {
         rootNode.determineNodeTypeForH(data);
     }
 
-    public void computeFactorizingPermutationAndReorderAccordingly(DirectedMD data){
+    public void computeFactorizingPermutationAndReorderAccordingly(DirectedMD data, boolean reorder){
 
         // First step: order the leaves in accordance of their left-right appearance in the Tree
         List<PartitiveFamilyLeafNode> orderedLeaves = new ArrayList<>(data.nVertices);
@@ -87,8 +87,14 @@ public class PartitiveFamilyTree extends RootedTree {
         // next step: use N_{+} and N_{-} to separate the children of a 0/1-complete node that is a module into R_X-classes
         // According to step 5, for the tournament I can select any representative of its children.
         // todo: Problem - they have uniform relationship to other nodes ONLY IF the child is a strong node!!! Must make them Strong, if they aren't!!!
-        rootNode.reorderAllInnerNodes( data, sortedOutEgdes, sortedInEdges,  orderedLeaves, positionInPermutation);
+        if(reorder) {
+            // reorder only, don't delete/recover anything
+            rootNode.reorderAllInnerNodes(data, sortedOutEgdes, sortedInEdges, orderedLeaves, positionInPermutation);
+        } else {
+            // delete and recover.
+        }
 
+        /*
         if(data.debugMode){
             // vielleicht nützlich:
 
@@ -140,6 +146,7 @@ public class PartitiveFamilyTree extends RootedTree {
 
 
         }
+        */
 
     }
     /**

@@ -5,6 +5,7 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.HashMap;
@@ -58,9 +59,8 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         return  (PartitiveFamilyTreeNode) super.removeThis();
     }
 
-    PartitiveFamilyTreeNode reorderAllInnerNodes(DirectedMD data,
-                              BitSet[] outNeighbors, BitSet[] inNeighbors, List<PartitiveFamilyLeafNode> orderedLeaves, int[] positionInPermutation){
-
+    PartitiveFamilyTreeNode deleteWeakAndrecoverMerged(DirectedMD data,
+                                                       BitSet[] outNeighbors, BitSet[] inNeighbors, List<PartitiveFamilyLeafNode> orderedLeaves, int[] positionInPermutation){
         // Inspect bottom-up, as merging/deleting of lower nodes might change the upper ones.
 
         Logger log = data.log;
@@ -125,6 +125,43 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
         return myRightSibling;
 
+    }
+
+    PartitiveFamilyTreeNode reorderAllInnerNodes(DirectedMD data,
+                              BitSet[] outNeighbors, BitSet[] inNeighbors, List<PartitiveFamilyLeafNode> orderedLeaves, int[] positionInPermutation){
+
+        // Inspect bottom-up, as merging/deleting of lower nodes might change the upper ones.
+
+        Logger log = data.log;
+        PartitiveFamilyTreeNode currentChild = (PartitiveFamilyTreeNode) getFirstChild();
+        if(currentChild != null) {
+            while (currentChild != null) {
+                if(!currentChild.isALeaf()){
+                    // because currentChild might be deleted, I need to return the right sibling.
+                    currentChild = currentChild.reorderAllInnerNodes(data, outNeighbors, inNeighbors, orderedLeaves, positionInPermutation);
+                } else {
+                    currentChild = (PartitiveFamilyTreeNode) currentChild.getRightSibling();
+                }
+            }
+        }
+
+        PartitiveFamilyTreeNode myRightSibling = (PartitiveFamilyTreeNode) getRightSibling();
+
+        if (type.isDegenerate()) {
+            // According to Lem 20:
+            log.fine(() -> type + ": computing equivalence classes");
+            computeEquivalenceClassesAndReorderChildren(log, outNeighbors, inNeighbors, orderedLeaves, positionInPermutation); // still also splits.
+
+        } else if (type == MDNodeType.ORDER){
+            // According to Lem 21:
+            log.fine(() -> type + ": computing fact perm of tournament " + inducedPartialSubgraph);
+            List<Pair<Integer, Integer>> perfectFactPerm = perfFactPermFromTournament.apply(inducedPartialSubgraph);
+            // results are real vertices in a new order (first) and their outdegree (second).
+            log.fine(() -> type + ": reordering modules according to permutation: " + perfectFactPerm);
+            reorderAccordingToPerfFactPerm(perfectFactPerm, log);
+        }
+
+        return myRightSibling;
     }
 
 
@@ -325,27 +362,15 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         }
 
     }
-
-
-    /**
-     * reorders the children of this vertex accound to the perfect factorizing permutation
-     * @param perfFactPerm the computed perfect factorizing permutation of the corresponding tournament
-     */
-    private void reorderAccordingToPerfFactPerm(List<Pair<Integer,Integer>> perfFactPerm, Logger log){
-
-        if( type != MDNodeType.ORDER ){
-            throw new IllegalStateException("Wrong type in step 5: " + type + " for node:\n" + toString());
-        }
-
-        int sz = perfFactPerm.size();
-        HashMap<Integer,Integer> positionInPermutation = new HashMap<>(sz*4/3);
-
-        // detect merged modules here. According to Th3 of the fact.perm. paper, the "true" module appears consecutively
+    /*
+    Draft: detection of merged
+    // detect merged modules here. According to Th3 of the fact.perm. paper, the "true" module appears consecutively
         // => the true module is a transitive tournament, it has a total order.
 
         // therefore, there is only room for mergers at start end end of the fact.perm.
         // todo: unfortunately, weak module might be orderered nicely and contain a strong one
         // idea: use outDegs and inDegs of REAL GRAPH -> not enough, need true adjacencies.
+
         int outScore = sz - 1;
         HashMap<Integer,Integer> primeMemberIndexInPerm = new HashMap<>();
 
@@ -364,41 +389,9 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             outScore --;
         }
 
+        // reordering....
 
 
-        PartitiveFamilyTreeNode[] orderedNodes = new PartitiveFamilyTreeNode[sz];
-
-        PartitiveFamilyTreeNode currentChild = (PartitiveFamilyTreeNode) getFirstChild();
-        if(currentChild != null) {
-            while (currentChild != null) {
-
-                int position = -1; // want an error if not found
-                int realV;
-                // computes the first position of any vertex in the child module
-                if(currentChild.isALeaf()){
-                    realV = ((PartitiveFamilyLeafNode) currentChild).getVertex();
-                    position = positionInPermutation.get(realV);
-                } else {
-                    int skipCount = 0;
-                    for(realV = currentChild.vertices.nextSetBit(0); realV >= 0; realV = currentChild.vertices.nextSetBit(realV+1)){
-                        if(positionInPermutation.containsKey(realV)){
-                            position = positionInPermutation.get(realV);
-                            break;
-                        } else {
-                            skipCount++;
-                        }
-                    }
-                    log.fine("Checked " + skipCount + " of " + currentChild.getNumChildren() + " vertices to find position " + position);
-                }
-
-                if(orderedNodes[position] != null){
-                    throw new IllegalStateException("Vertex for position " + position + " already present for node\n" + toString());
-                }
-                orderedNodes[position] = currentChild;
-
-                currentChild = (PartitiveFamilyTreeNode) currentChild.getRightSibling();
-            }
-        }
 
         boolean first = true;
         boolean recoverMerged = !primeMemberIndexInPerm.isEmpty();
@@ -446,6 +439,64 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             addChild(newNode);
             log.fine(() -> "new child created: " + newNode.toString());
         }
+
+     */
+
+
+    /**
+     * reorders the children of this vertex accound to the perfect factorizing permutation
+     * @param perfFactPerm the computed perfect factorizing permutation of the corresponding tournament
+     */
+    private void reorderAccordingToPerfFactPerm(List<Pair<Integer,Integer>> perfFactPerm, Logger log){
+
+        if( type != MDNodeType.ORDER ){
+            throw new IllegalStateException("Wrong type in step 5: " + type + " for node:\n" + toString());
+        }
+
+        int sz = perfFactPerm.size();
+        HashMap<Integer,Integer> positionInPermutation = new HashMap<>(sz*4/3);
+
+        for(int i = 0; i<sz; i++){
+            Pair<Integer,Integer> element = perfFactPerm.get(i);
+            int vertex = element.getFirst();
+            positionInPermutation.put(vertex, i);
+        }
+
+        PartitiveFamilyTreeNode[] orderedNodes = new PartitiveFamilyTreeNode[sz];
+
+        PartitiveFamilyTreeNode currentChild = (PartitiveFamilyTreeNode) getFirstChild();
+        if(currentChild != null) {
+            while (currentChild != null) {
+
+                int position = -1; // want an error if not found
+                int realV;
+                // computes the first position of any vertex in the child module
+                if(currentChild.isALeaf()){
+                    realV = ((PartitiveFamilyLeafNode) currentChild).getVertex();
+                    position = positionInPermutation.get(realV);
+                } else {
+                    int skipCount = 0;
+                    for(realV = currentChild.vertices.nextSetBit(0); realV >= 0; realV = currentChild.vertices.nextSetBit(realV+1)){
+                        if(positionInPermutation.containsKey(realV)){
+                            position = positionInPermutation.get(realV);
+                            break;
+                        } else {
+                            skipCount++;
+                        }
+                    }
+                    log.fine("Checked " + skipCount + " of " + currentChild.getNumChildren() + " vertices to find position " + position);
+                }
+
+                if(orderedNodes[position] != null){
+                    throw new IllegalStateException("Vertex for position " + position + " already present for node\n" + toString());
+                }
+                orderedNodes[position] = currentChild;
+
+                currentChild = (PartitiveFamilyTreeNode) currentChild.getRightSibling();
+            }
+        }
+
+        ArrayList<PartitiveFamilyTreeNode> orderedChildren = new ArrayList<>(Arrays.asList(orderedNodes));
 
         log.fine( () -> type + " Reordering children of " + toString());
         log.fine( () -> type + " according to: " + orderedChildren.toString() );
@@ -561,7 +612,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         // for the sake of simplicity, I use strings and compare if they are equal.
         // running time is same as worst case when comparing the lists element by element.
 
-        if( type == MDNodeType.PRIME ){
+        if( type == MDNodeType.PRIME ){ // todo: order
             throw new IllegalStateException("Wrong type in step 4: " + type + " for node\n" + toString());
         }
 
@@ -628,6 +679,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             for (List<PartitiveFamilyTreeNode> children : equivClassByBits.values()) {
 
 
+                // todo: not needed for fact perm only.
                 if (children.size() > 1) {
                     // create a new node (i.e. the module in G) from these children
                     BitSet newNodeBits = new BitSet();

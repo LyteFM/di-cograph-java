@@ -90,8 +90,9 @@ public class Main {
         SimpleDirectedGraph<Integer, DefaultEdge> paperGraph = JGraphAdjecencyImporter.importIntGraph(new File(fromPaper), false);
         DirectedMD paperMD = new DirectedMD(paperGraph, log, true);        paperMD.computeModularDecomposition();
         //System.out.println(paperGraph);
-        DOTExporter<Integer,DefaultEdge> exporter =new DOTExporter<>();
-        exporter.exportGraph(paperGraph, new File(fromPaper+ ".dot"));
+
+        //DOTExporter<Integer,DefaultEdge> exporter =new DOTExporter<>();
+        //exporter.exportGraph(paperGraph, new File(fromPaper+ ".dot"));
 
 
        StringBuilder allPaths = new StringBuilder();
@@ -184,11 +185,6 @@ public class Main {
         // here: weak order module was deleted, but it two of its children are still an order module. -> OK with new equivClass-Check!
         String weakOrderWithStrongChildren = reTestPath + "randDigraph_n_22_edits_11_11-28_15:49:46:254_original.txt";
 
-        List<String> allOKToCheck = Arrays.asList(n_12_ordersplit, n25err, n22err, n23err2, weirdError, n21err, n23err, n24err, viceVera, smallNotAtournament, smallTourErrgraph, n10falsePrime,weakOrderWithStrongChildren);
-
-        //        for( String s : allOKToCheck){
-//            MDtestFromFile(log,s,true);
-//        }
 
 
 
@@ -230,6 +226,22 @@ public class Main {
 
 
         String nextWeek = "testGraphs/DMDvery/randDigraph_n_21_edits_8_12-05_15:55:20:659_original.txt";
+
+
+        List<String> allOKToCheck = Arrays.asList(n_12_ordersplit, n25err, n22err, n23err2, weirdError, n21err, n23err, n24err, viceVera, smallNotAtournament, smallTourErrgraph, n10falsePrime,weakOrderWithStrongChildren);
+
+        for( String s : allOKToCheck){
+            MDtestFromFile(log,s,true);
+        }
+
+        System.out.println("\n*** ERRS ***\n");
+        
+        List<String> allWithOKFactPerm = Arrays.asList(n13_orderWeakPrime,next, more, boring, n20_err, anotherRoot, moreInteresting, fubar, moreErrs, nextWeek);
+
+        for( String s : allWithOKFactPerm){
+            MDtestFromFile(log,s,true);
+        }
+
 
         //
         // SEVERE:
