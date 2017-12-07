@@ -59,6 +59,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         return  (PartitiveFamilyTreeNode) super.removeThis();
     }
 
+    /*
     PartitiveFamilyTreeNode deleteWeakAndrecoverMerged(DirectedMD data,
                                                        BitSet[] outNeighbors, BitSet[] inNeighbors, List<PartitiveFamilyLeafNode> orderedLeaves, int[] positionInPermutation){
         // Inspect bottom-up, as merging/deleting of lower nodes might change the upper ones.
@@ -127,17 +128,18 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
     }
 
+    */
+
     PartitiveFamilyTreeNode reorderAllInnerNodes(DirectedMD data,
                               BitSet[] outNeighbors, BitSet[] inNeighbors, List<PartitiveFamilyLeafNode> orderedLeaves, int[] positionInPermutation){
 
-        // Inspect bottom-up, as merging/deleting of lower nodes might change the upper ones.
+        // Inspect bottom-up
 
         Logger log = data.log;
         PartitiveFamilyTreeNode currentChild = (PartitiveFamilyTreeNode) getFirstChild();
         if(currentChild != null) {
             while (currentChild != null) {
                 if(!currentChild.isALeaf()){
-                    // because currentChild might be deleted, I need to return the right sibling.
                     currentChild = currentChild.reorderAllInnerNodes(data, outNeighbors, inNeighbors, orderedLeaves, positionInPermutation);
                 } else {
                     currentChild = (PartitiveFamilyTreeNode) currentChild.getRightSibling();
@@ -612,7 +614,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         // for the sake of simplicity, I use strings and compare if they are equal.
         // running time is same as worst case when comparing the lists element by element.
 
-        if( type == MDNodeType.PRIME ){ // todo: order
+        if( type == MDNodeType.PRIME || type == MDNodeType.ORDER ){ // todo: order
             throw new IllegalStateException("Wrong type in step 4: " + type + " for node\n" + toString());
         }
 
@@ -679,6 +681,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             for (List<PartitiveFamilyTreeNode> children : equivClassByBits.values()) {
 
 
+                /*
                 // todo: not needed for fact perm only.
                 if (children.size() > 1) {
                     // create a new node (i.e. the module in G) from these children
@@ -703,8 +706,11 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                     orderedChildren.add(newNode);
 
                 } else {
+
                     orderedChildren.add(children.get(0));
                 }
+                */
+                orderedChildren.addAll(children);
             }
 
             log.fine( () -> type + " Reordering children of " + toString());

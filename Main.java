@@ -88,7 +88,8 @@ public class Main {
 
         String fromPaper = "fromFactPermPaper.txt";
         SimpleDirectedGraph<Integer, DefaultEdge> paperGraph = JGraphAdjecencyImporter.importIntGraph(new File(fromPaper), false);
-        DirectedMD paperMD = new DirectedMD(paperGraph, log, true);        paperMD.computeModularDecomposition();
+        // Reihenfolge stimmt aber.
+        //DirectedMD paperMD = new DirectedMD(paperGraph, log, true);        paperMD.computeModularDecomposition();
         //System.out.println(paperGraph);
 
         //DOTExporter<Integer,DefaultEdge> exporter =new DOTExporter<>();
@@ -231,7 +232,11 @@ public class Main {
         List<String> allOKToCheck = Arrays.asList(n_12_ordersplit, n25err, n22err, n23err2, weirdError, n21err, n23err, n24err, viceVera, smallNotAtournament, smallTourErrgraph, n10falsePrime,weakOrderWithStrongChildren);
 
         for( String s : allOKToCheck){
-            MDtestFromFile(log,s,true);
+            try {
+                MDtestFromFile(log,s,true);
+            } catch (IllegalStateException e){
+                e.printStackTrace();
+            }
         }
 
         System.out.println("\n*** ERRS ***\n");
@@ -239,7 +244,11 @@ public class Main {
         List<String> allWithOKFactPerm = Arrays.asList(n13_orderWeakPrime,next, more, boring, n20_err, anotherRoot, moreInteresting, fubar, moreErrs, nextWeek);
 
         for( String s : allWithOKFactPerm){
-            MDtestFromFile(log,s,true);
+            try {
+                MDtestFromFile(log,s,true);
+            } catch (Exception e){
+                e.printStackTrace();
+            }
         }
 
 

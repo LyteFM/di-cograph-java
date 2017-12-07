@@ -195,14 +195,14 @@ public class DirectedMD {
 
 
 
-//        if (debugMode) {
-//            String msg = treeForH.verifyNodeTypes(inputGraph, true);
-//
-//            if (!msg.isEmpty()) {
-//                msg = "Error in modules of G:\n" + msg;
-//                throw new IllegalStateException(msg);
-//            }
-//        }
+        if (debugMode) {
+            String msg = treeForH.verifyNodeTypes(inputGraph, true);
+
+            if (!msg.isEmpty()) {
+                msg = "Error in modules of G:\n" + msg;
+                throw new IllegalStateException(msg);
+            }
+        }
 
         return treeForH;
 
