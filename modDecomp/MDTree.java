@@ -137,7 +137,7 @@ public class MDTree extends RootedTree {
 		return root;
 	}
 
-    public static Reader readMDAsDot(Graph<Integer, DefaultEdge> inputGraph, String factPerm) throws IOException {
+    private static Reader readMDAsDot(Graph<Integer, DefaultEdge> inputGraph, String factPerm) throws IOException {
 
         // I might need two separate classes, anyways...
         boolean undirectedMD = factPerm == null || factPerm.isEmpty();
@@ -149,8 +149,14 @@ public class MDTree extends RootedTree {
         List<String> command = new ArrayList<>();
 //        String input = "([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [{0,4}, {0,5}, {0,6}, {0,7}, {0,8}, {0,9}, {1,0}, {1,4}, {1,5}, {1,6}, {1,7}, {1,8}, {2,3}, {2,4}, {2,5}, {2,6}, {2,7}, {2,8}, {2,9}, {3," +
 //                "5}, {3,6}, {3,7}, {3,8}, {3,9}, {4,5}, {4,7}, {4,8}, {4,9}, {5,6}, {5,7}, {5,8}, {5,9}, {6,4}, {7,6}, {7,8}, {7,9}, {8,6}, {8,9}, {9,6}])";
-        command.add("./MD/build/mod_dec");
-        command.add(inputGraph.toString());
+        if(undirectedMD) {
+            command.add("./MD/build/mod_dec");
+            command.add(inputGraph.toString());
+        } else {
+            command.add("./FP_to_DMD/factPermToMD");
+            command.add(inputGraph.toString());
+            command.add(factPerm);
+        }
 
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.environment();
@@ -167,12 +173,17 @@ public class MDTree extends RootedTree {
     public MDTree(Graph<Integer, DefaultEdge> inputGraph, String factPerm, boolean debug, Logger log) throws IOException, ImportException {
         super();
         Reader reader = readMDAsDot(inputGraph, factPerm);
+
         if (debug) {
             BufferedReader br = new BufferedReader(reader);
             StringBuilder builder = new StringBuilder();
             String next;
+            boolean start = factPerm == null || factPerm.isEmpty();
             while ((next = br.readLine()) != null) {
-                builder.append(next).append("\n");
+                if(start)
+                    builder.append(next).append("\n");
+                else
+                    start = next.startsWith("MD Tree:");
             }
             String res = builder.toString();
             log.fine("Passed .dot-file:\n" + res);
@@ -198,7 +209,7 @@ public class MDTree extends RootedTree {
         }
     }
 
-    public void readFromDot(Reader dotReader) throws IOException, ImportException {
+    private void readFromDot(Reader dotReader) throws IOException, ImportException {
 
         SimpleDirectedGraph< Integer ,DefaultEdge> treeGraph = new SimpleDirectedGraph<>(DefaultEdge.class);
         HashMap<Integer, MDTreeNode> noToTreenode = new HashMap<>();
@@ -216,8 +227,9 @@ public class MDTree extends RootedTree {
                             node = new MDTreeNode();
                             break;
                         case "Spider":
-                            node = new MDTreeNode();
-                            break;
+                            throw new RuntimeException("Error: Didn't expect Spider nodes.");
+                            //node = new MDTreeNode();
+                            //break;
                         case "Series":
                             node = new MDTreeNode(MDNodeType.SERIES);
                             break;
@@ -241,8 +253,6 @@ public class MDTree extends RootedTree {
                 });
 
         importer.importGraph(treeGraph, dotReader);
-        //System.out.println(treeGraph);
-
 
         root = noToTreenode.get(0);
     }

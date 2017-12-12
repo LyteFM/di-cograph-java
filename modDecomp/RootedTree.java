@@ -192,11 +192,11 @@ class RootedTree {
             while (currChild != null) {
                 int anyVertex;
                 if (currChild.isALeaf()) {
-                    if (directed) {
-                        anyVertex = ((PartitiveFamilyLeafNode) currChild).getVertex();
-                    } else {
+                    //if (directed) {
+                    //    anyVertex = ((PartitiveFamilyLeafNode) currChild).getVertex();
+                    //} else {
                         anyVertex = ((MDTreeLeafNode) currChild).getVertexNo();
-                    }
+                    //}
                 } else {
                     anyVertex = currChild.vertices.nextSetBit(0);
                 }
@@ -210,12 +210,12 @@ class RootedTree {
 
 
             Graph<Integer, DefaultEdge> subgraph;
-            MDNodeType currNodeType;
+            MDNodeType currNodeType = ((MDTreeNode) node).getType();
             if (directed) {
-                currNodeType = ((PartitiveFamilyTreeNode) node).getType();
+                //currNodeType = ((PartitiveFamilyTreeNode) node).getType();
                 subgraph = new DirectedInducedIntSubgraph<>(graph, childRepresentatives);
             } else {
-                currNodeType = ((MDTreeNode) node).getType();
+                //currNodeType = ((MDTreeNode) node).getType();
                 subgraph = new UndirectedInducedIntSubgraph<>(graph, childRepresentatives);
             }
             String verificationResult = MDNodeType.verifyNodeType(directed, subgraph, graph, currNodeType, childRepresentatives, node);

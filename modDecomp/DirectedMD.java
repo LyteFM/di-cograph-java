@@ -102,7 +102,7 @@ public class DirectedMD {
         return ret;
     }
 
-    public PartitiveFamilyTree computeModularDecomposition() throws InterruptedException, IOException, ImportException {
+    public MDTree computeModularDecomposition() throws InterruptedException, IOException, ImportException {
 
         log.info("init md of graph: " + inputGraph.toString());
 
@@ -180,23 +180,35 @@ public class DirectedMD {
         treeForH.computeFactorizingPermutationAndReorderAccordingly(this, true );
 
 
-        // Step 6 a): Resulting leaf order of T(H) is a factorizing permutation of G by Lem 20,21. Use algorithm
+        // Resulting leaf order of T(H) is a factorizing permutation of G by Lem 20,21. Use algorithm
         //         [2] to find the modular decomposition of G.
         ArrayList<PartitiveFamilyLeafNode> trueLeafOrder =  new ArrayList<>(nVertices);
         treeForH.getLeavesInLeftToRightOrder( trueLeafOrder );
 
-        ArrayList<Integer> leafNumbers = new ArrayList<>(trueLeafOrder.size());
-        trueLeafOrder.forEach( l ->  leafNumbers.add(l.getVertex()));
+        StringBuilder leafNumbers = new StringBuilder();
+        for(int i = 0; i < trueLeafOrder.size(); i++){
+            PartitiveFamilyLeafNode l = trueLeafOrder.get(i);
+            leafNumbers.append(l.getVertex());
+            if(i != nVertices-1)
+                leafNumbers.append(", ");
+        }
         log.info(() ->"Leaves ordered as factorizing permutation: " + leafNumbers);
         log.info("Reordered Tree: " + MDTree.beautify(treeForH.toString()));
-        //log.info("As .dot:\n" + treeForH.exportAsDot());
+
+
+        // get the MD Tree
+        MDTree finalTree = new MDTree(inputGraph, leafNumbers.toString(), true, log);
+        MDTreeLeafNode[] finalLeaves = new MDTreeLeafNode[nVertices];
+        finalTree.getStrongModulesBool(finalLeaves);
+        finalTree.removeDummyPrimes(); // todo: remove weak order modules as well.
+        log.info("Final Tree: " + MDTree.beautify(finalTree.toString()));
+
 
         // Step 6 b): Deletion of weak modules and recovering of merged modules
 
 
-
         if (debugMode) {
-            String msg = treeForH.verifyNodeTypes(inputGraph, true);
+            String msg = finalTree.verifyNodeTypes(inputGraph, true);
 
             if (!msg.isEmpty()) {
                 msg = "Error in modules of G:\n" + msg;
@@ -204,7 +216,7 @@ public class DirectedMD {
             }
         }
 
-        return treeForH;
+        return finalTree;
 
     }
 
