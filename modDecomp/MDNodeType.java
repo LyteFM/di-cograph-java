@@ -55,9 +55,9 @@ public enum MDNodeType {
 						if(node.isRoot()) {
 							// handle special case
 							HashSet<Integer> leaves = node.getDirectLeaves().stream().map( leaf -> {
-								if(isDirected)
-									return ((PartitiveFamilyLeafNode) leaf).getVertex();
-								else
+								//if(isDirected)
+								//	return ((PartitiveFamilyLeafNode) leaf).getVertex();
+								//else
 									return ((MDTreeLeafNode) leaf).getVertexNo();
 							}).collect(Collectors.toCollection( HashSet::new));
 							if(leaves.size() == subSet.size()){

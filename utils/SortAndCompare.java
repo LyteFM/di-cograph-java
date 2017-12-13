@@ -202,7 +202,7 @@ public class SortAndCompare {
                             msg = "Expected value: " + otherToModule + " for edge (" + otherV + "," + moduleV + ")\n";
                             res.append(msg);
                         }
-                        break;
+                        //break;
                     }
                     if (moduleToOther != graph.containsEdge(moduleV, otherV)) {
                         isModule = false;
@@ -210,7 +210,7 @@ public class SortAndCompare {
                             msg = "Expected value: " + moduleToOther + " for edge (" + moduleV + "," + otherV + ")\n";
                             res.append(msg);
                         }
-                        break;
+                        //break;
                     }
                 }
             }

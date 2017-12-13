@@ -2,18 +2,13 @@ package dicograph.modDecomp;
 
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.SimpleGraph;
 
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeSet;
 
-import dicograph.graphIO.UndirectedInducedIntSubgraph;
 import dicograph.utils.SortAndCompare;
 
 /*
@@ -433,26 +428,7 @@ class RootedTreeNode {
         this.parent = parent;
     }
 
-	// F.L. 22.11.17: deal with error in Adrains Code
-	boolean removeDummyPrimes() {
-		RootedTreeNode currentChild = getFirstChild();
-		boolean ret = false;
-		while (currentChild != null) {
-			MDTreeNode current = (MDTreeNode) currentChild;
-			if (current.removeDummyPrimes()) {
-				ret = true;
-			}
-			MDNodeType currentType = current.getType();
-			currentChild = currentChild.getRightSibling(); // now nextChild
 
-			if (currentType == MDNodeType.PRIME && current.getNumChildren() == 1) {
-				currentChild.insertBefore(current.getFirstChild()); // takes the subtree with it
-				ret = true;
-				current.removeSubtree(); // shouldn't have anything now, just remove it
-			}
-		}
-		return ret;
-	}
 
     // F.L. 24.11.17:
 	RootedTreeNode removeThis(){

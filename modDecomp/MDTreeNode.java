@@ -554,6 +554,29 @@ class MDTreeNode extends RootedTreeNode {
 		}
 		return result + ")";
 	}
+
+	// F.L. 22.11.17: deal with error in Adrains Code
+	// F.L. 13.12.17: and with weak order modules
+	boolean removeDummies() {
+		RootedTreeNode currentChild = getFirstChild();
+		boolean ret = false;
+		while (currentChild != null) {
+			MDTreeNode current = (MDTreeNode) currentChild;
+			if (current.removeDummies()) {
+				ret = true;
+			}
+			MDNodeType currentType = current.getType();
+			currentChild = currentChild.getRightSibling(); // now nextChild
+
+			if (currentType == MDNodeType.PRIME && current.getNumChildren() == 1
+					|| currentType == MDNodeType.ORDER && !isRoot() && type == MDNodeType.ORDER) {
+				currentChild.insertBefore(current.getFirstChild()); // takes the subtree with it
+				ret = true;
+				current.removeSubtree(); // shouldn't have anything now, just remove it
+			}
+		}
+		return ret;
+	}
 }
 
 

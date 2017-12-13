@@ -3,29 +3,23 @@ package dicograph.modDecomp;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
-import org.jgrapht.alg.util.Pair;
 import org.jgrapht.graph.SimpleGraph;
 import org.jgrapht.io.Attribute;
 import org.jgrapht.io.DOTImporter;
 import org.jgrapht.io.ImportException;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
-
-import dicograph.graphIO.UndirectedInducedIntSubgraph;
 
 /*
  * A modular decomposition tree of a simple, undirected graph.
@@ -195,17 +189,17 @@ public class MDTree extends RootedTree {
 
 
     // F.L. 22.11.17: removing dummy primes from adrians MD
-    public boolean removeDummyPrimes() {
+    public boolean removeDummies() {
         MDTreeNode rootNode = (MDTreeNode) root;
         if (rootNode.getType() == MDNodeType.PRIME && rootNode.getNumChildren() == 1) {
             RootedTreeNode newRoot = rootNode.getFirstChild();
             newRoot.setParent(null);
             root = newRoot;
             rootNode = (MDTreeNode) root;
-            rootNode.removeDummyPrimes();
+            rootNode.removeDummies();
             return true;
         } else {
-            return rootNode.removeDummyPrimes();
+            return rootNode.removeDummies();
         }
     }
 

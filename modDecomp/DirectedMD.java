@@ -148,13 +148,13 @@ public class DirectedMD {
 
         // without null used Tedder's MD
         MDTree treeForG_d = new MDTree(G_d, null, debugMode, log);
-        if(treeForG_d.removeDummyPrimes()){
+        if(treeForG_d.removeDummies()){
             log.warning("Removed dummy primes for G_d");
         }
         log.info("computing md for G_s:");
 
         MDTree treeForG_s = new MDTree(G_s, null, debugMode, log);
-        if(treeForG_s.removeDummyPrimes()){
+        if(treeForG_s.removeDummies()){
             log.warning("Removed dummy primes for G_s");
         }
         log.info("md for G_d:\n" + MDTree.beautify(treeForG_d.toString()));
@@ -200,7 +200,9 @@ public class DirectedMD {
         MDTree finalTree = new MDTree(inputGraph, leafNumbers.toString(), true, log);
         MDTreeLeafNode[] finalLeaves = new MDTreeLeafNode[nVertices];
         finalTree.getStrongModulesBool(finalLeaves);
-        finalTree.removeDummyPrimes(); // todo: remove weak order modules as well.
+        if(finalTree.removeDummies()){
+            log.warning("Removed dummy primes/ weak orders!");
+        }
         log.info("Final Tree: " + MDTree.beautify(finalTree.toString()));
 
 

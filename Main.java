@@ -89,7 +89,8 @@ public class Main {
         String fromPaper = "fromFactPermPaper.txt";
         SimpleDirectedGraph<Integer, DefaultEdge> paperGraph = JGraphAdjecencyImporter.importIntGraph(new File(fromPaper), false);
         // Reihenfolge stimmt aber.
-        //DirectedMD paperMD = new DirectedMD(paperGraph, log, true);        paperMD.computeModularDecomposition();
+        DirectedMD paperMD = new DirectedMD(paperGraph, log, true);
+        paperMD.computeModularDecomposition();
         //System.out.println(paperGraph);
 
         //DOTExporter<Integer,DefaultEdge> exporter =new DOTExporter<>();
@@ -228,7 +229,8 @@ public class Main {
 
         String nextWeek = "testGraphs/DMDvery/randDigraph_n_21_edits_8_12-05_15:55:20:659_original.txt";
 
-
+        // I compared the computed permutation of these
+        // first test yields 12 errors, but the permutation itself should be ok.
         List<String> allOKToCheck = Arrays.asList(n_12_ordersplit, n25err, n22err, n23err2, weirdError, n21err, n23err, n24err, viceVera, smallNotAtournament, smallTourErrgraph, n10falsePrime,weakOrderWithStrongChildren);
 
         for( String s : allOKToCheck){
@@ -237,6 +239,7 @@ public class Main {
             } catch (IllegalStateException e){
                 e.printStackTrace();
             }
+            log.info("For Graph: " + s);
         }
 
         System.out.println("\n*** ERRS ***\n");
@@ -249,6 +252,7 @@ public class Main {
             } catch (Exception e){
                 e.printStackTrace();
             }
+            log.info("For Graph: " + s);
         }
 
 
@@ -266,7 +270,7 @@ public class Main {
 
 
 
-        //MDtestFromFile(log, anotherRoot, true);
+        //MDtestFromFile(log, uMDErr, true);
 
 //
 //        File importFile = new File("testy.txt");
@@ -452,7 +456,7 @@ public class Main {
         DOTExporter<Integer, DefaultEdge> exporter = new DOTExporter<>();
         Writer writer = new StringWriter();
         exporter.exportGraph(importGraph, writer);
-        log.info(".dot for Graph:\n" + writer.toString());
+        //log.info(".dot for Graph:\n" + writer.toString());
 
         DirectedMD testMD = new DirectedMD(importGraph, log, true);
         testMD.computeModularDecomposition();
