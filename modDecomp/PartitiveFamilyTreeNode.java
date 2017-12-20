@@ -149,7 +149,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
         PartitiveFamilyTreeNode myRightSibling = (PartitiveFamilyTreeNode) getRightSibling();
 
-        if (type.isDegenerate()) {
+        if (type.isDegenerate() || type == MDNodeType.PRIME) {
             // According to Lem 20:
             log.fine(() -> type + ": computing equivalence classes");
             computeEquivalenceClassesAndReorderChildren(log, outNeighbors, inNeighbors, orderedLeaves, positionInPermutation); // still also splits.
@@ -614,19 +614,30 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         // for the sake of simplicity, I use strings and compare if they are equal.
         // running time is same as worst case when comparing the lists element by element.
 
-        if( type == MDNodeType.PRIME || type == MDNodeType.ORDER ){ // todo: order
+        // F.L. 20.12.17: I also need to reorder PRIMES according to module/not module.
+        if(  type == MDNodeType.ORDER ){ // type == MDNodeType.PRIME ||
             throw new IllegalStateException("Wrong type in step 4: " + type + " for node\n" + toString());
         }
-
-        HashMap<Pair<BitSet,BitSet>, List<PartitiveFamilyTreeNode>> equivClassByBits = new HashMap<>(getNumChildren()*4/3);
-
+        Collection<List<PartitiveFamilyTreeNode>> equivClasses;
         PartitiveFamilyTreeNode currentChild = (PartitiveFamilyTreeNode) getFirstChild();
-        if(currentChild != null) {
+
+        if(isRoot()){
+            // It's just one equiv class. But I want to reorder.
+            LinkedList<PartitiveFamilyTreeNode> children = new LinkedList<>();
+            while (currentChild != null) {
+                children.add(currentChild);
+                currentChild = (PartitiveFamilyTreeNode) currentChild.getRightSibling();
+            }
+            equivClasses = new LinkedList<>();
+            equivClasses.add(children);
+        } else {
+            HashMap<Pair<BitSet, BitSet>, List<PartitiveFamilyTreeNode>> equivClassByBits = new HashMap<>(getNumChildren() * 4 / 3);
+
             while (currentChild != null) {
                 // take any vertex of child Y and prune vertices of this node X from its adjacency list
                 // note: this is the real vertex number, not permutation element.
                 int anyVertex;
-                if(currentChild.isALeaf()) {
+                if (currentChild.isALeaf()) {
                     anyVertex = ((PartitiveFamilyLeafNode) currentChild).getVertex();
                 } else {
                     anyVertex = currentChild.vertices.nextSetBit(0);
@@ -637,44 +648,46 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                 BitSet outgoingWithoutX = new BitSet(orderedLeaves.size());
                 BitSet outNeighborPositions = outNeighbors[vertexPosition];
                 // adds the vertex to the list, if it's not a vertex of this treenode
-                outNeighborPositions.stream().forEach( vPos -> {
-                        int realVertex = orderedLeaves.get(vPos).getVertex();
-                        if(!vertices.get(realVertex)){
-                            outgoingWithoutX.set(realVertex);
-                        }
+                outNeighborPositions.stream().forEach(vPos -> {
+                    int realVertex = orderedLeaves.get(vPos).getVertex();
+                    if (!vertices.get(realVertex)) {
+                        outgoingWithoutX.set(realVertex);
+                    }
                 });
 
                 // compute S_{-}
                 BitSet incomingWithoutX = new BitSet(orderedLeaves.size());
                 BitSet incNeighborPositions = inNeighbors[vertexPosition];
                 // adds the vertex to the list, if it's not a vertex of this treenode
-                incNeighborPositions.stream().forEach( vPos -> {
+                incNeighborPositions.stream().forEach(vPos -> {
                     int realVertex = orderedLeaves.get(vPos).getVertex();
-                    if(!vertices.get(realVertex)){
+                    if (!vertices.get(realVertex)) {
                         incomingWithoutX.set(realVertex);
                     }
                 });
 
                 // save  directly into equivalence classes, don't bother manual partition refinement
-                Pair<BitSet,BitSet> key = new Pair<>(outgoingWithoutX,incomingWithoutX);
-                if(equivClassByBits.containsKey(key)){
+                Pair<BitSet, BitSet> key = new Pair<>(outgoingWithoutX, incomingWithoutX);
+                if (equivClassByBits.containsKey(key)) {
                     equivClassByBits.get(key).add(currentChild);
                     log.fine(() -> type + " adding child with vertex " + anyVertex + " to eqClass " + key);
                 } else {
                     LinkedList<PartitiveFamilyTreeNode> eqClass = new LinkedList<>();
                     eqClass.addLast(currentChild);
                     equivClassByBits.put(key, eqClass);
-                    log.fine(() -> type + " creating new eqClass " + key + " for child with vertex " + anyVertex );
+                    log.fine(() -> type + " creating new eqClass " + key + " for child with vertex " + anyVertex);
                 }
 
                 currentChild = (PartitiveFamilyTreeNode) currentChild.getRightSibling();
             }
+
+            equivClasses = equivClassByBits.values();
         }
 
 
 
 
-        if(equivClassByBits.size() > 1) {
+        if(equivClasses.size() > 1) {
             if(isModuleInG) {
                 throw new IllegalStateException("Found several equiv classes in step 5 for a module in G: " + this);
             }
@@ -686,7 +699,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
         ArrayList<PartitiveFamilyTreeNode> orderedChildren = new ArrayList<>(getNumChildren());
 
-        for (List<PartitiveFamilyTreeNode> childrenOfEquivClass : equivClassByBits.values()) {
+        for (List<PartitiveFamilyTreeNode> childrenOfEquivClass : equivClasses) {
 
             // 20.12.17: Attempt to solve an error. Group according to 1. Vertices 2. Strong Modules 3. Weak modules.
             LinkedList<PartitiveFamilyTreeNode> verticesAndModules = new LinkedList<>();
