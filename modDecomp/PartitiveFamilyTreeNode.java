@@ -672,54 +672,41 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         }
 
 
+
+
         if(equivClassByBits.size() > 1) {
             if(isModuleInG) {
-                throw new IllegalStateException("Found several equiv classes in step 5 for a module in G: )");
+                throw new IllegalStateException("Found several equiv classes in step 5 for a module in G: " + this);
             }
-            ArrayList<PartitiveFamilyTreeNode> orderedChildren = new ArrayList<>(getNumChildren());
-
-            for (List<PartitiveFamilyTreeNode> children : equivClassByBits.values()) {
-
-
-                /*
-                // todo: not needed for fact perm only.
-                if (children.size() > 1) {
-                    // create a new node (i.e. the module in G) from these children
-                    BitSet newNodeBits = new BitSet();
-                    PartitiveFamilyTreeNode newNode = new PartitiveFamilyTreeNode(newNodeBits,treeContext);
-
-                    for(PartitiveFamilyTreeNode child : children){
-                        newNode.addChild(child);
-                        if(child.isALeaf()){
-                            newNodeBits.set( ((PartitiveFamilyLeafNode)child).getVertex() );
-                        } else {
-                            newNodeBits.or( child.vertices );
-                        }
-                    }
-                    newNode.type = type; // todo: always???
-                    newNode.isModuleInG = true;
-                    newNode.inducedPartialSubgraph = new DirectedInducedIntSubgraph<>(inducedPartialSubgraph.getBase(), newNode.vertices);
-                    treeContext.moduleToTreenode.put(newNode.vertices,newNode);
-
-                    addChild(newNode);
-                    log.fine(() -> "new child created: " + newNode.toString());
-                    orderedChildren.add(newNode);
-
-                } else {
-
-                    orderedChildren.add(children.get(0));
-                }
-                */
-                orderedChildren.addAll(children);
-            }
-
-            log.fine( () -> type + " Reordering children of " + toString());
-            log.fine( () -> type + " according to: " + orderedChildren.toString() );
-            reorderChildren(orderedChildren);
         } else {
-            log.fine( () -> type + " has only one equiv class, it's a module." );
+            log.fine( () -> type + " has only one equiv class." );
+            // , it's a module <- Not necessarily!!! Can be weak!
             //assert isModuleInG : "Error: should not be weak!\n" + this;
         }
+
+        ArrayList<PartitiveFamilyTreeNode> orderedChildren = new ArrayList<>(getNumChildren());
+
+        for (List<PartitiveFamilyTreeNode> childrenOfEquivClass : equivClassByBits.values()) {
+
+            // 20.12.17: Attempt to solve an error. Group according to 1. Vertices 2. Strong Modules 3. Weak modules.
+            LinkedList<PartitiveFamilyTreeNode> verticesAndModules = new LinkedList<>();
+            LinkedList<PartitiveFamilyTreeNode> weakChildren = new LinkedList<>();
+            for(PartitiveFamilyTreeNode child : childrenOfEquivClass){
+                if(child.isALeaf())
+                    verticesAndModules.add(0,child);
+                else if(child.isModuleInG)
+                    verticesAndModules.add(child);
+                else
+                    weakChildren.add(child);
+            }
+            orderedChildren.addAll(verticesAndModules);
+            orderedChildren.addAll(weakChildren);
+        }
+
+        log.fine( () -> type + " Reordering children of " + toString());
+        log.fine( () -> type + " according to: " + orderedChildren.toString() );
+        reorderChildren(orderedChildren);
+
 
 
     }
