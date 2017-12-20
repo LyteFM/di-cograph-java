@@ -148,15 +148,15 @@ public class DirectedMD {
 
         // without null used Tedder's MD
         MDTree treeForG_d = new MDTree(G_d, null, debugMode, log);
-        if(treeForG_d.removeDummies()){
-            log.warning("Removed dummy primes for G_d");
-        }
+//        if(treeForG_d.removeDummies()){
+//            log.warning("Removed dummy primes for G_d");
+//        }
         log.info("computing md for G_s:");
 
         MDTree treeForG_s = new MDTree(G_s, null, debugMode, log);
-        if(treeForG_s.removeDummies()){
-            log.warning("Removed dummy primes for G_s");
-        }
+//        if(treeForG_s.removeDummies()){
+//            log.warning("Removed dummy primes for G_s");
+//        }
         log.info("md for G_d:\n" + MDTree.beautify(treeForG_d.toString()));
         log.fine("DOT for G_d:\n" + treeForG_d.exportAsDot());
         log.info("md for G_s:\n" + MDTree.beautify(treeForG_s.toString()));
@@ -196,17 +196,17 @@ public class DirectedMD {
         log.info("Reordered Tree: " + MDTree.beautify(treeForH.toString()));
 
 
-        // get the MD Tree
+        // get the MD Tree from C++
         MDTree finalTree = new MDTree(inputGraph, leafNumbers.toString(), true, log);
         MDTreeLeafNode[] finalLeaves = new MDTreeLeafNode[nVertices];
         finalTree.getStrongModulesBool(finalLeaves);
-        if(finalTree.removeDummies()){
-            log.warning("Removed dummy primes/ weak orders!");
-        }
+
+
+        // Step 6 b): Deletion of weak modules and recovering of merged modules - should happen in C++
+//        if(finalTree.removeDummies()){
+//            log.warning("Removed dummy primes/ weak orders!");
+//        }
         log.info("Final Tree: " + MDTree.beautify(finalTree.toString()));
-
-
-        // Step 6 b): Deletion of weak modules and recovering of merged modules
 
 
         if (debugMode) {

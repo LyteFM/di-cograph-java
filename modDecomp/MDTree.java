@@ -248,7 +248,11 @@ public class MDTree extends RootedTree {
 
         importer.importGraph(treeGraph, dotReader);
 
+        // determine root (is not alwaays the first!)
         root = noToTreenode.get(0);
+        while (root.getParent() != null){
+            root = root.getParent();
+        }
     }
 
 
