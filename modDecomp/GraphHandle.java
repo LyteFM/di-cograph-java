@@ -15,7 +15,7 @@ import org.jgrapht.graph.*;
 public class GraphHandle {
 
 	// new: Use SimpleGraph from JGraphT for the base Graph.
-    public SimpleGraph <Integer, DefaultEdge> graph;
+    public SimpleGraph <Integer, DefaultWeightedEdge> graph;
 
 
 	
@@ -45,11 +45,11 @@ public class GraphHandle {
 	 * @param file The name of the input file specifying the graph.
 	 */
 	public GraphHandle(String file) {
-        graph = new SimpleGraph<>(DefaultEdge.class);
+        graph = new SimpleGraph<>(DefaultWeightedEdge.class);
 	    vertices = buildFromFile(file);
 	}
 
-	public GraphHandle(SimpleGraph<Integer,DefaultEdge> graph){
+	public GraphHandle(SimpleGraph<Integer,DefaultWeightedEdge> graph){
 	    this.graph = graph;
     }
 
@@ -175,7 +175,7 @@ public class GraphHandle {
 		return vertices.values().toString();
 	}
 
-	public SimpleGraph<Integer, DefaultEdge> getGraph() {
+	public SimpleGraph<Integer, DefaultWeightedEdge> getGraph() {
 		return graph;
 	}
 }

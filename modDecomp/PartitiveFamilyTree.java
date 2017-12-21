@@ -1,6 +1,6 @@
 package dicograph.modDecomp;
 
-import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
 import java.util.ArrayList;

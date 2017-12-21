@@ -1,6 +1,6 @@
 package dicograph.ILPSolver;
 
-import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
 
@@ -72,12 +72,12 @@ public class CplexDiCographEditingSolver {
 
 
     // input data. Also works, if has self-loops (will be ignored)
-    SimpleDirectedGraph<Integer, DefaultEdge> inputGraph;
+    SimpleDirectedGraph<Integer, DefaultWeightedEdge> inputGraph;
     TreeSet<Integer> sortedVertexSet;
     // parameters
     int [] parameters;
 
-    List<SimpleDirectedGraph<Integer, DefaultEdge>> solutionGraphs;
+    List<SimpleDirectedGraph<Integer, DefaultWeightedEdge>> solutionGraphs;
     List<Double> editingDistances;
 
     // CPLEX solver
@@ -102,7 +102,7 @@ public class CplexDiCographEditingSolver {
      * @throws IloException
      */
 
-    public CplexDiCographEditingSolver(SimpleDirectedGraph<Integer, DefaultEdge> inputGraph, int[] parameters, Logger log) throws IloException {
+    public CplexDiCographEditingSolver(SimpleDirectedGraph<Integer, DefaultWeightedEdge> inputGraph, int[] parameters, Logger log) throws IloException {
         this.inputGraph = inputGraph;
         // want the vertex set of the graph in sorted order for easier display and to uniquely define the matrix
         sortedVertexSet = new TreeSet<>(inputGraph.vertexSet()); // todo: not necessary!
@@ -118,7 +118,7 @@ public class CplexDiCographEditingSolver {
 
     }
 
-    public List<SimpleDirectedGraph<Integer,DefaultEdge>> solve() throws IloException{
+    public List<SimpleDirectedGraph<Integer,DefaultWeightedEdge>> solve() throws IloException{
         this.solver.setName("CplexCographSolver");
 
         // initialize boolean variables as "E_x,y"
@@ -131,7 +131,7 @@ public class CplexDiCographEditingSolver {
         }
 
 
-        DefaultEdge edge;
+        DefaultWeightedEdge edge;
         int i = 0;
 
         // No diagonal entries as self-loops are excluded:
@@ -262,7 +262,7 @@ public class CplexDiCographEditingSolver {
             if (solver.getObjValue(solutionId)<=bestObjectiveValue){
 
                 // initialize JGraph with same vertex-Set:
-                SimpleDirectedGraph<Integer, DefaultEdge> solutionGraph = new SimpleDirectedGraph<>(DefaultEdge.class);
+                SimpleDirectedGraph<Integer, DefaultWeightedEdge> solutionGraph = new SimpleDirectedGraph<>(DefaultWeightedEdge.class);
                 for(int vertex = 0; vertex < vertexCount; vertex++){
                     solutionGraph.addVertex(vertex);
                 }

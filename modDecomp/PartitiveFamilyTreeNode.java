@@ -1,7 +1,7 @@
 package dicograph.modDecomp;
 
 import org.jgrapht.alg.util.Pair;
-import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
 import java.util.ArrayList;
@@ -30,7 +30,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
     int rc_X;
     private boolean isModuleInG;
     private MDNodeType type;
-    private DirectedInducedIntSubgraph<DefaultEdge> inducedPartialSubgraph;
+    private DirectedInducedIntSubgraph<DefaultWeightedEdge> inducedPartialSubgraph;
     PartitiveFamilyTree treeContext; // reference to Tree Object
 
 
@@ -194,7 +194,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             int typeVal = -1;
             int currVal;
             boolean firstRun = true;
-            for(DefaultEdge edge : inducedPartialSubgraph.edgeSet()){
+            for(DefaultWeightedEdge edge : inducedPartialSubgraph.edgeSet()){
                 int source = inducedPartialSubgraph.getEdgeSource(edge);
                 int target = inducedPartialSubgraph.getEdgeTarget(edge);
                 currVal = data.getEdgeValueForH(source, target);
@@ -258,7 +258,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         int returnVal = subgraphVertices.getFirst();
         // compute the induced subgraph and determine the node type
         inducedPartialSubgraph = new DirectedInducedIntSubgraph<>(data.inputGraph, subgraphVertices);
-        Set<DefaultEdge> edgeSet = inducedPartialSubgraph.edgeSet();
+        Set<DefaultWeightedEdge> edgeSet = inducedPartialSubgraph.edgeSet();
         int n = inducedPartialSubgraph.vertexSet().size();
         if (edgeSet.isEmpty()) {
             // no edges means 0-complete
@@ -272,7 +272,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             // 2-complete means: one edge between every vertex pair
             if (isOrder) {
                 // need to brute-force check every edge
-                for (DefaultEdge edge : edgeSet) {
+                for (DefaultWeightedEdge edge : edgeSet) {
                     int source = inducedPartialSubgraph.getEdgeSource(edge);
                     int target = inducedPartialSubgraph.getEdgeTarget(edge);
                     if (data.getEdgeValueForH(source, target) != 2) {
@@ -510,7 +510,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
      * Assertion if it is a tournament - already verified.
      * "The ordering of the vertices in σ is exactly the ordering induced by the order node, otherwise there would exist some cutter."
      */
-    private Function<SimpleDirectedGraph<Integer, DefaultEdge>, List<Pair<Integer,Integer>>> perfFactPermFromTournament = tournament -> {
+    private Function<SimpleDirectedGraph<Integer, DefaultWeightedEdge>, List<Pair<Integer,Integer>>> perfFactPermFromTournament = tournament -> {
 
         int n = tournament.vertexSet().size();
         HashMap<Integer, Collection<Integer>> vertexToPartition = new HashMap<>(n*4/3);
@@ -531,26 +531,26 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             Collection<Integer> cPartition = vertexToPartition.get(realVertexNo);
             int partitionsIndex = partitions.indexOf(cPartition); // todo: ouch, linearity :/
 
-            Set <DefaultEdge> outgoing = tournament.outgoingEdgesOf(realVertexNo);
+            Set <DefaultWeightedEdge> outgoing = tournament.outgoingEdgesOf(realVertexNo);
             vertexToOutdegree.put(realVertexNo,outgoing.size());
 
 
             // skip singletons. We're done if we have n singletons.
             if (cPartition.size() > 1 && partitions.size() < n) {
                 // neighborhood N_- and N_+:
-                Set <DefaultEdge> incoming = tournament.incomingEdgesOf(realVertexNo);
+                Set <DefaultWeightedEdge> incoming = tournament.incomingEdgesOf(realVertexNo);
 
                 assert incoming.size() + outgoing.size() == n-1 : "Not a tournament: " + tournament; // still true for merger.
 
                 HashSet<Integer> inNeighbors = new HashSet<>(incoming.size()*4/3);
-                for( DefaultEdge edge : incoming){
+                for( DefaultWeightedEdge edge : incoming){
                     int source = tournament.getEdgeSource(edge);
                     inNeighbors.add( source );
                 }
                 inNeighbors.retainAll(cPartition); // Compute the intersection
 
                 HashSet<Integer> outNeigbors = new HashSet<>(outgoing.size()*4/3);
-                for( DefaultEdge edge : outgoing){
+                for( DefaultWeightedEdge edge : outgoing){
                     int source = tournament.getEdgeTarget(edge);
                     outNeigbors.add( source );
                 }

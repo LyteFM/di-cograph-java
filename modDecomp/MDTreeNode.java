@@ -2,7 +2,7 @@ package dicograph.modDecomp;
 
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
-import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
@@ -600,7 +600,7 @@ public class MDTreeNode extends RootedTreeNode {
 		firstChild.getPrimeModules(depthToNodes, currDepth);
 	}
 
-	public void initWeightedSubgraph(SimpleDirectedGraph<Integer,DefaultWeightedEdge>subGraph, SimpleDirectedGraph<Integer,DefaultEdge> base){
+	public void initWeightedSubgraph(SimpleDirectedGraph<Integer,DefaultWeightedEdge>subGraph, SimpleDirectedGraph<Integer,DefaultWeightedEdge> base){
 		//vertices.stream().forEach( graph::addVertex );
 
 		MDTreeNode currChild = (MDTreeNode) getFirstChild();
@@ -623,7 +623,7 @@ public class MDTreeNode extends RootedTreeNode {
 		// add edges. Cost of editing is the product, as this many edges would have to be edited.
 		// is it smarter to check all Vertices or all edges? Hmm, not if the modules is large...
 		for (int source : vertexToWeight.keySet()) {
-			for (DefaultEdge outEdge : base.outgoingEdgesOf(source)) {
+			for (DefaultWeightedEdge outEdge : base.outgoingEdgesOf(source)) {
 				int target = base.getEdgeTarget(outEdge);
 
 				if (vertexToWeight.containsKey(target)) {

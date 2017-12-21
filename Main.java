@@ -2,7 +2,7 @@ package dicograph;
 
 
 import org.jgrapht.alg.isomorphism.VF2GraphIsomorphismInspector;
-import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.graph.SimpleGraph;
 import org.jgrapht.io.DOTExporter;
@@ -87,13 +87,13 @@ public class Main {
 
 
         String fromPaper = "fromFactPermPaper.txt";
-//        SimpleDirectedGraph<Integer, DefaultEdge> paperGraph = JGraphAdjecencyImporter.importIntGraph(new File(fromPaper), false);
+//        SimpleDirectedGraph<Integer, DefaultWeightedEdge> paperGraph = JGraphAdjecencyImporter.importIntGraph(new File(fromPaper), false);
 //        // Reihenfolge stimmt aber.
 //        DirectedMD paperMD = new DirectedMD(paperGraph, log, true);
 //        paperMD.computeModularDecomposition();
         //System.out.println(paperGraph);
 
-        //DOTExporter<Integer,DefaultEdge> exporter =new DOTExporter<>();
+        //DOTExporter<Integer,DefaultWeightedEdge> exporter =new DOTExporter<>();
         //exporter.exportGraph(paperGraph, new File(fromPaper+ ".dot"));
 
 
@@ -307,8 +307,8 @@ public class Main {
 
 //
 //        File importFile = new File("testy.txt");
-//        SimpleDirectedGraph<Integer, DefaultEdge> matrixGraph = SimpleMatrixImporter.importIntGraph( new File(weirdError));
-//        SimpleDirectedGraph<Integer, DefaultEdge> randGraph = JGraphAdjecencyImporter.importIntGraph(importFile);
+//        SimpleDirectedGraph<Integer, DefaultWeightedEdge> matrixGraph = SimpleMatrixImporter.importIntGraph( new File(weirdError));
+//        SimpleDirectedGraph<Integer, DefaultWeightedEdge> randGraph = JGraphAdjecencyImporter.importIntGraph(importFile);
 
 
 
@@ -326,7 +326,7 @@ public class Main {
 //        for (int i = 0; i < 5; i++) {
 //            Integer[] permutation = randPermutation(start,random);
 //
-//            TedFormatExporter<Integer,DefaultEdge> tedXp = new TedFormatExporter<>();
+//            TedFormatExporter<Integer,DefaultWeightedEdge> tedXp = new TedFormatExporter<>();
 //            tedXp.setPermutation(permutation);
 //
 ////            String filePath = "ted_matrix_case_" + i + ".txt";
@@ -362,7 +362,7 @@ public class Main {
         String mderror_10 = folder + "randDigraph_n_10_edits_5_11-17_13:54:28:564_original.txt";
         //MDtestFromFile(log, mderror_10,true);
 
-        SimpleDirectedGraph<Integer, DefaultEdge> mderr10G = SimpleMatrixImporter.importIntGraph( new File(mderror_10));
+        SimpleDirectedGraph<Integer, DefaultWeightedEdge> mderr10G = SimpleMatrixImporter.importIntGraph( new File(mderror_10));
         System.out.println(getG_s(mderr10G).toString());
 
 
@@ -385,7 +385,7 @@ public class Main {
                 permutation[count] = i;
                 count++;
             }
-            TedFormatExporter<Integer,DefaultEdge> tedXp = new TedFormatExporter<>();
+            TedFormatExporter<Integer,DefaultWeightedEdge> tedXp = new TedFormatExporter<>();
             tedXp.setPermutation(permutation);
             String expPath = "ted_md10Cut" + 0 + ".txt";
             System.out.println(expPath);
@@ -480,13 +480,13 @@ public class Main {
     static void MDtestFromFile(Logger log, String importFilePath, boolean matrix) throws Exception {
 
         File importFile = new File(importFilePath);
-        SimpleDirectedGraph<Integer, DefaultEdge> importGraph;
+        SimpleDirectedGraph<Integer, DefaultWeightedEdge> importGraph;
         if(matrix) {
             importGraph=SimpleMatrixImporter.importIntGraph(importFile);
         } else {
             importGraph = JGraphAdjecencyImporter.importIntGraph(importFile);
         }
-        DOTExporter<Integer, DefaultEdge> exporter = new DOTExporter<>();
+        DOTExporter<Integer, DefaultWeightedEdge> exporter = new DOTExporter<>();
         Writer writer = new StringWriter();
         exporter.exportGraph(importGraph, writer);
         //log.info(".dot for Graph:\n" + writer.toString());
@@ -499,13 +499,13 @@ public class Main {
 
     }
 
-    static void compareMatrixAndRand(SimpleDirectedGraph<Integer, DefaultEdge> matrixGraph, SimpleDirectedGraph<Integer, DefaultEdge> randGraph) {
-        //AsUndirectedGraph<Integer,DefaultEdge> matrixUndirected = new AsUndirectedGraph<>(randGraph);
-        //AsUndirectedGraph<Integer,DefaultEdge> randUndirected = new AsUndirectedGraph<>(matrixGraph);
+    static void compareMatrixAndRand(SimpleDirectedGraph<Integer, DefaultWeightedEdge> matrixGraph, SimpleDirectedGraph<Integer, DefaultWeightedEdge> randGraph) {
+        //AsUndirectedGraph<Integer,DefaultWeightedEdge> matrixUndirected = new AsUndirectedGraph<>(randGraph);
+        //AsUndirectedGraph<Integer,DefaultWeightedEdge> randUndirected = new AsUndirectedGraph<>(matrixGraph);
         // same here as in MD
-        SimpleGraph <Integer,DefaultEdge> matrixUndirected = new SimpleGraph<>(DefaultEdge.class);
+        SimpleGraph <Integer,DefaultWeightedEdge> matrixUndirected = new SimpleGraph<>(DefaultWeightedEdge.class);
         matrixGraph.vertexSet().forEach(  matrixUndirected::addVertex );
-        for (DefaultEdge edge : matrixGraph.edgeSet()) {
+        for (DefaultWeightedEdge edge : matrixGraph.edgeSet()) {
             int source = matrixGraph.getEdgeSource(edge);
             int target = matrixGraph.getEdgeTarget(edge);
             if (!matrixUndirected.containsEdge(source, target)) {
@@ -513,9 +513,9 @@ public class Main {
             }
         }
 
-        SimpleGraph <Integer,DefaultEdge> randUndirected = new SimpleGraph<>(DefaultEdge.class);
+        SimpleGraph <Integer,DefaultWeightedEdge> randUndirected = new SimpleGraph<>(DefaultWeightedEdge.class);
         randGraph.vertexSet().forEach(  randUndirected::addVertex );
-        for (DefaultEdge edge : randGraph.edgeSet()) {
+        for (DefaultWeightedEdge edge : randGraph.edgeSet()) {
             int source = randGraph.getEdgeSource(edge);
             int target = randGraph.getEdgeTarget(edge);
             if (!randUndirected.containsEdge(source, target)) {
@@ -547,8 +547,8 @@ public class Main {
         VF2GraphIsomorphismInspector isomorphismInspector = new VF2GraphIsomorphismInspector<>(matrixGraph,randGraph);
         System.out.println("Iso exists for Directed: " + isomorphismInspector.isomorphismExists());
 
-        SimpleGraph<Integer,DefaultEdge> g_s_matrix = getG_s(matrixGraph);
-        SimpleGraph<Integer,DefaultEdge> g_s_rand = getG_s(randGraph);
+        SimpleGraph<Integer,DefaultWeightedEdge> g_s_matrix = getG_s(matrixGraph);
+        SimpleGraph<Integer,DefaultWeightedEdge> g_s_rand = getG_s(randGraph);
 
         System.out.println("\nTest from matrix:\n");
         debugTesting(g_s_matrix, matrix_others, se_5_matrix);
@@ -559,10 +559,10 @@ public class Main {
         System.out.println("Iso exists for G_s: " + iso2.isomorphismExists());
     }
 
-    static SimpleGraph<Integer,DefaultEdge> getG_s (SimpleDirectedGraph<Integer,DefaultEdge> inputGraph){
-        SimpleGraph<Integer,DefaultEdge> G_s = new SimpleGraph<>(DefaultEdge.class);
+    static SimpleGraph<Integer,DefaultWeightedEdge> getG_s (SimpleDirectedGraph<Integer,DefaultWeightedEdge> inputGraph){
+        SimpleGraph<Integer,DefaultWeightedEdge> G_s = new SimpleGraph<>(DefaultWeightedEdge.class);
         inputGraph.vertexSet().forEach( G_s::addVertex );
-        for (DefaultEdge edge : inputGraph.edgeSet()) {
+        for (DefaultWeightedEdge edge : inputGraph.edgeSet()) {
             int source = inputGraph.getEdgeSource(edge);
             int target = inputGraph.getEdgeTarget(edge);
             if (!G_s.containsEdge(source, target)) {
@@ -572,7 +572,7 @@ public class Main {
         return G_s;
     }
 
-    static void debugTesting(SimpleGraph<Integer,DefaultEdge> graph, Set<Integer> otherVertices, List<Integer> moduleVertices){
+    static void debugTesting(SimpleGraph<Integer,DefaultWeightedEdge> graph, Set<Integer> otherVertices, List<Integer> moduleVertices){
 
         for (int i : otherVertices) {
             System.out.println("Checking: " + i + " with edges: " + graph.edgesOf(i));
@@ -592,7 +592,7 @@ public class Main {
         }
     }
 
-    static void debugTesting2(SimpleDirectedGraph<Integer,DefaultEdge> graph, Set<Integer> otherVertices, List<Integer> moduleVertices){
+    static void debugTesting2(SimpleDirectedGraph<Integer,DefaultWeightedEdge> graph, Set<Integer> otherVertices, List<Integer> moduleVertices){
 
         for (int i : otherVertices) {
             System.out.println("Checking: " + i + " with edges: " + graph.edgesOf(i));
@@ -626,7 +626,7 @@ public class Main {
         log.addHandler(fileHandler);
 
         GraphGenerator gen = new GraphGenerator(log);
-        SimpleDirectedGraph<Integer, DefaultEdge> g_d = new SimpleDirectedGraph<>(DefaultEdge.class);
+        SimpleDirectedGraph<Integer, DefaultWeightedEdge> g_d = new SimpleDirectedGraph<>(DefaultWeightedEdge.class);
         gen.generateRandomDirectedCograph(g_d, nVertices, true);
         gen.disturbDicograph(g_d, nDisturb);
 
@@ -634,7 +634,7 @@ public class Main {
         String matrixPath = filePath + "_original.txt";
         allPaths.append("\"").append(matrixPath).append("\", ");
         File expfile = new File(matrixPath);
-        SimpleMatrixExporter<Integer, DefaultEdge> myExporter = new SimpleMatrixExporter<>();
+        SimpleMatrixExporter<Integer, DefaultWeightedEdge> myExporter = new SimpleMatrixExporter<>();
         myExporter.exportGraph(g_d, expfile);
         log.info(String.format("Generated random Dicograph with %s vertices and %s random edge-edits.", nVertices, nDisturb));
         log.info("Exported Matrix to :" + filePath + "_original.txt");
@@ -657,7 +657,7 @@ public class Main {
             log.info("*** Starting ILP-Solver ***");
             int [] parameters = {0,0}; // one solution
             CplexDiCographEditingSolver mySolver = new CplexDiCographEditingSolver(g_d, parameters, log);
-            List<SimpleDirectedGraph<Integer, DefaultEdge>> solutions = mySolver.solve();
+            List<SimpleDirectedGraph<Integer, DefaultWeightedEdge>> solutions = mySolver.solve();
             log.info("Saving solution for n = " + nVertices + " to:");
             log.info(filePath + "_edited.txt");
             File solFile = new File(filePath + "_edited.txt");
@@ -676,7 +676,7 @@ public class Main {
 
     void cographTesting(Logger log) throws Exception{
         // Cograph Testing
-        SimpleGraph<Integer, DefaultEdge> g = new SimpleGraph<>(DefaultEdge.class);
+        SimpleGraph<Integer, DefaultWeightedEdge> g = new SimpleGraph<>(DefaultWeightedEdge.class);
         GraphGenerator gen = new GraphGenerator(log);
         gen.generateRandomCograph(g,35);
 
@@ -690,11 +690,11 @@ public class Main {
 
 
         for( int i = 10; i< 50; i++) {
-            SimpleDirectedGraph<Integer, DefaultEdge> g_d = new SimpleDirectedGraph<>(DefaultEdge.class);
+            SimpleDirectedGraph<Integer, DefaultWeightedEdge> g_d = new SimpleDirectedGraph<>(DefaultWeightedEdge.class);
             gen.generateRandomDirectedCograph(g_d, i, true);
 
             CplexDiCographEditingSolver mySolver = new CplexDiCographEditingSolver(g_d, parameters, log);
-            List<SimpleDirectedGraph<Integer, DefaultEdge>> solutions = mySolver.solve();
+            List<SimpleDirectedGraph<Integer, DefaultWeightedEdge>> solutions = mySolver.solve();
             System.out.print(solutions.get(0));
             Double sol = mySolver.getEditingDistances().get(0);
             if(sol.intValue() > 0){
@@ -763,18 +763,18 @@ public class Main {
     void cplexTest(Logger log) throws ExportException, IloException, IOException {
         String filePath = "importFiles/sz_15_pr_30";
         File importFile = new File(filePath+ ".txt");
-        SimpleDirectedGraph<Integer, DefaultEdge> importGraph = SimpleMatrixImporter.importIntGraph(importFile);
+        SimpleDirectedGraph<Integer, DefaultWeightedEdge> importGraph = SimpleMatrixImporter.importIntGraph(importFile);
 
         System.out.print(importGraph + "\n");
         int [] parameters = {0,1};
 
         CplexDiCographEditingSolver mySolver = new CplexDiCographEditingSolver(importGraph, parameters, log);
-        List<SimpleDirectedGraph<Integer,DefaultEdge>> solutions = mySolver.solve();
+        List<SimpleDirectedGraph<Integer,DefaultWeightedEdge>> solutions = mySolver.solve();
 
         int count = 1;
-        for(SimpleDirectedGraph<Integer,DefaultEdge> cograph : solutions){
+        for(SimpleDirectedGraph<Integer,DefaultWeightedEdge> cograph : solutions){
 
-            SimpleMatrixExporter<Integer, DefaultEdge> myExporter = new SimpleMatrixExporter<>();
+            SimpleMatrixExporter<Integer, DefaultWeightedEdge> myExporter = new SimpleMatrixExporter<>();
             File expfile = new File(filePath + "_solution_"+ count + ".txt");
             myExporter.exportGraph(cograph, expfile);
             count++;
@@ -783,7 +783,7 @@ public class Main {
 
     void randImportExportTest(Logger log) throws IOException, ExportException{
         GraphGenerator graphGenerator = new GraphGenerator(log);
-        SimpleDirectedGraph<String, DefaultEdge> testGraph = graphGenerator.generateRandomGnp(11,0.3);
+        SimpleDirectedGraph<String, DefaultWeightedEdge> testGraph = graphGenerator.generateRandomGnp(11,0.3);
         System.out.println(testGraph.toString());
 
         // test output
@@ -795,11 +795,11 @@ public class Main {
 
         //
 
-        SimpleMatrixExporter<String, DefaultEdge> myExporter = new SimpleMatrixExporter<>();
+        SimpleMatrixExporter<String, DefaultWeightedEdge> myExporter = new SimpleMatrixExporter<>();
         myExporter.exportGraph(testGraph, logFile);
 
         // try importing and exporting again:
-        SimpleDirectedGraph<String,DefaultEdge> testGraph2 = SimpleMatrixImporter.importStringGraph(logFile);
+        SimpleDirectedGraph<String,DefaultWeightedEdge> testGraph2 = SimpleMatrixImporter.importStringGraph(logFile);
         String exp2 = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
         File expfile = new File(exp2 + "_reimported" + ".txt");
         myExporter.exportGraph(testGraph2, expfile);

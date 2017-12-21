@@ -1,7 +1,7 @@
 package dicograph.modDecomp;
 
 import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.graph.SimpleGraph;
 import org.jgrapht.io.Attribute;
@@ -37,7 +37,7 @@ public class MDTree extends RootedTree {
 		setRoot(buildMDTree(graphHandle));
 	}
 
-	public MDTree(SimpleGraph<Integer,DefaultEdge> jGraph) {
+	public MDTree(SimpleGraph<Integer,DefaultWeightedEdge> jGraph) {
 		super();
 		setRoot( buildMDTree(jGraph) );
 	}
@@ -121,7 +121,7 @@ public class MDTree extends RootedTree {
 
 
 	// F.L. new: use JGraph
-	private MDTreeNode buildMDTree(SimpleGraph<Integer, DefaultEdge> g) {
+	private MDTreeNode buildMDTree(SimpleGraph<Integer, DefaultWeightedEdge> g) {
 
 		if (g.vertexSet().isEmpty()){
 			return null;
@@ -135,7 +135,7 @@ public class MDTree extends RootedTree {
 	}
 
 	// F.L.
-    private static Reader readMDAsDot(Graph<Integer, DefaultEdge> inputGraph, String factPerm) throws IOException {
+    private static Reader readMDAsDot(Graph<Integer, DefaultWeightedEdge> inputGraph, String factPerm) throws IOException {
 
         // I might need two separate classes, anyways...
         boolean undirectedMD = factPerm == null || factPerm.isEmpty();
@@ -165,11 +165,11 @@ public class MDTree extends RootedTree {
     }
 
     // F.L.
-    public MDTree(Graph<Integer, DefaultEdge> inputGraph, String factPerm) throws IOException, ImportException {
+    public MDTree(Graph<Integer, DefaultWeightedEdge> inputGraph, String factPerm) throws IOException, ImportException {
         this(inputGraph, factPerm, false, null);
     }
 
-    public MDTree(Graph<Integer, DefaultEdge> inputGraph, String factPerm, boolean debug, Logger log) throws IOException, ImportException {
+    public MDTree(Graph<Integer, DefaultWeightedEdge> inputGraph, String factPerm, boolean debug, Logger log) throws IOException, ImportException {
         super();
         Reader reader = readMDAsDot(inputGraph, factPerm);
 
@@ -211,10 +211,10 @@ public class MDTree extends RootedTree {
     // F.L.
     private void readFromDot(Reader dotReader) throws IOException, ImportException {
 
-        SimpleDirectedGraph< Integer ,DefaultEdge> treeGraph = new SimpleDirectedGraph<>(DefaultEdge.class);
+        SimpleDirectedGraph< Integer ,DefaultWeightedEdge> treeGraph = new SimpleDirectedGraph<>(DefaultWeightedEdge.class);
         HashMap<Integer, MDTreeNode> noToTreenode = new HashMap<>();
 
-        DOTImporter<Integer,DefaultEdge> importer = new DOTImporter<>(
+        DOTImporter<Integer,DefaultWeightedEdge> importer = new DOTImporter<>(
                 (String label, Map<String, Attribute> attributes) -> {
                     int no = Integer.valueOf(label);
                     String content = attributes.get("label").getValue();

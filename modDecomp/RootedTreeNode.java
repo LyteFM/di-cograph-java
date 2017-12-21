@@ -1,7 +1,7 @@
 package dicograph.modDecomp;
 
 import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultWeightedEdge;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -456,7 +456,7 @@ public class RootedTreeNode {
      	return myParent;
 	}
 
-	void verifyModuleStatus(StringBuilder res, Graph<Integer, DefaultEdge> graph){
+	void verifyModuleStatus(StringBuilder res, Graph<Integer, DefaultWeightedEdge> graph){
 		ArrayList<Integer> moduleVertices = new ArrayList<>(vertices.cardinality());
 		vertices.stream().forEach(moduleVertices::add);
 		res.append(SortAndCompare.checkModuleBruteForce(graph,moduleVertices, true));

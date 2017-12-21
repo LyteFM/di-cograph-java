@@ -1,7 +1,7 @@
 package dicograph.modDecomp;
 
 import org.jgrapht.alg.util.Pair;
-import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.graph.SimpleGraph;
 import org.jgrapht.io.ImportException;
@@ -32,11 +32,11 @@ import dicograph.utils.SortAndCompare;
  */
 public class DirectedMD {
 
-    final SimpleDirectedGraph<Integer, DefaultEdge> inputGraph;
+    final SimpleDirectedGraph<Integer, DefaultWeightedEdge> inputGraph;
     final Logger log;
     final int nVertices;
-    SimpleGraph<Integer, DefaultEdge> G_s;
-    SimpleGraph<Integer, DefaultEdge> G_d;
+    SimpleGraph<Integer, DefaultWeightedEdge> G_s;
+    SimpleGraph<Integer, DefaultWeightedEdge> G_d;
 
     final boolean debugMode; // false for max speed, true for nicely sorted vertices etc.
 
@@ -46,7 +46,7 @@ public class DirectedMD {
 
 
 
-    public DirectedMD(SimpleDirectedGraph<Integer, DefaultEdge> input, Logger logger, boolean debugMode){
+    public DirectedMD(SimpleDirectedGraph<Integer, DefaultWeightedEdge> input, Logger logger, boolean debugMode){
 
         inputGraph = input;
         log = logger;
@@ -110,10 +110,10 @@ public class DirectedMD {
         // Step 1: Find G_s, G_d and H
 
         // G_d: undirected graph s.t. {u,v} in E_d iff both (u,v) and (v,u) in E
-        G_d = new SimpleGraph<>(DefaultEdge.class);
+        G_d = new SimpleGraph<>(DefaultWeightedEdge.class);
         inputGraph.vertexSet().forEach( G_d::addVertex );
 
-        for (DefaultEdge edge : inputGraph.edgeSet()) {
+        for (DefaultWeightedEdge edge : inputGraph.edgeSet()) {
             int source = inputGraph.getEdgeSource(edge);
             int target = inputGraph.getEdgeTarget(edge);
             if (inputGraph.containsEdge(target, source)) {
@@ -123,9 +123,9 @@ public class DirectedMD {
         log.info("  G_d of digraph: " + G_d);
 
         // G_s: undirected graph s.t. {u,v} in E_s iff (u,v) in E or (v,u) in E todo: ändert nix :(
-        G_s = new SimpleGraph<>(DefaultEdge.class);
+        G_s = new SimpleGraph<>(DefaultWeightedEdge.class);
         inputGraph.vertexSet().forEach( G_s::addVertex );
-        for (DefaultEdge edge : inputGraph.edgeSet()) {
+        for (DefaultWeightedEdge edge : inputGraph.edgeSet()) {
             int source = inputGraph.getEdgeSource(edge);
             int target = inputGraph.getEdgeTarget(edge);
             if (!G_s.containsEdge(source, target)) {

@@ -1,7 +1,7 @@
 package dicograph.utils;
 
 import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
 import java.security.SecureRandom;
@@ -115,7 +115,7 @@ public class SortAndCompare {
      * @param outgoing true for outgoing, false for incoming edges
      * @return the edges sorted according to the permutation
      */
-    public static BitSet[] edgesSortedByPerm(List<Integer> permutation, int[] positionInPermutation,  SimpleDirectedGraph<Integer, DefaultEdge> g, boolean outgoing){
+    public static BitSet[] edgesSortedByPerm(List<Integer> permutation, int[] positionInPermutation,  SimpleDirectedGraph<Integer, DefaultWeightedEdge> g, boolean outgoing){
 
         BitSet[] retSets = new BitSet[g.vertexSet().size()];
         int n = permutation.size();
@@ -123,7 +123,7 @@ public class SortAndCompare {
 
         // get edges, save in BitSet with their vertexNo in the permutation
         for(int vertex : permutation){
-            Set<DefaultEdge> edgeSet;
+            Set<DefaultWeightedEdge> edgeSet;
             if(outgoing)
                 edgeSet = g.outgoingEdgesOf(vertex);
             else
@@ -132,7 +132,7 @@ public class SortAndCompare {
             if(!edgeSet.isEmpty()) {
                 // iterate edges and get the ordering. Using BitSet for performance
                 BitSet edgeTargets = new BitSet(n);
-                for (DefaultEdge e : edgeSet) {
+                for (DefaultWeightedEdge e : edgeSet) {
                     int secondVertex;
                     if(outgoing)
                         secondVertex = g.getEdgeTarget(e);
@@ -173,7 +173,7 @@ public class SortAndCompare {
 
 
     // assuming internal type correctness, now check if truly a module.
-    public static String checkModuleBruteForce( Graph<Integer, DefaultEdge> graph, Collection<Integer> moduleVertices, boolean expectModule) {
+    public static String checkModuleBruteForce( Graph<Integer, DefaultWeightedEdge> graph, Collection<Integer> moduleVertices, boolean expectModule) {
 
         // 0 - no edge
         //
