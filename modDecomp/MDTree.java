@@ -17,8 +17,10 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.logging.Logger;
 
 /*
@@ -74,7 +76,7 @@ public class MDTree extends RootedTree {
 
 
     /**
-     * Makes the String representation of MDTree human-readable.
+     * F.L. Makes the String representation of MDTree human-readable.
      * @param mdTree the MDTRee
      * @return the String, formatted according to the tree structure
      */
@@ -107,6 +109,7 @@ public class MDTree extends RootedTree {
 
     }
 
+    // F.L.
     private static StringBuilder addOffset(StringBuilder builder, int times){
         String offset = "  ";
         for(int i = 0; i< times; i++){
@@ -131,6 +134,7 @@ public class MDTree extends RootedTree {
 		return root;
 	}
 
+	// F.L.
     private static Reader readMDAsDot(Graph<Integer, DefaultEdge> inputGraph, String factPerm) throws IOException {
 
         // I might need two separate classes, anyways...
@@ -160,6 +164,7 @@ public class MDTree extends RootedTree {
         return new InputStreamReader(inputStream);
     }
 
+    // F.L.
     public MDTree(Graph<Integer, DefaultEdge> inputGraph, String factPerm) throws IOException, ImportException {
         this(inputGraph, factPerm, false, null);
     }
@@ -203,6 +208,7 @@ public class MDTree extends RootedTree {
         }
     }
 
+    // F.L.
     private void readFromDot(Reader dotReader) throws IOException, ImportException {
 
         SimpleDirectedGraph< Integer ,DefaultEdge> treeGraph = new SimpleDirectedGraph<>(DefaultEdge.class);
@@ -253,6 +259,13 @@ public class MDTree extends RootedTree {
         while (root.getParent() != null){
             root = root.getParent();
         }
+    }
+
+    public TreeMap<Integer,LinkedList<MDTreeNode>> getPrimeModulesBottomUp(){
+        TreeMap<Integer,LinkedList<MDTreeNode>>ret = new TreeMap<>();
+        ((MDTreeNode) root).getPrimeModules(ret,0);
+
+        return ret;
     }
 
 

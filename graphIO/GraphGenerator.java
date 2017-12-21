@@ -303,4 +303,16 @@ public class GraphGenerator {
         return vertexIndex;
     }
 
+    /**
+     * Returns a deep clone (new vertex and edge objects) of the graph
+     * @param input input graph
+     * @return cloned graph
+     */
+    public static SimpleDirectedGraph<Integer,DefaultEdge> deepClone(final SimpleDirectedGraph<Integer, DefaultEdge> input){
+        SimpleDirectedGraph<Integer,DefaultEdge> ret = new SimpleDirectedGraph<>(DefaultEdge.class);
+        input.vertexSet().forEach( ret::addVertex );
+        input.edgeSet().forEach( e -> ret.addEdge( input.getEdgeSource(e), input.getEdgeTarget(e) ));
+        return ret;
+    }
+
 }

@@ -14,7 +14,9 @@ import dicograph.utils.SortAndCompare;
 /*
  * A node in a rooted tree.
  */
-class RootedTreeNode {
+public class RootedTreeNode {
+
+
 	// F.L. 16.11.17: moved here
 	protected BitSet vertices;
 

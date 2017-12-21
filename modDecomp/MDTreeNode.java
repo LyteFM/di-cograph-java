@@ -1,15 +1,22 @@
 package dicograph.modDecomp;
 
+import org.jgrapht.Graph;
+import org.jgrapht.Graphs;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.SimpleDirectedGraph;
+
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Map;
 
 /*
  * An internal node in a modular decomposition tree.
  */
-class MDTreeNode extends RootedTreeNode {
+public class MDTreeNode extends RootedTreeNode {
 	
 	// The type of this node, either PRIME, PARALLEL, or SERIES.
 	// The default is PRIME.
@@ -576,6 +583,56 @@ class MDTreeNode extends RootedTreeNode {
 			}
 		}
 		return ret;
+	}
+
+	// F.L. 21.12.17: For Editing.
+	void getPrimeModules(Map<Integer,LinkedList<MDTreeNode>> depthToNodes, int currDepth){
+
+		if(MDNodeType.PRIME == type){
+			depthToNodes.putIfAbsent(currDepth, new LinkedList<>());
+			depthToNodes.get(currDepth).add(this);
+		}
+		MDTreeNode rightSibling = (MDTreeNode) getRightSibling();
+		rightSibling.getPrimeModules(depthToNodes, currDepth);
+
+		currDepth++;
+		MDTreeNode firstChild = (MDTreeNode) getFirstChild();
+		firstChild.getPrimeModules(depthToNodes, currDepth);
+	}
+
+	public void initWeightedSubgraph(SimpleDirectedGraph<Integer,DefaultWeightedEdge>subGraph, SimpleDirectedGraph<Integer,DefaultEdge> base){
+		//vertices.stream().forEach( graph::addVertex );
+
+		MDTreeNode currChild = (MDTreeNode) getFirstChild();
+		HashMap<Integer,Double> vertexToWeight = new HashMap<>();
+
+		// add Vertices
+		while (currChild != null) {
+			double edgeWeight = Graph.DEFAULT_EDGE_WEIGHT;
+			int vertexNo;
+			if (currChild.isALeaf())
+				vertexNo = ((MDTreeLeafNode) currChild).vertexNo;
+			else {
+				vertexNo = currChild.vertices.nextSetBit(0);
+				edgeWeight = currChild.vertices.cardinality();
+			}
+			subGraph.addVertex(vertexNo);
+			vertexToWeight.put(vertexNo,edgeWeight);
+		}
+
+		// add edges. Cost of editing is the product, as this many edges would have to be edited.
+		// is it smarter to check all Vertices or all edges? Hmm, not if the modules is large...
+		for (int source : vertexToWeight.keySet()) {
+			for (DefaultEdge outEdge : base.outgoingEdgesOf(source)) {
+				int target = base.getEdgeTarget(outEdge);
+
+				if (vertexToWeight.containsKey(target)) {
+					double weight = vertexToWeight.get(source) * vertexToWeight.get(target);
+					Graphs.addEdge(subGraph,source,target,weight);
+				}
+			}
+		}
+
 	}
 }
 
