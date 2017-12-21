@@ -52,6 +52,7 @@ public enum MDNodeType {
 					result = SortAndCompare.checkModuleBruteForce(mainGraph, subSet,false);
 					if(!result.isEmpty()){
 						boolean stillValid = false;
+						/*
 						//if(node.isRoot()) {
 							// handle special case todo: Or is this false???
 							HashSet<Integer> leaves = node.getDirectLeaves().stream().map( leaf -> {
@@ -65,6 +66,7 @@ public enum MDNodeType {
 								stillValid = leaves.isEmpty();
 							}
 						//}
+						*/
 						if(!stillValid) {
 							builder.append("For vertices: ").append(subSet).append("\n").append(result);
 							//break; // not if I want all
