@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import dicograph.modDecomp.MDTreeNode;
 import dicograph.utils.SortAndCompare;
@@ -21,30 +22,52 @@ import dicograph.utils.SortAndCompare;
 public class InducedWeightedSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEdge> {
 
     private final SimpleDirectedGraph<Integer, DefaultWeightedEdge> base;
+    private final int nVertices;
+    private final Map<Integer,Double> vertexToWeight;
 
-    private InducedWeightedSubgraph(SimpleDirectedGraph<Integer,DefaultWeightedEdge> baseGraph){
-        super(new ClassBasedEdgeFactory<>(DefaultWeightedEdge.class),true);
-        base = baseGraph;
-    }
 
     public InducedWeightedSubgraph(SimpleDirectedGraph<Integer,DefaultWeightedEdge> baseGraph, MDTreeNode node){
-        this(baseGraph);
-        node.initWeightedSubgraph(this,base);
+        super(new ClassBasedEdgeFactory<>(DefaultWeightedEdge.class),true);
+        base = baseGraph;
+        vertexToWeight = node.initWeightedSubgraph(this,base);
+        nVertices = vertexToWeight.size();
     }
 
+    // Possible optimization: sequential subsets! (a,b) -> (a,b,c) ...
     public HashMap<Integer, List<List<DefaultWeightedEdge>>> allEditsByWeight(){
         // an entry in the map means: if present -> remove, if not -> add.
         //
+        if(nVertices > 25)
+            throw new RuntimeException("n too large!");
+
         HashMap<Integer, List<List<DefaultWeightedEdge>>> costToEdges = new HashMap();
+        ClassBasedEdgeFactory<Integer,DefaultWeightedEdge> edgeFactory = (ClassBasedEdgeFactory<Integer, DefaultWeightedEdge>) getEdgeFactory();
+        HashMap<Integer, DefaultWeightedEdge> intToEdge = new HashMap<>();
+
 
         // I need this to compute all possible permutations for the n^2 edges...
-        HashMap<Integer, DefaultWeightedEdge> intToEdge = new HashMap<>();
-        int i = 0;
-        for( DefaultWeightedEdge e : edgeSet()){
-            intToEdge.put(i, e);
-            i++;
-        }
 
+        // a) use the EdgeFactory and create all those edges with their respective weight. Add them later.
+        // b) use Pairs.
+
+        int cnt = 0;
+        for (int i : vertexSet()) {
+            for (int j : vertexSet()) {
+                if(j!=i){
+                    DefaultWeightedEdge e = getEdge(i,j);
+                    if(e == null){
+                        double weight = vertexToWeight.get(i) * vertexToWeight.get(j);
+                        e = getEdgeFactory().createEdge(i,j);
+                        setEdgeWeight(e, weight); // todo: is this okay? Should know the edge but not add.
+                    }
+                    intToEdge.put( cnt, e );
+                    cnt++;
+                }
+            }
+        }
+        System.out.println("All Edges created with weights");
+
+        // this will kill me with more than 5 vertices in the prime module... need a better strategy.
         for(List<Integer> edgeSubset : SortAndCompare.computeAllSubsets( new ArrayList<>(intToEdge.keySet()) )){
             int cost = 0;
             List<DefaultWeightedEdge> edges = new ArrayList<>(edgeSubset.size());
@@ -56,10 +79,21 @@ public class InducedWeightedSubgraph extends SimpleDirectedGraph<Integer,Default
             costToEdges.putIfAbsent(cost,new LinkedList<>());
             costToEdges.get(cost).add(edges);
         }
-        // damn, these are only deletions...
 
 
+        return costToEdges;
+    }
 
-            return costToEdges;
+
+    public void edit(List<DefaultWeightedEdge> edgeList){
+
+        for(DefaultWeightedEdge e : edgeList){
+            if(containsEdge(e)){
+                removeEdge(e);
+            } else {
+                addEdge(getEdgeSource(e), getEdgeTarget(e), e);
+            }
+        }
+
     }
 }

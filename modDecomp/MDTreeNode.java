@@ -588,19 +588,24 @@ public class MDTreeNode extends RootedTreeNode {
 	// F.L. 21.12.17: For Editing.
 	void getPrimeModules(Map<Integer,LinkedList<MDTreeNode>> depthToNodes, int currDepth){
 
-		if(MDNodeType.PRIME == type){
+		if(!isALeaf() && MDNodeType.PRIME == type){
 			depthToNodes.putIfAbsent(currDepth, new LinkedList<>());
 			depthToNodes.get(currDepth).add(this);
 		}
-		MDTreeNode rightSibling = (MDTreeNode) getRightSibling();
-		rightSibling.getPrimeModules(depthToNodes, currDepth);
 
-		currDepth++;
-		MDTreeNode firstChild = (MDTreeNode) getFirstChild();
-		firstChild.getPrimeModules(depthToNodes, currDepth);
+		MDTreeNode rightSibling = (MDTreeNode) getRightSibling();
+		if(rightSibling != null) {
+			rightSibling.getPrimeModules(depthToNodes, currDepth);
+		}
+
+		if(!isALeaf()) {
+			currDepth++;
+			MDTreeNode firstChild = (MDTreeNode) getFirstChild();
+			firstChild.getPrimeModules(depthToNodes, currDepth);
+		}
 	}
 
-	public void initWeightedSubgraph(SimpleDirectedGraph<Integer,DefaultWeightedEdge>subGraph, SimpleDirectedGraph<Integer,DefaultWeightedEdge> base){
+	public Map<Integer, Double> initWeightedSubgraph(SimpleDirectedGraph<Integer,DefaultWeightedEdge>subGraph, SimpleDirectedGraph<Integer,DefaultWeightedEdge> base){
 		//vertices.stream().forEach( graph::addVertex );
 
 		MDTreeNode currChild = (MDTreeNode) getFirstChild();
@@ -618,6 +623,7 @@ public class MDTreeNode extends RootedTreeNode {
 			}
 			subGraph.addVertex(vertexNo);
 			vertexToWeight.put(vertexNo,edgeWeight);
+			currChild = (MDTreeNode) currChild.getRightSibling();
 		}
 
 		// add edges. Cost of editing is the product, as this many edges would have to be edited.
@@ -632,7 +638,7 @@ public class MDTreeNode extends RootedTreeNode {
 				}
 			}
 		}
-
+		return  vertexToWeight;
 	}
 }
 
