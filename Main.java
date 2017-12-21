@@ -87,10 +87,10 @@ public class Main {
 
 
         String fromPaper = "fromFactPermPaper.txt";
-        SimpleDirectedGraph<Integer, DefaultEdge> paperGraph = JGraphAdjecencyImporter.importIntGraph(new File(fromPaper), false);
-        // Reihenfolge stimmt aber.
-        DirectedMD paperMD = new DirectedMD(paperGraph, log, true);
-        paperMD.computeModularDecomposition();
+//        SimpleDirectedGraph<Integer, DefaultEdge> paperGraph = JGraphAdjecencyImporter.importIntGraph(new File(fromPaper), false);
+//        // Reihenfolge stimmt aber.
+//        DirectedMD paperMD = new DirectedMD(paperGraph, log, true);
+//        paperMD.computeModularDecomposition();
         //System.out.println(paperGraph);
 
         //DOTExporter<Integer,DefaultEdge> exporter =new DOTExporter<>();
@@ -99,13 +99,18 @@ public class Main {
 
        StringBuilder allPaths = new StringBuilder();
 
-        boolean morePls = true;
-//        while (morePls){
-//            morePls = directedMDTesting(log,consoleHandler,21,8,false, allPaths);
-//        }
+        for (int i = 0; i < 1000; i++) {
+            if(!directedMDTesting(log,consoleHandler,20,7,false, allPaths)) {
+                System.out.println("Error occured after " + i + " successful runs.");
+                break;
+            }
+            System.out.println("Proud you should be, 1000 test runs went successful!");
+        }
+        System.out.println("All Paths:");
+        System.out.println(allPaths.toString().substring(0,allPaths.length()-1));
 
 //        for( int i = 8; i <= 25; i ++) {
-//            boolean ok = directedMDTesting(log, consoleHandler, i, i/2 - 2,false, allPaths);
+//            boolean ok = directedMDTesting(log, consoleHandler, i,  i/2 - 2,false, allPaths);
 //            if(!ok) {
 //                System.err.println("Error for n = " + i);
 //                break;
@@ -113,25 +118,26 @@ public class Main {
 //        }
 
 
-//        System.out.println("All Paths:");
-//        System.out.println(allPaths.toString().substring(0,allPaths.length()-1));
 
 
-        // 1st testrun: n = 22 has error if I
-/*
+        /*
+        //20/12/17: One Error: testGraphs/DMDvery/randDigraph_n_11_edits_4_11-30_15:34:03:245_original.txt -> after manual del in C++ okay!
+
         List<String> all = Arrays.asList("testGraphs/DMDvery/randDigraph_n_8_edits_3_11-30_15:34:02:289_original.txt", "testGraphs/DMDvery/randDigraph_n_9_edits_4_11-30_15:34:02:948_original.txt", "testGraphs/DMDvery/randDigraph_n_10_edits_4_11-30_15:34:03:091_original.txt", "testGraphs/DMDvery/randDigraph_n_11_edits_4_11-30_15:34:03:245_original.txt", "testGraphs/DMDvery/randDigraph_n_12_edits_5_11-30_15:34:03:406_original.txt", "testGraphs/DMDvery/randDigraph_n_13_edits_5_11-30_15:34:03:486_original.txt", "testGraphs/DMDvery/randDigraph_n_14_edits_5_11-30_15:34:03:633_original.txt", "testGraphs/DMDvery/randDigraph_n_15_edits_6_11-30_15:34:03:740_original.txt", "testGraphs/DMDvery/randDigraph_n_16_edits_6_11-30_15:34:04:047_original.txt", "testGraphs/DMDvery/randDigraph_n_17_edits_6_11-30_15:34:04:173_original.txt", "testGraphs/DMDvery/randDigraph_n_18_edits_7_11-30_15:34:04:452_original.txt", "testGraphs/DMDvery/randDigraph_n_19_edits_7_11-30_15:34:04:930_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_7_11-30_15:34:05:320_original.txt", "testGraphs/DMDvery/randDigraph_n_21_edits_8_11-30_15:34:06:154_original.txt", "testGraphs/DMDvery/randDigraph_n_22_edits_8_11-30_15:34:06:683_original.txt", "testGraphs/DMDvery/randDigraph_n_23_edits_8_11-30_15:34:07:608_original.txt", "testGraphs/DMDvery/randDigraph_n_24_edits_9_11-30_15:34:13:773_original.txt", "testGraphs/DMDvery/randDigraph_n_25_edits_9_11-30_15:34:14:899_original.txt");
-
-        List<String> all = Arrays.asList("testGraphs/DMDvery/randDigraph_n_8_edits_3_11-30_15:48:34:482_original.txt", "testGraphs/DMDvery/randDigraph_n_9_edits_4_11-30_15:48:35:165_original.txt", "testGraphs/DMDvery/randDigraph_n_10_edits_4_11-30_15:48:35:378_original.txt", "testGraphs/DMDvery/randDigraph_n_11_edits_4_11-30_15:48:35:547_original.txt", "testGraphs/DMDvery/randDigraph_n_12_edits_5_11-30_15:48:35:683_original.txt", "testGraphs/DMDvery/randDigraph_n_13_edits_5_11-30_15:48:35:789_original.txt", "testGraphs/DMDvery/randDigraph_n_14_edits_5_11-30_15:48:36:003_original.txt", "testGraphs/DMDvery/randDigraph_n_15_edits_6_11-30_15:48:36:273_original.txt", "testGraphs/DMDvery/randDigraph_n_16_edits_6_11-30_15:48:36:435_original.txt", "testGraphs/DMDvery/randDigraph_n_17_edits_6_11-30_15:48:36:668_original.txt", "testGraphs/DMDvery/randDigraph_n_18_edits_7_11-30_15:48:36:972_original.txt", "testGraphs/DMDvery/randDigraph_n_19_edits_7_11-30_15:48:37:621_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_7_11-30_15:48:38:268_original.txt", "testGraphs/DMDvery/randDigraph_n_21_edits_8_11-30_15:48:38:673_original.txt", "testGraphs/DMDvery/randDigraph_n_22_edits_8_11-30_15:48:39:572_original.txt", "testGraphs/DMDvery/randDigraph_n_23_edits_8_11-30_15:48:40:975_original.txt", "testGraphs/DMDvery/randDigraph_n_24_edits_9_11-30_15:48:41:752_original.txt", "testGraphs/DMDvery/randDigraph_n_25_edits_9_11-30_15:48:41:911_original.txt"
-                );
-                */
+        */
 
 
-
-
-
+        // Nullptr fixed with root-search in MDTree. Now all ok.
+        /*
+        List<String> all = Arrays.asList("testGraphs/DMDvery/randDigraph_n_8_edits_3_11-30_15:48:34:482_original.txt", "testGraphs/DMDvery/randDigraph_n_9_edits_4_11-30_15:48:35:165_original.txt", "testGraphs/DMDvery/randDigraph_n_10_edits_4_11-30_15:48:35:378_original.txt", "testGraphs/DMDvery/randDigraph_n_11_edits_4_11-30_15:48:35:547_original.txt", "testGraphs/DMDvery/randDigraph_n_12_edits_5_11-30_15:48:35:683_original.txt", "testGraphs/DMDvery/randDigraph_n_13_edits_5_11-30_15:48:35:789_original.txt", "testGraphs/DMDvery/randDigraph_n_14_edits_5_11-30_15:48:36:003_original.txt", "testGraphs/DMDvery/randDigraph_n_15_edits_6_11-30_15:48:36:273_original.txt", "testGraphs/DMDvery/randDigraph_n_16_edits_6_11-30_15:48:36:435_original.txt", "testGraphs/DMDvery/randDigraph_n_17_edits_6_11-30_15:48:36:668_original.txt", "testGraphs/DMDvery/randDigraph_n_18_edits_7_11-30_15:48:36:972_original.txt", "testGraphs/DMDvery/randDigraph_n_19_edits_7_11-30_15:48:37:621_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_7_11-30_15:48:38:268_original.txt", "testGraphs/DMDvery/randDigraph_n_21_edits_8_11-30_15:48:38:673_original.txt", "testGraphs/DMDvery/randDigraph_n_22_edits_8_11-30_15:48:39:572_original.txt", "testGraphs/DMDvery/randDigraph_n_23_edits_8_11-30_15:48:40:975_original.txt", "testGraphs/DMDvery/randDigraph_n_24_edits_9_11-30_15:48:41:752_original.txt", "testGraphs/DMDvery/randDigraph_n_25_edits_9_11-30_15:48:41:911_original.txt");
+        */
 
 //        for(String s : all){
-//            MDtestFromFile(log, s, true);
+//            try {
+//                MDtestFromFile(log, s, true);
+//            } catch (IllegalStateException e){
+//                e.printStackTrace();
+//            }
 //        }
 
         String reTestPath = "testGraphs/DMDvery/";
@@ -212,8 +218,7 @@ public class Main {
         // jetzt normaler root order + weak prime- Fehler.
         String n20_err = "testGraphs/DMDvery/randDigraph_n_20_edits_8_11-30_20:48:03:974_original.txt";
 
-        // order root fucked up...
-        String anotherRoot = "testGraphs/DMDvery/randDigraph_n_21_edits_8_12-01_18:28:22:811_original.txt";
+
 
         // LOWER weak order node with weak series child got removed -> the first two should stay order.
         String moreInteresting = "testGraphs/DMDvery/randDigraph_n_20_edits_8_11-30_20:58:34:509_original.txt";
@@ -227,38 +232,10 @@ public class Main {
         String moreErrs = "testGraphs/DMDvery/randDigraph_n_21_edits_8_12-01_17:41:24:542_original.txt";
 
 
-        String nextWeek = "testGraphs/DMDvery/randDigraph_n_21_edits_8_12-05_15:55:20:659_original.txt";
 
-        // I compared the computed permutation of these
-        // first test yields 12 errors, but the permutation itself should be ok.
-        List<String> allOKToCheck = Arrays.asList(n_12_ordersplit, n25err, n22err, n23err2, weirdError, n21err, n23err, n24err, viceVera, smallNotAtournament, smallTourErrgraph, n10falsePrime,weakOrderWithStrongChildren);
-
-        for( String s : allOKToCheck){
-            try {
-                MDtestFromFile(log,s,true);
-            } catch (IllegalStateException e){
-                e.printStackTrace();
-            }
-            log.info("For Graph: " + s);
-        }
-
-        System.out.println("\n*** ERRS ***\n");
-        
-        List<String> allWithOKFactPerm = Arrays.asList(n13_orderWeakPrime,next, more, boring, n20_err, anotherRoot, moreInteresting, fubar, moreErrs, nextWeek);
-
-        for( String s : allWithOKFactPerm){
-            try {
-                MDtestFromFile(log,s,true);
-            } catch (Exception e){
-                e.printStackTrace();
-            }
-            log.info("For Graph: " + s);
-        }
-
-
-        //
-        // SEVERE:
-        //
+        // F.L. 20.12.17: moved here
+        // weakRemoveErr:
+        String wmr_12_13 = "testGraphs/DMDvery/randDigraph_n_22_edits_9_12-13_22:41:30:790_original.txt";
 
 
         // ERR in undirected MD for G_d: 6,8,9 (below prime) is module. was SPIDER
@@ -269,8 +246,64 @@ public class Main {
         String spiderman = "testGraphs/DMDvery/randDigraph_n_21_edits_8_12-01_18:32:12:959_original.txt";
 
 
+        // ok after del in c++ (order)
+        String aHitler = "testGraphs/DMDvery/randDigraph_n_22_edits_9_12-13_22:45:16:888_original.txt";
+        //
 
-        //MDtestFromFile(log, uMDErr, true);
+        // order root fucked up -> ok after ordering according to module type.
+        String anotherRoot = "testGraphs/DMDvery/randDigraph_n_21_edits_8_12-01_18:28:22:811_original.txt";
+
+
+
+
+
+        // I compared the computed permutation of these
+        // first test yields 12 errors, but the permutation itself should be ok.
+        List<String> allOKToCheck = Arrays.asList(n_12_ordersplit, n25err, n22err, n23err2, weirdError, n21err, n23err, n24err, viceVera, smallNotAtournament, smallTourErrgraph, n10falsePrime,weakOrderWithStrongChildren);
+
+        // Truly okay.
+//        for( String s : allOKToCheck){
+//            try {
+//                MDtestFromFile(log,s,true);
+//            } catch (IllegalStateException e){
+//                e.printStackTrace();
+//            }
+//            log.info("For Graph: " + s);
+//        }
+
+
+//        List<String> allWithOKFactPerm = Arrays.asList(wmr_12_13, uMDErr, spiderman, aHitler,n13_orderWeakPrime,next, more, boring, n20_err, anotherRoot, moreInteresting, fubar, moreErrs);
+//
+//        for( String s : allWithOKFactPerm){
+//            try {
+//                MDtestFromFile(log,s,true);
+//            } catch (Exception e){
+//                e.printStackTrace();
+//            }
+//            log.info("For Graph: " + s);
+//        }
+
+
+
+
+        //
+        // SEVERE:
+        //
+
+
+
+        // prime module and its direct vertex-children form a prime-module, too.
+        String nextWeek = "testGraphs/DMDvery/randDigraph_n_21_edits_8_12-05_15:55:20:659_original.txt";
+
+        // 20-12-17: Errors, NOT IN FACTPERM ORDER!!! Due to weak module...
+        // nextWeek - For vertices: [17, 12, 1, 15] only uniform adjacencies.
+
+
+
+
+
+
+        //MDtestFromFile(log, nextWeek, true);
 
 //
 //        File importFile = new File("testy.txt");
@@ -457,6 +490,9 @@ public class Main {
         Writer writer = new StringWriter();
         exporter.exportGraph(importGraph, writer);
         //log.info(".dot for Graph:\n" + writer.toString());
+
+        log.info("Computing MD for graph:" + importFilePath);
+
 
         DirectedMD testMD = new DirectedMD(importGraph, log, true);
         testMD.computeModularDecomposition();
