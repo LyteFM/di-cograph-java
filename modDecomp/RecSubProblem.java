@@ -1,6 +1,5 @@
 package dicograph.modDecomp;
 
-import org.jgrapht.UndirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleGraph;
 
@@ -99,49 +98,55 @@ class RecSubProblem extends RootedTreeNode {
 		while (leafIt.hasNext()) {			
 			MDTreeLeafNode current = leafIt.next();
 			addChild(current);
-		}
+            System.out.println("New child: " + current);
+        }
 				
 	}
 
-	RecSubProblem(UndirectedGraph<String, DefaultEdge> graph){
+	// F.L. 04.09.2017:
+	RecSubProblem(SimpleGraph<Integer, DefaultEdge> graph){
 
 	    this();
 
 	    // Initial capacity for no rehash
-        HashMap <String, MDTreeLeafNode> nodeToLeaves = new HashMap<>( graph.vertexSet().size()*4/3 );
+        HashMap <Integer, MDTreeLeafNode> nodeToLeaves = new HashMap<>( graph.vertexSet().size()*4/3 );
 
         // create a leaf for each vertex:
-        for( String currVertex : graph.vertexSet() ) {
+        for( int currVertex : graph.vertexSet() ) {
             MDTreeLeafNode currentLeaf = new MDTreeLeafNode(currVertex);
             nodeToLeaves.put(currVertex, currentLeaf);
         }
 
         // Adds the vertex neighbors of the graph as leaf neighbors of the recursion tree:
         for ( MDTreeLeafNode currLeaf : nodeToLeaves.values()){
-            String currLeafName = currLeaf.getLabel();
-            Set<DefaultEdge> edges = graph.edgesOf( currLeafName );
+            int currLeafNo = currLeaf.getVertexNo();
+            Set<DefaultEdge> edges = graph.edgesOf( currLeafNo );
             for( DefaultEdge edge : edges ) {
-                String neighbourName = graph.getEdgeTarget(edge);
+                int neighbour = graph.getEdgeTarget(edge);
                 // edges are saved uniquely with source and target!
                 // faster like this than with .getEdge != null
-                if(neighbourName.equals(currLeafName)){
-                    neighbourName = graph.getEdgeSource(edge);
+                if(neighbour == currLeafNo){
+                    neighbour = graph.getEdgeSource(edge);
                 }
 
-                MDTreeLeafNode neighbor = nodeToLeaves.get ( neighbourName );
+                MDTreeLeafNode neighbourLeaf = nodeToLeaves.get ( neighbour );
                 // Here: HashMap necessary, List not enough.
 
-                currLeaf.addNeighbour(neighbor);
-                currLeaf.addNeighbourName(neighbourName);
+                currLeaf.addNeighbour(neighbourLeaf);
+                //currLeaf.addNeighbourName(neighbour);
             }
         }
 
         // Add leaf nodes to the problem for recursion: (move to the upper loop?)
         for( MDTreeLeafNode leafNode : nodeToLeaves.values()){
             addChild(leafNode);
+            System.out.println("added child: " + leafNode.vertexNo);
         }
 
+        String debug = "deb";
+
     }
+    // end
 	
 	
 	/* Resets this subproblem's attributes to their default values. */
@@ -171,14 +176,19 @@ class RecSubProblem extends RootedTreeNode {
 						
 			processNeighbours(pivot);
 			pivot.setVisited();
-						
-			return (MDTreeNode) this.getFirstChild(); 
+
+            System.out.println("Only one Child: " + getFirstChild());
+
+            return (MDTreeNode) this.getFirstChild();
 		}
 									
 		// Pivot this subproblem and refine the subproblems in the rest of 
 		// the recursion tree.  See note of 'pivot' for the required introduction
 		// of 'thisProblem'.
 		RecSubProblem thisProblem = pivot();
+
+        System.out.println("Pivot: " + thisProblem);
+
 		
 		
 		// Solve the subproblems defined by the layers.
@@ -195,6 +205,8 @@ class RecSubProblem extends RootedTreeNode {
 		// MD trees later.
 		MDTreeNode extraComponents = 
 			thisProblem.removeExtraComponents();
+
+        //System.out.println("Extra Components: " + extraComponents);
 
 		// Replace the layers by their solutions.
 		thisProblem.removeLayers();
@@ -221,6 +233,8 @@ class RecSubProblem extends RootedTreeNode {
 		// have already been pivots for calculation of alpha-lists 
 		// (see 'processNeighbours').
 		thisProblem.clearAllButVisited();
+
+		System.out.println((MDTreeNode) thisProblem.getFirstChild());
 				
 		return (MDTreeNode) thisProblem.getFirstChild();			
 	}
@@ -1215,8 +1229,9 @@ class RecSubProblem extends RootedTreeNode {
 					
 		MDTreeLeafNode pivot = (MDTreeLeafNode) getFirstChild();
 		pivot.setVisited();
-	 
-		RecSubProblem neighbourProblem = processNeighbours(pivot);
+        System.out.println("Pivot Vertex: " + pivot);
+
+        RecSubProblem neighbourProblem = processNeighbours(pivot);
 						
 		pivot.removeSubtree();
 		RecSubProblem pivotProblem = new RecSubProblem(pivot);

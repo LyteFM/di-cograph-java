@@ -15,7 +15,7 @@ import org.jgrapht.graph.*;
 public class GraphHandle {
 
 	// new: Use SimpleGraph from JGraphT for the base Graph.
-    public SimpleGraph <String, DefaultEdge> graph;
+    public SimpleGraph <Integer, DefaultEdge> graph;
 
 
 	
@@ -49,7 +49,7 @@ public class GraphHandle {
 	    vertices = buildFromFile(file);
 	}
 
-	public GraphHandle(SimpleGraph<String,DefaultEdge> graph){
+	public GraphHandle(SimpleGraph<Integer,DefaultEdge> graph){
 	    this.graph = graph;
     }
 
@@ -75,6 +75,7 @@ public class GraphHandle {
                 // Determine the current vertex's label.
             	String[] vertexAndNeighbours = line.split(VERTEX_DELIM);
                 String vertexLabel = vertexAndNeighbours[0];
+                int vertexNo = Integer.valueOf(vertexLabel);
                 
                 // Determine the current vertex's neighbours.
                 String[] neighbourLabels = vertexAndNeighbours[1].split(NEIGH_DELIM);
@@ -92,8 +93,8 @@ public class GraphHandle {
                 }
 
                 // todo: New: use JGraphT
-                if(!graph.containsVertex(vertexLabel)){
-                    graph.addVertex(vertexLabel);
+                if(!graph.containsVertex(vertexNo)){
+                    graph.addVertex(vertexNo);
                 }
                 //
                        
@@ -111,13 +112,14 @@ public class GraphHandle {
                 	}
 
                 	// todo: use JGraphT
-                    if( !graph.containsVertex(neighbourLabels[i])){
+					int neighbourNo = Integer.valueOf(neighbourLabels[i]);
+                    if( !graph.containsVertex( neighbourNo)){
                 	    // if not present, create Vertex for neighbor
-                        graph.addVertex(neighbourLabels[i]);
+                        graph.addVertex(Integer.valueOf(neighbourLabels[i]));
                     }
-                    if( !graph.containsEdge(vertexLabel, neighbourLabels[i])){
+                    if( !graph.containsEdge(vertexNo, neighbourNo)){
                         // if not present, add Edge.
-                        graph.addEdge(vertexLabel, neighbourLabels[i]);
+                        graph.addEdge(vertexNo, neighbourNo);
                     }
                     //
 
@@ -173,5 +175,7 @@ public class GraphHandle {
 		return vertices.values().toString();
 	}
 
-
+	public SimpleGraph<Integer, DefaultEdge> getGraph() {
+		return graph;
+	}
 }

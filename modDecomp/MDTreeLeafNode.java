@@ -10,9 +10,8 @@ import java.util.ListIterator;
  */
 class MDTreeLeafNode extends MDTreeNode {
 
-    int vertexNo;
-    // F.L.
-    private String label;
+	// F.L.
+	int vertexNo;
 
 
 	// The vertex to which this leaf node is in one-to-one correspondance.
@@ -21,10 +20,6 @@ class MDTreeLeafNode extends MDTreeNode {
     // The leaf node representation of the neighbours of the vertex
 	// associated with this leaf node.
 	private LinkedList<MDTreeLeafNode> neighbours;
-
-	private ArrayList<String> neighbourNames;
-
-
 
 	// The neighbours of this leaf node in different subproblems than the one
 	// this node is contained in.
@@ -41,7 +36,6 @@ class MDTreeLeafNode extends MDTreeNode {
 		super();
 		alpha = new LinkedList<>();
 		neighbours = new LinkedList<>();
-		neighbourNames = new ArrayList<>();
 		visited = false;
 		vertex = null;
 	}
@@ -57,10 +51,10 @@ class MDTreeLeafNode extends MDTreeNode {
 		this.vertex = vertex;		
 	}
 
-	// neu: verwende einen String anstatt Vertex.
-	protected MDTreeLeafNode(String label){
+	// neu: verwende eine int anstatt Vertex.
+	protected MDTreeLeafNode(int vertexNo){
 		this();
-		this.label = label;
+		this.vertexNo = vertexNo;
 	}
 	
 	
@@ -164,14 +158,15 @@ class MDTreeLeafNode extends MDTreeNode {
 	 */
 	public String toString() {
 	    if(vertex != null)
-		    return vertex.toString();
+		    return String.format("(no= %s)", vertex.getLabel());
 	    else{ // F.L.
-            StringBuilder result = new StringBuilder("(label= " + label);
+//            StringBuilder result = new StringBuilder("(no= " + vertexNo);
 
+//            // unnecessary overhead.
 //            result.append(", neighbours: ");
 //            boolean firstRun = true;
 //
-//            for(String name : neighbourNames){
+//            for(MDTreeLeafNode name : neighbourNames){
 //                if(!firstRun) {
 //                    result.append(",");
 //                }
@@ -179,26 +174,28 @@ class MDTreeLeafNode extends MDTreeNode {
 //                firstRun = false;
 //            }
 
-            result.append(")");
+//            result.append(")");
 
-            return result.toString();
+//            return result.toString();
+            return (String.format("(no= %s)", vertexNo));
         }
 	}
 
-    public String getLabel() {
-        return label;
-    }
-
-    public ArrayList<String> getNeighbourNames() {
-        return neighbourNames;
-    }
-
-    protected void addNeighbourName(String neighbour) {
-        neighbourNames.add(neighbour);
+    public int getVertexNo() {
+        return vertexNo;
     }
 
     @Override
+	int exportAsDot(StringBuilder output, int[] counter){
+	    counter[0]++;
+		int myCounter = counter[0];
+		output.append(myCounter).append("[label=").append(vertexNo).append("];\n");
+		return myCounter;
+	}
+
+
+		@Override
     public String getSetRepresentation(ArrayList<String> bla) {
-        return label;
+        return Integer.toString(vertexNo);
     }
 }

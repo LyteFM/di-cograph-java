@@ -1,17 +1,25 @@
 package dicograph.modDecomp;
 
+import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultEdge;
+
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map;
+import java.util.List;
+
+import dicograph.utils.SortAndCompare;
 
 /*
  * A node in a rooted tree.
  */
 class RootedTreeNode {
-    // F.L. 30.10. Flags for directedMD:
+	// F.L. 16.11.17: moved here
+	protected BitSet vertices;
+
+
+	// F.L. 30.10. Flags for directedMD, should go there.
     boolean marked;
     int numMarkedChildren;
     int nodeNumber;
@@ -42,9 +50,13 @@ class RootedTreeNode {
 		numChildren = 0;
 
         // F.L. 30.10. Flags for Algorithm 1:
+        // actually used for MDTree/Leafnodes.
         marked = false;
         numMarkedChildren = 0;
         nodeNumber = 0;
+        // end
+        vertices = null;
+
     }
 
     // F.L. 30.10. Flags for Algorithm 1:
@@ -108,13 +120,12 @@ class RootedTreeNode {
 	protected boolean hasNoChildren() {
 		return (numChildren == 0);
 	}
-	
-	
-	/* Returns true iff this node has a single child. */ 
+
+
+	/* Returns true iff this node has a single child. */
 	protected boolean hasOnlyOneChild() {
 		return (numChildren == 1);
 	}
-	
 	
 	/* 
 	 * Replaces this node in its tree with the supplied node.  This node's
@@ -288,7 +299,9 @@ class RootedTreeNode {
 	 * node is removed from its tree.
 	 */
 	protected void replaceThisByItsChildren() {
-		
+
+		// todo: is this the error source???
+		System.out.println("Warning: replacing " + this + " by its children!");
 		RootedTreeNode currentChild = getFirstChild();
 		while (currentChild != null) {
 			RootedTreeNode nextChild = currentChild.getRightSibling();
@@ -297,8 +310,8 @@ class RootedTreeNode {
 		}
 		this.removeSubtree();
 	}
-	
-	
+
+
 	/*
 	 * Replaces the children of this node with the node supplied.  The
 	 * children are removed from this node's tree.
@@ -343,7 +356,8 @@ class RootedTreeNode {
 	}
 
     /**
-     * This is the desired format. Separating members my " " and using -1 to end a module.
+     * F.L. just for display
+	 * This is the desired format. Separating members my " " and using -1 to end a module.
      * 2 3 4 5 6 7 -1
      * 1 8 9 10 11 -1
      * 4 5 6 7 -1
@@ -378,62 +392,97 @@ class RootedTreeNode {
 	    return thisNodesMembers;
     }
 
-    /**
-     * Using a BitSet for easy UNION-Computation lateron. Running Time: O(n (1 + Anzahl module))
-     * @param vertexToIndex
-     * @param modules
-     * @return
-     */
-    public BitSet getStrongModulesBool(Map<String, Integer> vertexToIndex, MDTreeLeafNode[] leaves, HashMap<BitSet, RootedTreeNode> modules) {
-        int n = vertexToIndex.size();
-        BitSet ret = new BitSet(n);
-        RootedTreeNode currentChild = firstChild;
-        if(currentChild != null){
-            while (currentChild != null){
-                if(currentChild.isALeaf()){
-                    MDTreeLeafNode leafNode = (MDTreeLeafNode) currentChild;
-                    int index = vertexToIndex.get(leafNode.getLabel());
-                    ret.set(index);
-                    leaves[index] = leafNode;
-                } else {
-                    BitSet childSet = currentChild.getStrongModulesBool(vertexToIndex, leaves, modules);
-                    ret.or(childSet);
-                }
+     int exportAsDot(StringBuilder output, int[] counter){
+
+         // first action: increment the counter, used for this
+         counter[0] ++;
+         // assign the number to this node
+         int myNumber = counter[0];
+
+         String label;
+         if(this instanceof MDTreeNode){
+             label = ((MDTreeNode) this).getType().toString();
+         } else if(this instanceof PartitiveFamilyTreeNode){
+             label = ((PartitiveFamilyTreeNode)this).getType().toString();
+         } else {
+             label = vertices.toString();
+         }
+
+         output.append(myNumber).append("[label=").append(label).append("];\n");
+
+         RootedTreeNode currentChild = firstChild;
+         while (currentChild != null){
+             // add edge from this to no of child
+             // increment happens as first step
+
+             int childNo = currentChild.exportAsDot(output, counter);
+             output.append(myNumber).append("->").append(childNo).append( ";\n");
+             currentChild = currentChild.rightSibling;
+         }
+
+         return myNumber;
+
+	}
+
+    void setParent(RootedTreeNode parent) {
+        this.parent = parent;
+    }
+
+
+
+    // F.L. 24.11.17:
+	RootedTreeNode removeThis(){
+
+     	// default: insert before right sibling
+     	RootedTreeNode stillRightSibling = rightSibling;
+     	// if node is rightmost node: need to insert after left sibling.
+		RootedTreeNode fallBackLeftSibling = leftSibling;
+
+		RootedTreeNode myParent = parent;
+     	RootedTreeNode currentChild = firstChild;
+     	RootedTreeNode nextChild;
+     	while (currentChild != null){
+     		nextChild = currentChild.rightSibling;
+     		if(stillRightSibling != null) {
+				currentChild.insertBefore(stillRightSibling);
+			} else {
+     			currentChild.insertAfter(fallBackLeftSibling);
+			}
+     		currentChild = nextChild;
+		}
+		removeSubtree();
+     	return myParent;
+	}
+
+	void verifyModuleStatus(StringBuilder res, Graph<Integer, DefaultEdge> graph){
+		ArrayList<Integer> moduleVertices = new ArrayList<>(vertices.cardinality());
+		vertices.stream().forEach(moduleVertices::add);
+		res.append(SortAndCompare.checkModuleBruteForce(graph,moduleVertices, true));
+	}
+
+
+
+	// F.L. 27.11.17: trying to fix the directed MD
+
+	/* Returns a List of leaves directly attached to this node. */
+	protected List<RootedTreeNode> getDirectLeaves() {
+
+		LinkedList<RootedTreeNode> leaves = new LinkedList<>();
+
+		if (isALeaf()) {
+			leaves.add(this);
+		}
+		else {
+			RootedTreeNode currentChild = firstChild;
+			while (currentChild != null) {
+				if (currentChild.isALeaf()) {
+					leaves.add(currentChild);
+				}
 				currentChild = currentChild.rightSibling;
 			}
-            if(!isRoot()){
-                modules.put(ret, this);
-            }
-        }
+		}
 
-        return ret;
-    }
+		return leaves;
+	}
 
-    /*
-    protected ArrayList<Integer> getStrongModulesIntList(Map<String, Integer> vertexToIndex, ArrayList<ArrayList<Integer>> modules) {
-        ArrayList<Integer> ret = new ArrayList<>();
-        RootedTreeNode currentChild = firstChild;
-        if (currentChild != null) {
-            while (currentChild != null) {
-                if (currentChild.isALeaf()) {
-                    MDTreeLeafNode leafNode = (MDTreeLeafNode) currentChild;
-                    int index = vertexToIndex.get(leafNode.getLabel());
-                    ret.add(index);
-                } else {
-                    ArrayList<Integer> childSet = currentChild.getStrongModulesIntList(vertexToIndex, modules);
-                    // todo:
-                    ret.addAll(childSet);
-                }
-                currentChild = currentChild.rightSibling;
-            }
-            if (!isRoot()) {
-                modules.add(ret);
-            }
-        }
-
-
-        return ret;
-
-    }
-    */
 }

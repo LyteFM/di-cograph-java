@@ -1,7 +1,7 @@
 package dicograph.graphIO;
 
 import org.jgrapht.Graph;
-import org.jgrapht.ext.GraphExporter;
+import org.jgrapht.io.GraphExporter;
 
 import java.io.PrintWriter;
 import java.io.Writer;
@@ -39,7 +39,7 @@ public class SimpleMatrixExporter<V,E> implements GraphExporter<V,E>{
         String name;
         if(nameToVertex.isEmpty()) {
             for (V vertex : g.vertexSet()) {
-                // Map vertex names to vertex objects
+                // Map vertex names to vertex objects by their String representation
                 name = vertex.toString();
                 if (nameToVertex.containsKey(name)) {
                     throw new IllegalArgumentException("Error: vertex name " + name + " not unique!");

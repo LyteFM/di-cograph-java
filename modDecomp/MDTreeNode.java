@@ -1,6 +1,8 @@
 package dicograph.modDecomp;
 
+import java.util.BitSet;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -72,6 +74,40 @@ class MDTreeNode extends RootedTreeNode {
 		this();
 		this.type = type;
 	}
+
+
+	// F.L. 09.11.: moved here
+    /**
+     * Using a BitSet for easy UNION-Computation lateron. Running Time: O(n (1 + Anzahl module))
+     * @param leaves the empty but size-initialized array for storing all leafs
+     * @param modules
+     * @return
+     */
+    public BitSet getStrongModulesBool(MDTreeLeafNode[] leaves, HashMap<BitSet, RootedTreeNode> modules) {
+
+        BitSet ret = new BitSet(leaves.length);
+        MDTreeNode currentChild = (MDTreeNode) getFirstChild();
+        if(currentChild != null){
+            while (currentChild != null){
+                if(currentChild.isALeaf()){
+                    MDTreeLeafNode leafNode = (MDTreeLeafNode) currentChild;
+                    int index = leafNode.getVertexNo(); // 0 <= index  <= n-1
+                    ret.set(index);
+                    leaves[index] = leafNode;
+                } else {
+                    BitSet childSet = currentChild.getStrongModulesBool(leaves, modules);
+                    ret.or(childSet);
+                }
+                currentChild = (MDTreeNode) currentChild.getRightSibling();
+            }
+            if(!isRoot()){
+                modules.put(ret, this);
+            }
+        }
+
+        vertices = ret;
+        return ret;
+    }
 
 	
 	/* Adds one to the number of marks this node has received. */
@@ -502,7 +538,10 @@ class MDTreeNode extends RootedTreeNode {
 	 */	
 	public String toString() {
 		
-		String result = "(" + type + ", numChildren=" + getNumChildren();
+		String result ="(" ;
+		if(isRoot())
+			result += "ROOT ";
+		result += type + ", numChildren=" + getNumChildren();
 		
 		RootedTreeNode current = getFirstChild();
 		if (current != null) { 
@@ -514,6 +553,29 @@ class MDTreeNode extends RootedTreeNode {
 			current = current.getRightSibling();
 		}
 		return result + ")";
+	}
+
+	// F.L. 22.11.17: deal with error in Adrains Code
+	// F.L. 13.12.17: and with weak order modules
+	boolean removeDummies() {
+		RootedTreeNode currentChild = getFirstChild();
+		boolean ret = false;
+		while (currentChild != null) {
+			MDTreeNode current = (MDTreeNode) currentChild;
+			if (current.removeDummies()) {
+				ret = true;
+			}
+			MDNodeType currentType = current.getType();
+			currentChild = currentChild.getRightSibling(); // now nextChild
+
+			if (currentType == MDNodeType.PRIME && current.getNumChildren() == 1
+					|| currentType == MDNodeType.ORDER && !isRoot() && type == MDNodeType.ORDER) {
+				currentChild.insertBefore(current.getFirstChild()); // takes the subtree with it
+				ret = true;
+				current.removeSubtree(); // shouldn't have anything now, just remove it
+			}
+		}
+		return ret;
 	}
 }
 
