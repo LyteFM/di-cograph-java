@@ -35,6 +35,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import dicograph.ILPSolver.CplexDiCographEditingSolver;
+import dicograph.MDSolver.MDEditor;
 import dicograph.graphIO.GraphGenerator;
 import dicograph.graphIO.JGraphAdjecencyImporter;
 import dicograph.graphIO.SimpleMatrixExporter;
@@ -77,10 +78,10 @@ public class Main {
         Handler consoleHandler = new ConsoleHandler();
         VerySimpleFormatter myFormatter = new VerySimpleFormatter();
         consoleHandler.setFormatter(myFormatter);
-        consoleHandler.setLevel( Level.FINEST );
+        consoleHandler.setLevel( Level.INFO );
 
         log.addHandler( consoleHandler );
-        log.setLevel( Level.FINEST );
+        log.setLevel( Level.INFO );
         log.fine( "Alles ist fein!" );
 
 
@@ -309,6 +310,20 @@ public class Main {
 //        File importFile = new File("testy.txt");
 //        SimpleDirectedGraph<Integer, DefaultWeightedEdge> matrixGraph = SimpleMatrixImporter.importIntGraph( new File(weirdError));
 //        SimpleDirectedGraph<Integer, DefaultWeightedEdge> randGraph = JGraphAdjecencyImporter.importIntGraph(importFile);
+
+
+
+        SimpleDirectedGraph<Integer,DefaultWeightedEdge> importGraph=SimpleMatrixImporter.importIntGraph(new File(smallTourErrgraph));
+        MDEditor testEditor = new MDEditor(importGraph, log);
+        SimpleDirectedGraph<Integer,DefaultWeightedEdge> editGraph = testEditor.editIntoCograph();
+        DirectedMD testMD = new DirectedMD(editGraph,log,true);
+        testMD.computeModularDecomposition();
+
+
+
+
+
+
 
 
 

@@ -6,12 +6,15 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
+
+import dicograph.graphIO.InducedWeightedSubgraph;
 
 /*
  * An internal node in a modular decomposition tree.
@@ -605,12 +608,15 @@ public class MDTreeNode extends RootedTreeNode {
 		}
 	}
 
-	public Map<Integer, Double> initWeightedSubgraph(SimpleDirectedGraph<Integer,DefaultWeightedEdge>subGraph, SimpleDirectedGraph<Integer,DefaultWeightedEdge> base){
-		//vertices.stream().forEach( graph::addVertex );
+	// inits Graph, baseVnoToSubVno and returns the weights of each new vertex.
+	public double[] initWeightedSubgraph(InducedWeightedSubgraph subGraph, SimpleDirectedGraph<Integer,DefaultWeightedEdge> base){
+
+		HashMap<Integer,Integer> baseVNoTosubVNo = subGraph.getBaseNoTosubNo();
 
 		MDTreeNode currChild = (MDTreeNode) getFirstChild();
-		HashMap<Integer,Double> vertexToWeight = new HashMap<>();
+		double[] subVertexToWeight = new double[getNumChildren()];
 
+		int subIndex = 0;
 		// add Vertices
 		while (currChild != null) {
 			double edgeWeight = Graph.DEFAULT_EDGE_WEIGHT;
@@ -621,24 +627,28 @@ public class MDTreeNode extends RootedTreeNode {
 				vertexNo = currChild.vertices.nextSetBit(0);
 				edgeWeight = currChild.vertices.cardinality();
 			}
-			subGraph.addVertex(vertexNo);
-			vertexToWeight.put(vertexNo,edgeWeight);
+			baseVNoTosubVNo.put(vertexNo,subIndex);
+			subGraph.addVertex(subIndex);
+			subVertexToWeight[subIndex] = edgeWeight;
 			currChild = (MDTreeNode) currChild.getRightSibling();
+			subIndex++;
 		}
 
 		// add edges. Cost of editing is the product, as this many edges would have to be edited.
 		// is it smarter to check all Vertices or all edges? Hmm, not if the modules is large...
-		for (int source : vertexToWeight.keySet()) {
-			for (DefaultWeightedEdge outEdge : base.outgoingEdgesOf(source)) {
+		for (Map.Entry<Integer,Integer> source : baseVNoTosubVNo.entrySet()) {
+			for (DefaultWeightedEdge outEdge : base.outgoingEdgesOf(source.getKey())) {
 				int target = base.getEdgeTarget(outEdge);
 
-				if (vertexToWeight.containsKey(target)) {
-					double weight = vertexToWeight.get(source) * vertexToWeight.get(target);
-					Graphs.addEdge(subGraph,source,target,weight);
+				if (baseVNoTosubVNo.containsKey(target)) {
+					int subSourceV = source.getValue();
+					int subTargetV = baseVNoTosubVNo.get(target);
+					double weight = subVertexToWeight[subSourceV] * subVertexToWeight[subTargetV];
+					Graphs.addEdge(subGraph,subSourceV,subTargetV,weight);
 				}
 			}
 		}
-		return  vertexToWeight;
+		return  subVertexToWeight;
 	}
 }
 

@@ -1,9 +1,7 @@
 package dicograph.graphIO;
 
-import org.jgrapht.Graph;
-import org.jgrapht.alg.util.Pair;
+import org.jgrapht.Graphs;
 import org.jgrapht.graph.ClassBasedEdgeFactory;
-import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
@@ -15,6 +13,7 @@ import java.util.Map;
 
 import dicograph.modDecomp.MDTreeNode;
 import dicograph.utils.SortAndCompare;
+import dicograph.utils.WeightedPair;
 
 /**
  * Created by Fynn Leitow on 21.12.17.
@@ -23,43 +22,47 @@ public class InducedWeightedSubgraph extends SimpleDirectedGraph<Integer,Default
 
     private final SimpleDirectedGraph<Integer, DefaultWeightedEdge> base;
     private final int nVertices;
-    private final Map<Integer,Double> vertexToWeight;
+
+    private final HashMap<Integer,Integer> baseNoTosubNo;
+    private final double[] subVertexToWeight;
+    private final int[] subNoToBaseNo;
 
 
     public InducedWeightedSubgraph(SimpleDirectedGraph<Integer,DefaultWeightedEdge> baseGraph, MDTreeNode node){
         super(new ClassBasedEdgeFactory<>(DefaultWeightedEdge.class),true);
         base = baseGraph;
-        vertexToWeight = node.initWeightedSubgraph(this,base);
-        nVertices = vertexToWeight.size();
+        baseNoTosubNo = new HashMap<>();
+        subVertexToWeight = node.initWeightedSubgraph(this,base);
+        nVertices = subVertexToWeight.length;
+        subNoToBaseNo = new int[nVertices];
+        for(Map.Entry<Integer, Integer> base2Sub : baseNoTosubNo.entrySet()){
+            subNoToBaseNo[base2Sub.getValue()] =  base2Sub.getKey();
+        }
     }
 
     // Possible optimization: sequential subsets! (a,b) -> (a,b,c) ...
-    public HashMap<Integer, List<List<DefaultWeightedEdge>>> allEditsByWeight(){
+    public HashMap<Integer, List<List<WeightedPair<Integer,Integer>>>> allEditsByWeight(){
         // an entry in the map means: if present -> remove, if not -> add.
         //
-        if(nVertices > 25)
+        if(nVertices > 6)
             throw new RuntimeException("n too large!");
 
-        HashMap<Integer, List<List<DefaultWeightedEdge>>> costToEdges = new HashMap();
-        ClassBasedEdgeFactory<Integer,DefaultWeightedEdge> edgeFactory = (ClassBasedEdgeFactory<Integer, DefaultWeightedEdge>) getEdgeFactory();
-        HashMap<Integer, DefaultWeightedEdge> intToEdge = new HashMap<>();
+        HashMap<Integer, List<List<WeightedPair<Integer,Integer>>>> costToEdges = new HashMap<>();
+        HashMap<Integer, WeightedPair<Integer,Integer>> intToEdge = new HashMap<>();
 
 
         // I need this to compute all possible permutations for the n^2 edges...
 
-        // a) use the EdgeFactory and create all those edges with their respective weight. Add them later.
+        // a) use the EdgeFactory and create all those edges with their respective weight. Add them later. <- doesn't work if I don't add them...
         // b) use Pairs.
 
         int cnt = 0;
+        // i,j are subVertices.
         for (int i : vertexSet()) {
             for (int j : vertexSet()) {
                 if(j!=i){
-                    DefaultWeightedEdge e = getEdge(i,j);
-                    if(e == null){
-                        double weight = vertexToWeight.get(i) * vertexToWeight.get(j);
-                        e = getEdgeFactory().createEdge(i,j);
-                        setEdgeWeight(e, weight); // todo: is this okay? Should know the edge but not add.
-                    }
+                    double weight = subVertexToWeight[i] * subVertexToWeight[j];
+                    WeightedPair<Integer,Integer> e = new WeightedPair<>(i,j,weight);
                     intToEdge.put( cnt, e );
                     cnt++;
                 }
@@ -70,11 +73,11 @@ public class InducedWeightedSubgraph extends SimpleDirectedGraph<Integer,Default
         // this will kill me with more than 5 vertices in the prime module... need a better strategy.
         for(List<Integer> edgeSubset : SortAndCompare.computeAllSubsets( new ArrayList<>(intToEdge.keySet()) )){
             int cost = 0;
-            List<DefaultWeightedEdge> edges = new ArrayList<>(edgeSubset.size());
+            List<WeightedPair<Integer,Integer>> edges = new ArrayList<>(edgeSubset.size());
             for(int edgeNo : edgeSubset){
-                DefaultWeightedEdge e = intToEdge.get(edgeNo);
+                WeightedPair<Integer,Integer> e = intToEdge.get(edgeNo);
                 edges.add(e);
-                cost += Math.round(getEdgeWeight(e)); // better use rounding, just in case...
+                cost += Math.round(e.getWeight()); // better use rounding, just in case...
             }
             costToEdges.putIfAbsent(cost,new LinkedList<>());
             costToEdges.get(cost).add(edges);
@@ -85,15 +88,37 @@ public class InducedWeightedSubgraph extends SimpleDirectedGraph<Integer,Default
     }
 
 
-    public void edit(List<DefaultWeightedEdge> edgeList){
+    public void edit(List<WeightedPair<Integer,Integer>> edgeList){
 
-        for(DefaultWeightedEdge e : edgeList){
-            if(containsEdge(e)){
-                removeEdge(e);
+        for(WeightedPair<Integer,Integer> e : edgeList){
+            if(containsEdge(e.getFirst(),e.getSecond())){
+                removeEdge(e.getFirst(),e.getSecond());
             } else {
-                addEdge(getEdgeSource(e), getEdgeTarget(e), e);
+                // todo: due to weighted Pair, I might not need weightedEdge at all.
+                Graphs.addEdge(this, e.getFirst(), e.getSecond(), e.getWeight());
             }
         }
 
+    }
+
+
+    public HashMap<Integer, Integer> getBaseNoTosubNo() {
+        return baseNoTosubNo;
+    }
+
+    public SimpleDirectedGraph<Integer, DefaultWeightedEdge> getBase() {
+        return base;
+    }
+
+    public int getnVertices() {
+        return nVertices;
+    }
+
+    public double[] getSubVertexToWeight() {
+        return subVertexToWeight;
+    }
+
+    public int[] getSubNoToBaseNo() {
+        return subNoToBaseNo;
     }
 }
