@@ -1,18 +1,26 @@
 package dicograph.graphIO;
 
+import com.google.common.collect.Sets;
+
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.ClassBasedEdgeFactory;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
+import org.jgrapht.io.ImportException;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.logging.Logger;
 
+import dicograph.modDecomp.DirectedMD;
+import dicograph.modDecomp.MDTree;
 import dicograph.modDecomp.MDTreeNode;
-import dicograph.utils.SortAndCompare;
 import dicograph.utils.WeightedPair;
 
 /**
@@ -20,6 +28,7 @@ import dicograph.utils.WeightedPair;
  */
 public class InducedWeightedSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEdge> {
 
+    private static final int maxCost = 6;
     private final SimpleDirectedGraph<Integer, DefaultWeightedEdge> base;
     private final int nVertices;
 
@@ -41,14 +50,15 @@ public class InducedWeightedSubgraph extends SimpleDirectedGraph<Integer,Default
     }
 
     // Possible optimization: sequential subsets! (a,b) -> (a,b,c) ...
-    public HashMap<Integer, List<List<WeightedPair<Integer,Integer>>>> allEditsByWeight(){
+    public Map<Integer, List<List<WeightedPair<Integer, Integer>>>> computeBestEdgeEdit(Logger log)
+    throws InterruptedException, IOException, ImportException{
         // an entry in the map means: if present -> remove, if not -> add.
         //
-        if(nVertices > 6)
-            throw new RuntimeException("n too large!");
 
-        HashMap<Integer, List<List<WeightedPair<Integer,Integer>>>> costToEdges = new HashMap<>();
-        HashMap<Integer, WeightedPair<Integer,Integer>> intToEdge = new HashMap<>();
+
+
+        HashMap<Integer, List<List<WeightedPair<Integer, Integer>>>> costToEdges = new HashMap<>();
+        Map<Integer, WeightedPair<Integer,Integer>> intToEdge = new HashMap<>();
 
 
         // I need this to compute all possible permutations for the n^2 edges...
@@ -68,19 +78,60 @@ public class InducedWeightedSubgraph extends SimpleDirectedGraph<Integer,Default
                 }
             }
         }
-        System.out.println("All Edges created with weights");
 
-        // this will kill me with more than 5 vertices in the prime module... need a better strategy.
-        for(List<Integer> edgeSubset : SortAndCompare.computeAllSubsets( new ArrayList<>(intToEdge.keySet()) )){
-            int cost = 0;
-            List<WeightedPair<Integer,Integer>> edges = new ArrayList<>(edgeSubset.size());
-            for(int edgeNo : edgeSubset){
-                WeightedPair<Integer,Integer> e = intToEdge.get(edgeNo);
-                edges.add(e);
-                cost += Math.round(e.getWeight()); // better use rounding, just in case...
+        int smallestCost = maxCost;
+        for (int i = 1; i < intToEdge.keySet().size(); i++) {
+            System.out.println("Computing all permutations of size " + i + " for n = " + cnt);
+            Set<Set<Integer>> combinations =  Sets.combinations(intToEdge.keySet(), i);
+            System.out.println(combinations.size() + " permutations!");
+            boolean costStillValid = false;
+
+            int count = 0;
+
+            for(Set<Integer> edgeSubset : combinations){
+                int cost = 0;
+                List<WeightedPair<Integer,Integer>> currEdgeList = new ArrayList<>(edgeSubset.size());
+                for(int edgeNo : edgeSubset){
+                    WeightedPair<Integer,Integer> e = intToEdge.get(edgeNo);
+                    currEdgeList.add(e);
+                    cost += Math.round(e.getWeight()); // better use rounding, just in case...
+                }
+                if(cost < maxCost) {
+
+                    costStillValid = true;
+
+                    edit(currEdgeList);
+                    // Brute force checking for forbidden subgraphs might be more efficient...
+                    log.info("i: " + i + ", Edges: " + currEdgeList);
+                    DirectedMD subMD = new DirectedMD(this, log, false);
+                    MDTree subTree = subMD.computeModularDecomposition();
+                    // edit back.
+                    edit(currEdgeList);
+                    if(subTree.getPrimeModulesBottomUp().isEmpty()){
+                        log.info(() -> " Successful edit found: " + currEdgeList);
+                        costToEdges.putIfAbsent(cost, new LinkedList<>());
+                        costToEdges.get(cost).add(currEdgeList);
+                        // need this to verify that an early, but expensive edit is best.
+                        if(cost < smallestCost)
+                            smallestCost = cost;
+                        if(smallestCost <= i)
+                            return costToEdges;
+                    }
+
+                }
+
+
+                count++;
+                if(count % 1000000 == 0)
+                    System.out.println("Count: " + count);
+                if(count == 50000000)
+                    break;
             }
-            costToEdges.putIfAbsent(cost,new LinkedList<>());
-            costToEdges.get(cost).add(edges);
+
+            if(!costStillValid){
+                break; // no need to continue
+            }
+
         }
 
 

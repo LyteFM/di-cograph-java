@@ -98,13 +98,13 @@ public class DirectedMD {
                 }
             }
         }
-        log.info("Dahlhaus algorithm finished");
+        log.fine("Dahlhaus algorithm finished");
         return ret;
     }
 
     public MDTree computeModularDecomposition() throws InterruptedException, IOException, ImportException {
 
-        log.info("init md of graph: " + inputGraph.toString());
+        log.fine("init md of graph: " + inputGraph.toString());
 
 
         // Step 1: Find G_s, G_d and H
@@ -120,7 +120,7 @@ public class DirectedMD {
                 G_d.addEdge(source, target);
             }
         }
-        log.info("  G_d of digraph: " + G_d);
+        log.fine("  G_d of digraph: " + G_d);
 
         // G_s: undirected graph s.t. {u,v} in E_s iff (u,v) in E or (v,u) in E todo: ändert nix :(
         G_s = new SimpleGraph<>(DefaultWeightedEdge.class);
@@ -133,7 +133,7 @@ public class DirectedMD {
             }
         }
 
-        log.info("  G_s of digraph: " + G_s);
+        log.fine("  G_s of digraph: " + G_s);
 
 
 
@@ -142,7 +142,7 @@ public class DirectedMD {
         //    E_H(u,v) = 1 if {u,v} edge (i.e. edge in both G_s and G_d)
         //    E_H(u,v) = 2 if (u,v) or (v,u) simple arc (i.e. edge in G_s but not G_d)
 
-        log.info("computing md for G_d:");
+        log.fine("computing md for G_d:");
 
         // Step 2: T(G_d) and T(G_s) with algorithm for undirected graphs
 
@@ -151,15 +151,15 @@ public class DirectedMD {
 //        if(treeForG_d.removeDummies()){
 //            log.warning("Removed dummy primes for G_d");
 //        }
-        log.info("computing md for G_s:");
+        log.fine("computing md for G_s:");
 
         MDTree treeForG_s = new MDTree(G_s, null, debugMode, log);
 //        if(treeForG_s.removeDummies()){
 //            log.warning("Removed dummy primes for G_s");
 //        }
-        log.info("md for G_d:\n" + MDTree.beautify(treeForG_d.toString()));
+        log.fine("md for G_d:\n" + MDTree.beautify(treeForG_d.toString()));
         log.fine("DOT for G_d:\n" + treeForG_d.exportAsDot());
-        log.info("md for G_s:\n" + MDTree.beautify(treeForG_s.toString()));
+        log.fine("md for G_s:\n" + MDTree.beautify(treeForG_s.toString()));
         log.fine("DOT for G_s:\n" + treeForG_s.exportAsDot());
 
         // Step 3: Find T(H) = T(G_s) Λ T(G_d)
@@ -169,7 +169,7 @@ public class DirectedMD {
         // I guess I should determine the node-type. Note: Due to possibly merged modules, this is
         // not yet the "true" node-type, just a reference to 0/1/2-completeness.
         treeForH.computeAllNodeTypes(this);
-        log.info("Inclusion Tree with computed types: " + MDTree.beautify(treeForH.toString()));
+        log.fine("Inclusion Tree with computed types: " + MDTree.beautify(treeForH.toString()));
 
 
         // Step 4: At each O-complete and 1-complete node X of T(H), order the children s.t.
@@ -192,8 +192,8 @@ public class DirectedMD {
             if(i != nVertices-1)
                 leafNumbers.append(", ");
         }
-        log.info(() ->"Leaves ordered as factorizing permutation: " + leafNumbers);
-        log.info("Reordered Tree: " + MDTree.beautify(treeForH.toString()));
+        log.fine(() ->"Leaves ordered as factorizing permutation: " + leafNumbers);
+        log.fine("Reordered Tree: " + MDTree.beautify(treeForH.toString()));
 
 
         // get the MD Tree from C++
@@ -206,7 +206,7 @@ public class DirectedMD {
 //        if(finalTree.removeDummies()){
 //            log.warning("Removed dummy primes/ weak orders!");
 //        }
-        log.info("Final Tree: " + MDTree.beautify(finalTree.toString()));
+        log.fine("Final Tree: " + MDTree.beautify(finalTree.toString()));
 
 
         if (debugMode) {
@@ -314,7 +314,7 @@ public class DirectedMD {
 
         // Try with ressources
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(dahlhausFile))){
-            System.out.println(dahlhausFile.getCanonicalPath());
+            //System.out.println(dahlhausFile.getCanonicalPath());
             writer.write(overlapInput.toString());
         } catch (Exception e) {
             e.printStackTrace();
