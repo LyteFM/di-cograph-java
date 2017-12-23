@@ -1,16 +1,16 @@
-package dicograph.ILPSolver;
+package dicograph.Editing;
 
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.logging.Logger;
 
+import dicograph.utils.WeightedPair;
 import ilog.concert.IloException;
 import ilog.concert.IloIntVar;
 import ilog.concert.IloNumExpr;
@@ -24,51 +24,7 @@ import ilog.cplex.IloCplex;
 
 public class CplexDiCographEditingSolver {
 
-    // forbidden subgraphs of length 4:
-    static int [] _p4    = {    1,-1,-1,
-                             1,    1,-1,
-                            -1, 1,    1,
-                            -1,-1, 1    };
 
-    static int [] _n     = {   -1,-1,-1,
-                            -1,   -1,-1,
-                            -1, 1,   -1,
-                             1, 1,-1    };
-
-    static int [] _n_bar = {    1, 1,-1,
-                             1,   -1,-1,
-                             1, 1,    1,
-                             1, 1, 1    };
-
-    static int [][] forbidden_len_4 = {_p4, _n, _n_bar};
-    static String [] forbidden_len_4_names = {"p4", "n", "n_bar"};
-    // threshold = number of ones - 1
-    static int [] threshold_len_4 = {5, 2, 8};
-
-    // forbidden subgraphs of length 3:
-    static int [] _p3 = {    1,-1,
-                         -1,    1,
-                         -1,-1    };
-
-    static int [] _a  = {    1,-1,
-                         -1,    1,
-                         -1, 1    };
-
-    static int [] _b  = {   -1,-1,
-                          1,    1,
-                         -1, 1    };
-
-    static int [] _c3 = {    1,-1,
-                         -1,    1,
-                          1,-1    };
-
-    static int [] _d3 = {    1, 1,
-                            -1, 1,
-                          1,-1    };
-
-    static int [][] forbidden_len_3 = {_p3, _a, _b, _c3, _d3};
-    static String [] forbidden_len_3_names = {"p3", "a", "b", "c3", "d3"};
-    static int [] threshold_len_3 = {1, 2, 2, 2, 3};
 
 
     // input data. Also works, if has self-loops (will be ignored)
@@ -90,6 +46,8 @@ public class CplexDiCographEditingSolver {
 
     // orthology variables -> Adjacency Matrix?
     private IloIntVar[][] E;
+    private final double[][] weightMatrix;
+    private List<List<WeightedPair<Integer, Integer>>> solutionEdgeEdits;
     private Logger log;
 
     // sets the time limit (default: 2h), if given by parameter #1
@@ -101,8 +59,12 @@ public class CplexDiCographEditingSolver {
      * @param parameters the parameter array:
      * @throws IloException
      */
-
     public CplexDiCographEditingSolver(SimpleDirectedGraph<Integer, DefaultWeightedEdge> inputGraph, int[] parameters, Logger log) throws IloException {
+        this(inputGraph,parameters,null,log);
+    }
+
+
+    public CplexDiCographEditingSolver(SimpleDirectedGraph<Integer, DefaultWeightedEdge> inputGraph, int[] parameters, double[][] weights, Logger log) throws IloException {
         this.inputGraph = inputGraph;
         // want the vertex set of the graph in sorted order for easier display and to uniquely define the matrix
         sortedVertexSet = new TreeSet<>(inputGraph.vertexSet()); // todo: not necessary!
@@ -115,6 +77,8 @@ public class CplexDiCographEditingSolver {
 
         this.parameters = parameters;
         this.log = log;
+        weightMatrix = weights;
+        solutionEdgeEdits = new LinkedList<>();
 
     }
 
@@ -131,27 +95,34 @@ public class CplexDiCographEditingSolver {
         }
 
 
-        DefaultWeightedEdge edge;
-        int i = 0;
+
 
         // No diagonal entries as self-loops are excluded:
         int noOfAdjacencies = (this.vertexCount *(this.vertexCount -1));
         IloNumExpr symDiff1Expr[] = new IloNumExpr[noOfAdjacencies];
         IloNumExpr symDiff2Expr[] = new IloNumExpr[noOfAdjacencies];
 
-        // Initializes the symmetric difference for the Cograph Computation
-        for(int sourceVertex = 0; sourceVertex < vertexCount; sourceVertex++){
-            for(int targetVertext = 0; targetVertext < vertexCount; targetVertext++) {
-                if(sourceVertex != targetVertext) {
-                    edge = inputGraph.getEdge(sourceVertex, targetVertext);
-                    int hasEdge =  edge == null ? 0 :1;
-                    //assert x != y;
-                    symDiff1Expr[i] = solver.prod((1 - hasEdge), E[sourceVertex][targetVertext]); // arrayOutOfBound!!
-                    symDiff2Expr[i] = solver.prod(hasEdge, solver.diff(1, E[sourceVertex][targetVertext] ));
-                    i++;
-                }
-            }
-        }
+//        DefaultWeightedEdge edge;
+//        int i = 0;
+//        // Initializes the symmetric difference for the Cograph Computation
+////        for(int sourceVertex = 0; sourceVertex < vertexCount; sourceVertex++){
+////            for(int targetVertext = 0; targetVertext < vertexCount; targetVertext++) {
+////                if(sourceVertex != targetVertext) {
+////                    edge = inputGraph.getEdge(sourceVertex, targetVertext);
+//                    int hasEdge =  edge == null ? 0 :1;
+//                    // new: add weights!
+//                    symDiff1Expr[i] = solver.prod((1 - hasEdge), E[sourceVertex][targetVertext]); // arrayOutOfBound!!
+//                    symDiff2Expr[i] = solver.prod(hasEdge, solver.diff(1, E[sourceVertex][targetVertext] ));
+//                    i++;
+//                }
+//            }
+//        }
+        if(weightMatrix == null)
+            initSymDiffUnweighted(symDiff1Expr,symDiff2Expr);
+        else
+            initSymDiffWeighted(symDiff1Expr,symDiff2Expr);
+
+
         this.objFn = solver.sum(solver.sum(symDiff1Expr),solver.sum(symDiff2Expr));
 
         // Maximum number of edge edits todo: was ist das???
@@ -177,11 +148,11 @@ public class CplexDiCographEditingSolver {
                                     E[y][w], E[y][x]
                             };
                             // subgraphs of length 3:
-                            for(j = 0; j< forbidden_len_3.length; j++){
+                            for(j = 0; j< ForbiddenSubgraphs.len_3.length; j++){
 
                                 IloRange range = solver.le(solver.scalProd(
-                                        forbidden_len_3[j], vars_3), threshold_len_3[j],
-                                        forbidden_len_3_names[j] + "_" + w + "," + x + "," + y);
+                                        ForbiddenSubgraphs.len_3[j], vars_3), ForbiddenSubgraphs.threshold_len_3[j],
+                                        ForbiddenSubgraphs.len_3_names[j] + "_" + w + "," + x + "," + y);
                                 solver.addLazyConstraint(range);
                             }
 
@@ -194,11 +165,11 @@ public class CplexDiCographEditingSolver {
                                             E[y][w], E[y][x],          E[y][z],
                                             E[z][w], E[z][x], E[z][y]
                                     };
-                                    for( k = 0; k< forbidden_len_4.length; k++) {
+                                    for(k = 0; k< ForbiddenSubgraphs.len_4.length; k++) {
 
                                         IloRange range = solver.le(solver.scalProd(
-                                                forbidden_len_4[k], vars_4), threshold_len_4[k],
-                                                forbidden_len_4_names[k] + "_" + w + "," + x + "," + y + "," + z);
+                                                ForbiddenSubgraphs.len_4[k], vars_4), ForbiddenSubgraphs.threshold_len_4[k],
+                                                ForbiddenSubgraphs.len_4_names[k] + "_" + w + "," + x + "," + y + "," + z);
                                         solver.addLazyConstraint(range);
                                     }
                                 }
@@ -243,6 +214,39 @@ public class CplexDiCographEditingSolver {
         return solutionGraphs;
     }
 
+    private void initSymDiffUnweighted(IloNumExpr symDiff1Expr[], IloNumExpr symDiff2Expr[]) throws IloException{
+        DefaultWeightedEdge edge;
+        int i = 0;
+        for(int sourceVertex = 0; sourceVertex < vertexCount; sourceVertex++){
+            for(int targetVertext = 0; targetVertext < vertexCount; targetVertext++) {
+                if(sourceVertex != targetVertext) {
+                    edge = inputGraph.getEdge(sourceVertex, targetVertext);
+                    int hasEdge =  edge == null ? 0 :1;
+                    // new: add weights!
+                    symDiff1Expr[i] = solver.prod((1 - hasEdge), E[sourceVertex][targetVertext]);
+                    symDiff2Expr[i] = solver.prod(hasEdge, solver.diff(1, E[sourceVertex][targetVertext] ));
+                    i++;
+                }
+            }
+        }
+    }
+
+    private void initSymDiffWeighted(IloNumExpr symDiff1Expr[], IloNumExpr symDiff2Expr[]) throws IloException{
+        DefaultWeightedEdge edge;
+        int i = 0;
+        for(int sourceVertex = 0; sourceVertex < vertexCount; sourceVertex++){
+            for(int targetVertext = 0; targetVertext < vertexCount; targetVertext++) {
+                if(sourceVertex != targetVertext) {
+                    edge = inputGraph.getEdge(sourceVertex, targetVertext);
+                    int hasEdge =  edge == null ? 0 :1;
+                    // new: add weights!
+                    symDiff1Expr[i] = solver.prod( weightMatrix[sourceVertex][targetVertext]*(1 - hasEdge), E[sourceVertex][targetVertext]);
+                    symDiff2Expr[i] = solver.prod(weightMatrix[sourceVertex][targetVertext]*hasEdge, solver.diff(1, E[sourceVertex][targetVertext] ));
+                    i++;
+                }
+            }
+        }
+    }
 
     /**
      * @return the current solution, i.e. the values of xVariables as string
@@ -266,6 +270,7 @@ public class CplexDiCographEditingSolver {
                 for(int vertex = 0; vertex < vertexCount; vertex++){
                     solutionGraph.addVertex(vertex);
                 }
+                List<WeightedPair<Integer, Integer>> edgeEdits = new LinkedList<>();
 
                 //Boolean[][] cograph = new Boolean[this.vertexCount][this.vertexCount];
                 solution.append("Adjacency Matrix:\n");
@@ -279,13 +284,25 @@ public class CplexDiCographEditingSolver {
                         boolean hasEdge = variable>0.5;
                         //cograph[x][y]=(hasEdge);
                         solution.append( hasEdge ?"1 " : "0 ");
+                        boolean edgeEdit;
                         if(hasEdge){
                             solutionGraph.addEdge(vertex_x, vertex_y);
+                            edgeEdit = !inputGraph.containsEdge(vertex_x,vertex_y);
+                        } else {
+                            edgeEdit = inputGraph.containsEdge(vertex_x,vertex_y);
+                        }
+                        if(edgeEdit){
+                            WeightedPair<Integer,Integer> editEdge = new WeightedPair<>(vertex_x,vertex_y);
+                            if(weightMatrix != null){
+                                editEdge.setWeight(weightMatrix[vertex_x][vertex_y]);
+                            }
+                            edgeEdits.add(editEdge);
                         }
                     }
                     solution.append("\n");
                 }
                 // gf.addCograph(cograph);
+                solutionEdgeEdits.add(edgeEdits);
                 editingDistances.add(solver.getObjValue(solutionId));
                 solutionGraphs.add(solutionGraph);
                 solution.append("\n\n")
@@ -296,7 +313,12 @@ public class CplexDiCographEditingSolver {
         return solution.toString();
     }
 
+    // These two go together (same order)
     public List<Double> getEditingDistances() {
         return editingDistances;
+    }
+
+    public List<List<WeightedPair<Integer, Integer>>> getSolutionEdgeEdits() {
+        return solutionEdgeEdits;
     }
 }

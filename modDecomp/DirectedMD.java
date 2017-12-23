@@ -54,7 +54,7 @@ public class DirectedMD {
 
         inputGraph = input;
         log = logger;
-        timeLog = new TimerLog(log,true);
+        timeLog = new TimerLog(log,false);
         nVertices = input.vertexSet().size();
         leavesOfT_s = new MDTreeLeafNode[nVertices];
         leavesOfT_g = new MDTreeLeafNode[nVertices];

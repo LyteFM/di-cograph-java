@@ -28,7 +28,7 @@ import dicograph.utils.WeightedPair;
  */
 public class InducedWeightedSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEdge> {
 
-    private static final int maxCost = 6;
+    private static final int maxCost = 5;
     private final SimpleDirectedGraph<Integer, DefaultWeightedEdge> base;
     private final int nVertices;
 
@@ -50,7 +50,7 @@ public class InducedWeightedSubgraph extends SimpleDirectedGraph<Integer,Default
     }
 
     // Possible optimization: sequential subsets! (a,b) -> (a,b,c) ...
-    public Map<Integer, List<List<WeightedPair<Integer, Integer>>>> computeBestEdgeEdit(Logger log)
+    public Map<Integer, List<List<WeightedPair<Integer, Integer>>>> computeBestEdgeEdit(Logger log, boolean useILP)
     throws InterruptedException, IOException, ImportException{
         // an entry in the map means: if present -> remove, if not -> add.
         //
@@ -66,12 +66,16 @@ public class InducedWeightedSubgraph extends SimpleDirectedGraph<Integer,Default
         // a) use the EdgeFactory and create all those edges with their respective weight. Add them later. <- doesn't work if I don't add them...
         // b) use Pairs.
 
+        double[][] weightMatrix = new double[nVertices][nVertices];
+
+
         int cnt = 0;
         // i,j are subVertices.
         for (int i : vertexSet()) {
             for (int j : vertexSet()) {
                 if(j!=i){
                     double weight = subVertexToWeight[i] * subVertexToWeight[j];
+                    weightMatrix[i][j] = weight;
                     WeightedPair<Integer,Integer> e = new WeightedPair<>(i,j,weight);
                     intToEdge.put( cnt, e );
                     cnt++;
@@ -79,59 +83,67 @@ public class InducedWeightedSubgraph extends SimpleDirectedGraph<Integer,Default
             }
         }
 
-        int smallestCost = maxCost;
-        for (int i = 1; i < intToEdge.keySet().size(); i++) {
-            System.out.println("Computing all permutations of size " + i + " for n = " + cnt);
-            Set<Set<Integer>> combinations =  Sets.combinations(intToEdge.keySet(), i);
-            System.out.println(combinations.size() + " permutations!");
-            boolean costStillValid = false;
+        if(useILP){
 
-            //int count = 0;
+        } else {
+            int smallestCost = maxCost;
+            for (int i = 1; i < intToEdge.keySet().size(); i++) {
+                System.out.println("Computing all permutations of size " + i + " for n = " + cnt);
+                Set<Set<Integer>> combinations = Sets.combinations(intToEdge.keySet(), i);
+                System.out.println(combinations.size() + " permutations!");
+                boolean costStillValid = false;
 
-            for(Set<Integer> edgeSubset : combinations){
-                int cost = 0;
-                List<WeightedPair<Integer,Integer>> currEdgeList = new ArrayList<>(edgeSubset.size());
-                for(int edgeNo : edgeSubset){
-                    WeightedPair<Integer,Integer> e = intToEdge.get(edgeNo);
-                    currEdgeList.add(e);
-                    cost += Math.round(e.getWeight()); // better use rounding, just in case...
-                }
-                if(cost < maxCost) {
+                int count = 0;
 
-                    costStillValid = true;
+                for (Set<Integer> edgeSubset : combinations) {
+                    int cost = 0;
+                    List<WeightedPair<Integer, Integer>> currEdgeList = new ArrayList<>(edgeSubset.size());
+                    for (int edgeNo : edgeSubset) {
+                        WeightedPair<Integer, Integer> e = intToEdge.get(edgeNo);
+                        currEdgeList.add(e);
+                        cost += Math.round(e.getWeight()); // better use rounding, just in case...
+                    }
+                    if (cost < maxCost) {
 
-                    edit(currEdgeList);
-                    // Brute force checking for forbidden subgraphs might be more efficient...
-                    log.info("i: " + i + ", Edges: " + currEdgeList);
-                    DirectedMD subMD = new DirectedMD(this, log, false);
-                    MDTree subTree = subMD.computeModularDecomposition();
-                    // edit back.
-                    edit(currEdgeList);
-                    if(subTree.getPrimeModulesBottomUp().isEmpty()){
-                        log.info(() -> " Successful edit found: " + currEdgeList);
-                        costToEdges.putIfAbsent(cost, new LinkedList<>());
-                        costToEdges.get(cost).add(currEdgeList);
-                        // need this to verify that an early, but expensive edit is best.
-                        if(cost < smallestCost)
-                            smallestCost = cost;
-                        if(smallestCost <= i)
-                            return costToEdges;
+                        costStillValid = true;
+
+                        edit(currEdgeList);
+                        // Brute force checking for forbidden subgraphs might be more efficient...
+                        DirectedMD subMD = new DirectedMD(this, log, false);
+                        MDTree subTree = subMD.computeModularDecomposition();
+                        log.info("Edges: " + currEdgeList);
+                        log.info("Tree: " + MDTree.beautify(subTree.toString()));
+                        // edit back.
+                        edit(currEdgeList);
+                        if (subTree.getPrimeModulesBottomUp().isEmpty()) {
+                            log.info(() -> " Successful edit found: " + currEdgeList);
+                            costToEdges.putIfAbsent(cost, new LinkedList<>());
+                            costToEdges.get(cost).add(currEdgeList);
+                            // need this to verify that an early, but expensive edit is best.
+                            if (cost < smallestCost)
+                                smallestCost = cost;
+                            if (smallestCost <= i)
+                                return costToEdges;
+                        }
+
                     }
 
+
+                    count++;
+                    if (count % 1000000 == 0)
+                        log.info("i: " + i + ", Count: " + count + ", Edges: " + currEdgeList);
+
+                    //if(count == 50000000) {
+                    //    log.info("Aborted after 500");
+                    //    break;
+                    //}
                 }
 
+                if (!costStillValid) {
+                    break; // no need to continue
+                }
 
-//                count++;
-//                if(count == 50000000) {
-//                    log.info("Aborted after 500");
-//                    break;
-//                }
             }
-
-            if(!costStillValid){
-                break; // no need to continue
-            }
-
         }
 
 

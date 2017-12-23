@@ -1,7 +1,6 @@
 package dicograph.graphIO;
 
 import org.jgrapht.Graph;
-import org.jgrapht.VertexFactory;
 import org.jgrapht.generate.EmptyGraphGenerator;
 import org.jgrapht.generate.GnmRandomGraphGenerator;
 import org.jgrapht.generate.GnpRandomGraphGenerator;
@@ -13,14 +12,10 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
 import java.util.logging.Logger;
 
-import dicograph.ILPSolver.CplexDiCographEditingSolver;
 import dicograph.modDecomp.MDNodeType;
 
 import static dicograph.modDecomp.MDNodeType.*;

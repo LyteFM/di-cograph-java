@@ -1,4 +1,4 @@
-package dicograph.MDSolver;
+package dicograph.Editing;
 
 import org.jgrapht.alg.util.Pair;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -7,6 +7,7 @@ import org.jgrapht.io.ImportException;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +41,7 @@ public class MDEditor {
 
     public SimpleDirectedGraph<Integer,DefaultWeightedEdge> editIntoCograph() throws ImportException, IOException, InterruptedException{
 
-        DirectedMD modDecomp = new DirectedMD(inputGraph, log, true);
+        DirectedMD modDecomp = new DirectedMD(inputGraph, log, false);
         MDTree currTree = modDecomp.computeModularDecomposition();
         log.info(()->"Original Tree: " + MDTree.beautify(currTree.toString()));
         TreeMap<Integer,LinkedList<MDTreeNode>> depthToPrimes = currTree.getPrimeModulesBottomUp();
@@ -81,7 +82,7 @@ public class MDEditor {
 
         // brute-Force approach: try out all possible edge-edits, costs from low to high, until the subgraph is non-prime.
         log.info(() -> "Computing all possible edit Sets for node " + primeNode);
-        Map<Integer, List<List<WeightedPair<Integer, Integer>>>> allPossibleEdits = subGraph.computeBestEdgeEdit(log);
+        Map<Integer, List<List<WeightedPair<Integer, Integer>>>> allPossibleEdits = subGraph.computeBestEdgeEdit(log,false);
 
         TreeSet<Integer> allSizesSorted = new TreeSet<>(allPossibleEdits.keySet());
         int fst = allSizesSorted.first();
@@ -102,4 +103,6 @@ public class MDEditor {
         } else
             return null;
     }
+
+    //public static Map<BitSet,>
 }
