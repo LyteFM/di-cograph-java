@@ -42,6 +42,7 @@ public class MDEditor {
 
         DirectedMD modDecomp = new DirectedMD(inputGraph, log, true);
         MDTree currTree = modDecomp.computeModularDecomposition();
+        log.info(()->"Original Tree: " + MDTree.beautify(currTree.toString()));
         TreeMap<Integer,LinkedList<MDTreeNode>> depthToPrimes = currTree.getPrimeModulesBottomUp();
         if(!depthToPrimes.isEmpty()){
             for(Map.Entry<Integer,LinkedList<MDTreeNode>> entry : depthToPrimes.descendingMap().entrySet()){

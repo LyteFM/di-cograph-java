@@ -1,5 +1,7 @@
 package dicograph.modDecomp;
 
+import com.google.common.base.Stopwatch;
+
 import org.jgrapht.alg.util.Pair;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
@@ -25,6 +27,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import dicograph.utils.SortAndCompare;
+import dicograph.utils.TimerLog;
 
 
 /**
@@ -34,6 +37,7 @@ public class DirectedMD {
 
     final SimpleDirectedGraph<Integer, DefaultWeightedEdge> inputGraph;
     final Logger log;
+    final TimerLog timeLog;
     final int nVertices;
     SimpleGraph<Integer, DefaultWeightedEdge> G_s;
     SimpleGraph<Integer, DefaultWeightedEdge> G_d;
@@ -50,6 +54,7 @@ public class DirectedMD {
 
         inputGraph = input;
         log = logger;
+        timeLog = new TimerLog(log,true);
         nVertices = input.vertexSet().size();
         leavesOfT_s = new MDTreeLeafNode[nVertices];
         leavesOfT_g = new MDTreeLeafNode[nVertices];
@@ -136,12 +141,12 @@ public class DirectedMD {
         log.fine("  G_s of digraph: " + G_s);
 
 
-
         // H: symmetric 2-structure with
         //    E_H(u,v) = 0 if {u,v} non-edge (i.e. non-edge in both G_s and G_d)
         //    E_H(u,v) = 1 if {u,v} edge (i.e. edge in both G_s and G_d)
         //    E_H(u,v) = 2 if (u,v) or (v,u) simple arc (i.e. edge in G_s but not G_d)
 
+        timeLog.logTime("Init of G_d and G_s");
         log.fine("computing md for G_d:");
 
         // Step 2: T(G_d) and T(G_s) with algorithm for undirected graphs
@@ -157,10 +162,11 @@ public class DirectedMD {
 //        if(treeForG_s.removeDummies()){
 //            log.warning("Removed dummy primes for G_s");
 //        }
+        timeLog.logTime("MD for G_d and G_s");
         log.fine("md for G_d:\n" + MDTree.beautify(treeForG_d.toString()));
-        log.fine("DOT for G_d:\n" + treeForG_d.exportAsDot());
+        //log.fine("DOT for G_d:\n" + treeForG_d.exportAsDot());
         log.fine("md for G_s:\n" + MDTree.beautify(treeForG_s.toString()));
-        log.fine("DOT for G_s:\n" + treeForG_s.exportAsDot());
+        //log.fine("DOT for G_s:\n" + treeForG_s.exportAsDot());
 
         // Step 3: Find T(H) = T(G_s) Λ T(G_d)
 
@@ -169,6 +175,7 @@ public class DirectedMD {
         // I guess I should determine the node-type. Note: Due to possibly merged modules, this is
         // not yet the "true" node-type, just a reference to 0/1/2-completeness.
         treeForH.computeAllNodeTypes(this);
+        timeLog.logTime("End of step 3 - Inclusion Tree");
         log.fine("Inclusion Tree with computed types: " + MDTree.beautify(treeForH.toString()));
 
 
@@ -178,6 +185,7 @@ public class DirectedMD {
         // Step 5: At each  2-complete node Y, select an arbitrary set S of representatives from the children.
         //         order the children of Y according to a perfect factorizing permutation of G[S].
         treeForH.computeFactorizingPermutationAndReorderAccordingly(this, true );
+        timeLog.logTime("Fact. Permutation");
 
 
         // Resulting leaf order of T(H) is a factorizing permutation of G by Lem 20,21. Use algorithm
@@ -206,6 +214,7 @@ public class DirectedMD {
 //        if(finalTree.removeDummies()){
 //            log.warning("Removed dummy primes/ weak orders!");
 //        }
+        timeLog.logTime("MD Tree from FP");
         log.fine("Final Tree: " + MDTree.beautify(finalTree.toString()));
 
 
@@ -306,6 +315,7 @@ public class DirectedMD {
                     overlapInput.append(vertexNo).append(" "));
             overlapInput.append("-1\n");
         });
+        timeLog.logTime("Init step 3");
 
 
         // 1.) use M.Rao's Dahlhaus algorithm to compute the overlap components (Bound: |M| <= 4m + 6n)
@@ -342,6 +352,7 @@ public class DirectedMD {
                 overlapComponents.put(componentNr, allNontrivModules.get(i));
             }
         }
+        timeLog.logTime("Overlap components");
 
         // What exacty _are_ the overlap Components now? number -> module
         // what do I want: number -> set with all vertices. therefore:
@@ -363,7 +374,8 @@ public class DirectedMD {
         // The previously ommitted V and the singleton sets are also added to the tree.
         PartitiveFamilyTree overlapInclusionTree = new PartitiveFamilyTree();
         PartitiveFamilyLeafNode[] leafNodes = overlapInclusionTree.createInclusionTreeFromBitsets(overlapComponents.values(),log,nVertices);
-        log.fine(() -> "Inclusion tree of overlap components: " + MDTree.beautify(overlapInclusionTree.toString()));
+        timeLog.logTime("Overlap inclusion tree");
+        log.fine(() -> MDTree.beautify(overlapInclusionTree.toString()));
         HashMap<BitSet, RootedTreeNode> bitsetToOverlapTreenNode = overlapInclusionTree.getModuleToTreenode();
 
 
@@ -436,6 +448,7 @@ public class DirectedMD {
             }
 
         }
+        timeLog.logTime("Equivalence Classes");
         log.fine("Equivalence Classes: " + equivalenceClassesR_U.values());
 
 

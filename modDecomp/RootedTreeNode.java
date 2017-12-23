@@ -303,7 +303,7 @@ public class RootedTreeNode {
 	protected void replaceThisByItsChildren() {
 
 		// todo: is this the error source???
-		System.out.println("Warning: replacing " + this + " by its children!");
+		// System.out.println("Warning: replacing " + this + " by its children!");
 		RootedTreeNode currentChild = getFirstChild();
 		while (currentChild != null) {
 			RootedTreeNode nextChild = currentChild.getRightSibling();

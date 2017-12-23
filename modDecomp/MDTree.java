@@ -40,6 +40,7 @@ public class MDTree extends RootedTree {
 	public MDTree(SimpleGraph<Integer,DefaultWeightedEdge> jGraph) {
 		super();
 		setRoot( buildMDTree(jGraph) );
+		root.setParent(null); // still has the recSubProblem, that kills by LCA-computations.
 	}
 
 	protected MDTree(){

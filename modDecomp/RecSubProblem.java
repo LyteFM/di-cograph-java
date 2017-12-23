@@ -98,7 +98,7 @@ class RecSubProblem extends RootedTreeNode {
 		while (leafIt.hasNext()) {			
 			MDTreeLeafNode current = leafIt.next();
 			addChild(current);
-            System.out.println("New child: " + current);
+            // System.out.println("New child: " + current);
         }
 				
 	}
@@ -140,7 +140,7 @@ class RecSubProblem extends RootedTreeNode {
         // Add leaf nodes to the problem for recursion: (move to the upper loop?)
         for( MDTreeLeafNode leafNode : nodeToLeaves.values()){
             addChild(leafNode);
-            System.out.println("added child: " + leafNode.vertexNo);
+            // System.out.println("added child: " + leafNode.vertexNo);
         }
 
         String debug = "deb";
@@ -177,7 +177,7 @@ class RecSubProblem extends RootedTreeNode {
 			processNeighbours(pivot);
 			pivot.setVisited();
 
-            System.out.println("Only one Child: " + getFirstChild());
+            // System.out.println("Only one Child: " + getFirstChild());
 
             return (MDTreeNode) this.getFirstChild();
 		}
@@ -187,7 +187,7 @@ class RecSubProblem extends RootedTreeNode {
 		// of 'thisProblem'.
 		RecSubProblem thisProblem = pivot();
 
-        System.out.println("Pivot: " + thisProblem);
+        // System.out.println("Pivot: " + thisProblem);
 
 		
 		
@@ -206,7 +206,7 @@ class RecSubProblem extends RootedTreeNode {
 		MDTreeNode extraComponents = 
 			thisProblem.removeExtraComponents();
 
-        //System.out.println("Extra Components: " + extraComponents);
+        //// System.out.println("Extra Components: " + extraComponents);
 
 		// Replace the layers by their solutions.
 		thisProblem.removeLayers();
@@ -234,7 +234,7 @@ class RecSubProblem extends RootedTreeNode {
 		// (see 'processNeighbours').
 		thisProblem.clearAllButVisited();
 
-		System.out.println((MDTreeNode) thisProblem.getFirstChild());
+		// System.out.println((MDTreeNode) thisProblem.getFirstChild());
 				
 		return (MDTreeNode) thisProblem.getFirstChild();			
 	}
@@ -1229,7 +1229,7 @@ class RecSubProblem extends RootedTreeNode {
 					
 		MDTreeLeafNode pivot = (MDTreeLeafNode) getFirstChild();
 		pivot.setVisited();
-        System.out.println("Pivot Vertex: " + pivot);
+        // System.out.println("Pivot Vertex: " + pivot);
 
         RecSubProblem neighbourProblem = processNeighbours(pivot);
 						

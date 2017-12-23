@@ -86,7 +86,7 @@ public class InducedWeightedSubgraph extends SimpleDirectedGraph<Integer,Default
             System.out.println(combinations.size() + " permutations!");
             boolean costStillValid = false;
 
-            int count = 0;
+            //int count = 0;
 
             for(Set<Integer> edgeSubset : combinations){
                 int cost = 0;
@@ -121,11 +121,11 @@ public class InducedWeightedSubgraph extends SimpleDirectedGraph<Integer,Default
                 }
 
 
-                count++;
-                if(count % 1000000 == 0)
-                    System.out.println("Count: " + count);
-                if(count == 50000000)
-                    break;
+//                count++;
+//                if(count == 50000000) {
+//                    log.info("Aborted after 500");
+//                    break;
+//                }
             }
 
             if(!costStillValid){
