@@ -28,7 +28,7 @@ import dicograph.utils.WeightedPair;
  */
 public class InducedWeightedSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEdge> {
 
-    private static final int maxCost = 5;
+    private static final int maxCost = 4;
     private final SimpleDirectedGraph<Integer, DefaultWeightedEdge> base;
     private final int nVertices;
 
@@ -87,7 +87,7 @@ public class InducedWeightedSubgraph extends SimpleDirectedGraph<Integer,Default
 
         } else {
             int smallestCost = maxCost;
-            for (int i = 1; i < intToEdge.keySet().size(); i++) {
+            for (int i = 1; i < maxCost; i++) {
                 System.out.println("Computing all permutations of size " + i + " for n = " + cnt);
                 Set<Set<Integer>> combinations = Sets.combinations(intToEdge.keySet(), i);
                 System.out.println(combinations.size() + " permutations!");
@@ -122,8 +122,9 @@ public class InducedWeightedSubgraph extends SimpleDirectedGraph<Integer,Default
                             // need this to verify that an early, but expensive edit is best.
                             if (cost < smallestCost)
                                 smallestCost = cost;
-                            if (smallestCost <= i)
-                                return costToEdges;
+                            //if (smallestCost <= i)
+                            //    return costToEdges;
+                            // todo: disabled for complete test run.
                         }
 
                     }

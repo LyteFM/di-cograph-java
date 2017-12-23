@@ -151,8 +151,8 @@ public class CplexDiCographEditingSolver {
                             for(j = 0; j< ForbiddenSubgraphs.len_3.length; j++){
 
                                 IloRange range = solver.le(solver.scalProd(
-                                        ForbiddenSubgraphs.len_3[j], vars_3), ForbiddenSubgraphs.threshold_len_3[j],
-                                        ForbiddenSubgraphs.len_3_names[j] + "_" + w + "," + x + "," + y);
+                                        ForbiddenSubgraphs.len_3[j].get(), vars_3), ForbiddenSubgraphs.len_3[j].getThreshold(),
+                                        ForbiddenSubgraphs.len_3[j] + "_" + w + "," + x + "," + y);
                                 solver.addLazyConstraint(range);
                             }
 
@@ -168,8 +168,8 @@ public class CplexDiCographEditingSolver {
                                     for(k = 0; k< ForbiddenSubgraphs.len_4.length; k++) {
 
                                         IloRange range = solver.le(solver.scalProd(
-                                                ForbiddenSubgraphs.len_4[k], vars_4), ForbiddenSubgraphs.threshold_len_4[k],
-                                                ForbiddenSubgraphs.len_4_names[k] + "_" + w + "," + x + "," + y + "," + z);
+                                                ForbiddenSubgraphs.len_4[k].get(), vars_4), ForbiddenSubgraphs.len_4[k].getThreshold(),
+                                                ForbiddenSubgraphs.len_4[k] + "_" + w + "," + x + "," + y + "," + z);
                                         solver.addLazyConstraint(range);
                                     }
                                 }
