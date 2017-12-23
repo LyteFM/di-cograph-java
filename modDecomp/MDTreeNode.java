@@ -3,10 +3,8 @@ package dicograph.modDecomp;
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultWeightedEdge;
-import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
-import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.HashMap;
@@ -14,7 +12,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 
-import dicograph.graphIO.InducedWeightedSubgraph;
+import dicograph.Editing.PrimeSubgraph;
 
 /*
  * An internal node in a modular decomposition tree.
@@ -609,7 +607,7 @@ public class MDTreeNode extends RootedTreeNode {
 	}
 
 	// inits Graph, baseVnoToSubVno and returns the weights of each new vertex.
-	public double[] initWeightedSubgraph(InducedWeightedSubgraph subGraph, SimpleDirectedGraph<Integer,DefaultWeightedEdge> base){
+	public double[] initWeightedSubgraph(PrimeSubgraph subGraph, SimpleDirectedGraph<Integer,DefaultWeightedEdge> base){
 
 		HashMap<Integer,Integer> baseVNoTosubVNo = subGraph.getBaseNoTosubNo();
 

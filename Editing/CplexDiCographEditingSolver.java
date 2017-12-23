@@ -1,5 +1,7 @@
 package dicograph.Editing;
 
+import com.google.common.io.ByteStreams;
+
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
@@ -148,11 +150,11 @@ public class CplexDiCographEditingSolver {
                                     E[y][w], E[y][x]
                             };
                             // subgraphs of length 3:
-                            for(j = 0; j< ForbiddenSubgraphs.len_3.length; j++){
+                            for(j = 0; j< ForbiddenSubgraph.len_3.length; j++){
 
                                 IloRange range = solver.le(solver.scalProd(
-                                        ForbiddenSubgraphs.len_3[j].get(), vars_3), ForbiddenSubgraphs.len_3[j].getThreshold(),
-                                        ForbiddenSubgraphs.len_3[j] + "_" + w + "," + x + "," + y);
+                                        ForbiddenSubgraph.len_3[j].get(), vars_3), ForbiddenSubgraph.len_3[j].getThreshold(),
+                                        ForbiddenSubgraph.len_3[j] + "_" + w + "," + x + "," + y);
                                 solver.addLazyConstraint(range);
                             }
 
@@ -165,11 +167,11 @@ public class CplexDiCographEditingSolver {
                                             E[y][w], E[y][x],          E[y][z],
                                             E[z][w], E[z][x], E[z][y]
                                     };
-                                    for(k = 0; k< ForbiddenSubgraphs.len_4.length; k++) {
+                                    for(k = 0; k< ForbiddenSubgraph.len_4.length; k++) {
 
                                         IloRange range = solver.le(solver.scalProd(
-                                                ForbiddenSubgraphs.len_4[k].get(), vars_4), ForbiddenSubgraphs.len_4[k].getThreshold(),
-                                                ForbiddenSubgraphs.len_4[k] + "_" + w + "," + x + "," + y + "," + z);
+                                                ForbiddenSubgraph.len_4[k].get(), vars_4), ForbiddenSubgraph.len_4[k].getThreshold(),
+                                                ForbiddenSubgraph.len_4[k] + "_" + w + "," + x + "," + y + "," + z);
                                         solver.addLazyConstraint(range);
                                     }
                                 }
@@ -191,6 +193,7 @@ public class CplexDiCographEditingSolver {
             solver.setOut(new NullOutputStream());
         }
         */
+        //solver.setOut( ByteStreams.nullOutputStream() );
 
         // all solutions
         if (parameters[1] != 0){

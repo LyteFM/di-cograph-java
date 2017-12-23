@@ -1,4 +1,4 @@
-package dicograph.graphIO;
+package dicograph.Editing;
 
 import com.google.common.collect.Sets;
 
@@ -18,15 +18,17 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Logger;
 
+import dicograph.Editing.CplexDiCographEditingSolver;
 import dicograph.modDecomp.DirectedMD;
 import dicograph.modDecomp.MDTree;
 import dicograph.modDecomp.MDTreeNode;
 import dicograph.utils.WeightedPair;
+import ilog.concert.IloException;
 
 /**
  * Created by Fynn Leitow on 21.12.17.
  */
-public class InducedWeightedSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEdge> {
+public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEdge> {
 
     private static final int maxCost = 4;
     private final SimpleDirectedGraph<Integer, DefaultWeightedEdge> base;
@@ -37,7 +39,7 @@ public class InducedWeightedSubgraph extends SimpleDirectedGraph<Integer,Default
     private final int[] subNoToBaseNo;
 
 
-    public InducedWeightedSubgraph(SimpleDirectedGraph<Integer,DefaultWeightedEdge> baseGraph, MDTreeNode node){
+    public PrimeSubgraph(SimpleDirectedGraph<Integer,DefaultWeightedEdge> baseGraph, MDTreeNode node){
         super(new ClassBasedEdgeFactory<>(DefaultWeightedEdge.class),true);
         base = baseGraph;
         baseNoTosubNo = new HashMap<>();
@@ -51,7 +53,7 @@ public class InducedWeightedSubgraph extends SimpleDirectedGraph<Integer,Default
 
     // Possible optimization: sequential subsets! (a,b) -> (a,b,c) ...
     public Map<Integer, List<List<WeightedPair<Integer, Integer>>>> computeBestEdgeEdit(Logger log, boolean useILP)
-    throws InterruptedException, IOException, ImportException{
+    throws InterruptedException, IOException, ImportException, IloException{
         // an entry in the map means: if present -> remove, if not -> add.
         //
 
@@ -84,6 +86,10 @@ public class InducedWeightedSubgraph extends SimpleDirectedGraph<Integer,Default
         }
 
         if(useILP){
+            CplexDiCographEditingSolver primeSolver = new CplexDiCographEditingSolver(this, new int[]{0,1}, weightMatrix, log);
+            primeSolver.solve();
+            int val = (int) Math.round(primeSolver.getEditingDistances().get(0));
+            costToEdges.put(val, primeSolver.getSolutionEdgeEdits());
 
         } else {
             int smallestCost = maxCost;
@@ -147,7 +153,7 @@ public class InducedWeightedSubgraph extends SimpleDirectedGraph<Integer,Default
             }
         }
 
-
+        // Subgraph Edges!
         return costToEdges;
     }
 
