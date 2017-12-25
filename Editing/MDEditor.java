@@ -8,6 +8,8 @@ import org.jgrapht.io.ImportException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -79,13 +81,20 @@ public class MDEditor {
 
         // 1. create weighted subgraph
         PrimeSubgraph subGraph = new PrimeSubgraph(editGraph,primeNode);
+        log.info("Subgraph: " + subGraph.toString());
+
 
         // have a look at the forbidden subgraphs and the graph:
-        log.info("Subgraph: " + subGraph.toString());
-        Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> badSubs = ForbiddenSubgraph.verticesToForbidden(subGraph);
+        HashMap<Pair<Integer,Integer>,Integer> edgeToCount = new HashMap<>();
+        // [(41,9), (40,48), (40,6), (36,8), (31,21), (31,20), (28,14), (47,34), (48,14), (4,20)]
+        Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> badSubs = ForbiddenSubgraph.verticesToForbidden(subGraph, edgeToCount);
         log.info("Length 3:\n" + badSubs.getFirst());
         log.info("Length 4:\n" + badSubs.getSecond());
         ForbiddenSubgraph.computeScores(badSubs, log,subGraph, false);
+        ArrayList<Map.Entry<Pair<Integer,Integer>,Integer>> edgesToScore = new ArrayList<>(edgeToCount.entrySet());
+        edgesToScore.sort( Comparator.comparingInt(e ->  Math.abs( e.getValue() )));
+        // (e1,e2) -> Integer.compare(Math.abs(e1.getValue()), Math.abs(e2.getValue())
+        log.info("Favourable edges: " + edgesToScore.size() + "\n" + edgesToScore);
 
         // brute-Force approach: try out all possible edge-edits, costs from low to high, until the subgraph is non-prime.
         log.info(() -> "Computing all possible edit Sets for node " + primeNode);

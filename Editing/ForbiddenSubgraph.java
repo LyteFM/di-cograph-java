@@ -96,11 +96,10 @@ enum ForbiddenSubgraph {
     static ForbiddenSubgraph[] len_3 = {_p3, _a, _b, _c3, _d3};
 
 
-    public static Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> verticesToForbidden(SimpleDirectedGraph<Integer,DefaultWeightedEdge> g){
+    public static Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> verticesToForbidden(SimpleDirectedGraph<Integer,DefaultWeightedEdge> g, HashMap<Pair<Integer,Integer>,Integer> edgeToCount){
 
         HashMap<BitSet,ForbiddenSubgraph> len3 = new HashMap<>();
         HashMap<BitSet,ForbiddenSubgraph> len4 = new HashMap<>();
-        HashMap<Pair<Integer,Integer>,Integer> edgeToCount = new HashMap<>();
 
         int n = g.vertexSet().size();
         boolean[][] E = new boolean[n][n];
@@ -174,10 +173,18 @@ enum ForbiddenSubgraph {
                 // edge scores
                 for(int u : vertices){
                     for (int v : vertices){
-                        if(u != v && matrix[u][v]){
-                            Pair<Integer,Integer> e = new Pair<>(u,v);
-                            int cnt = edgeCount.getOrDefault(e,0);
-                            edgeCount.put(e,++cnt);
+                        if(u != v){
+                            // we have an edge of the forbidden subgraph
+                           if(matrix[u][v]) {
+                               Pair<Integer, Integer> e = new Pair<>(u, v);
+                               int cnt = edgeCount.getOrDefault(e, 0);
+                               edgeCount.put(e, ++cnt);
+                           } else {
+                               // non-edge that might change it into a legal subgraph todo!!
+                               Pair<Integer, Integer> e = new Pair<>(u, v);
+                               int cnt = edgeCount.getOrDefault(e, 0);
+                               edgeCount.put(e, --cnt);
+                           }
                         }
                     }
                 }
@@ -210,7 +217,7 @@ enum ForbiddenSubgraph {
         }
 
 
-        // compute the 1-Neighborhood-score. Might be more insightful.
+        // compute the 1-Neighborhood-score. Might be more insightful. -> Unfortunately not.
         int[] touchingVerticesScores = new int[p.getnVertices()];
         for(BitSet vertices : subsMap.getFirst().keySet()){
             vertices.stream().forEach( v -> {
