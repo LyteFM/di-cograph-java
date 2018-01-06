@@ -269,5 +269,9 @@ public class MDTree extends RootedTree {
         return ret;
     }
 
+    public int getNumPrimeChildren(){
+        return ((MDTreeNode) root).getNumPrimeChildren();
+    }
+
 
 }

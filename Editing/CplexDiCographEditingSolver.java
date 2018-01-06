@@ -193,7 +193,7 @@ public class CplexDiCographEditingSolver {
             solver.setOut(new NullOutputStream());
         }
         */
-        //solver.setOut( ByteStreams.nullOutputStream() );
+        solver.setOut( ByteStreams.nullOutputStream() );
 
         // all solutions
         if (parameters[1] != 0){

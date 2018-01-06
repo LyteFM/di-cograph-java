@@ -33,12 +33,14 @@ public class MDEditor {
     SimpleDirectedGraph<Integer, DefaultWeightedEdge> editGraph;
     final  int nVertices;
     final Logger log;
+    final int method;
 
-    public MDEditor(SimpleDirectedGraph<Integer,DefaultWeightedEdge> input, Logger logger){
+    public MDEditor(SimpleDirectedGraph<Integer,DefaultWeightedEdge> input, Logger logger, int methodP){
         inputGraph = input;
         nVertices = inputGraph.vertexSet().size();
         editGraph = GraphGenerator.deepClone(inputGraph);
         log = logger;
+        method = methodP;
     }
 
     public SimpleDirectedGraph<Integer,DefaultWeightedEdge> editIntoCograph() throws ImportException, IOException, InterruptedException, IloException{
@@ -52,9 +54,9 @@ public class MDEditor {
                 log.info(()->"Editing primes on lvl " + entry.getKey());
                 for(MDTreeNode primeNode : entry.getValue()){
                     log.info(()->"Editing prime: " + primeNode);
-                    List<Pair<Integer,Integer>> editEdges = editSubgraph(primeNode);
+                    List<Pair<Integer,Integer>> editEdges = editSubgraph(primeNode,  method);
                     if(editEdges != null) {
-                        log.info(() -> "Found edit with cost " + editEdges.size() + " for this prime: " + editEdges);
+                        log.info(() -> "Found edit with " + editEdges.size() + "Edges for this prime: " + editEdges);
                         editGraph.editGraph(editEdges);
                     } else {
                         log.warning(() -> "No edit found for this prime. Aborting.");
@@ -63,6 +65,7 @@ public class MDEditor {
                 }
             }
         }
+        //editIntoCograph();
 
         return editGraph;
     }
@@ -77,28 +80,18 @@ public class MDEditor {
 //        }
 //    }
 
-    List<Pair<Integer,Integer>> editSubgraph(MDTreeNode primeNode)throws ImportException, IOException, InterruptedException, IloException{
+    List<Pair<Integer,Integer>> editSubgraph(MDTreeNode primeNode, int method)throws ImportException, IOException, InterruptedException, IloException{
 
         // 1. create weighted subgraph
         PrimeSubgraph subGraph = new PrimeSubgraph(editGraph,primeNode);
         log.info("Subgraph: " + subGraph.toString());
+        log.info("Base-Vertex to Sub-Vertex " + subGraph.getBaseNoTosubNo());
 
 
-        // have a look at the forbidden subgraphs and the graph:
-        HashMap<Pair<Integer,Integer>,Integer> edgeToCount = new HashMap<>();
-        // [(41,9), (40,48), (40,6), (36,8), (31,21), (31,20), (28,14), (47,34), (48,14), (4,20)]
-        Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> badSubs = ForbiddenSubgraph.verticesToForbidden(subGraph, edgeToCount);
-        log.info("Length 3:\n" + badSubs.getFirst());
-        log.info("Length 4:\n" + badSubs.getSecond());
-        ForbiddenSubgraph.computeScores(badSubs, log,subGraph, false);
-        ArrayList<Map.Entry<Pair<Integer,Integer>,Integer>> edgesToScore = new ArrayList<>(edgeToCount.entrySet());
-        edgesToScore.sort( Comparator.comparingInt(e ->  Math.abs( e.getValue() )));
-        // (e1,e2) -> Integer.compare(Math.abs(e1.getValue()), Math.abs(e2.getValue())
-        log.info("Favourable edges: " + edgesToScore.size() + "\n" + edgesToScore);
 
         // brute-Force approach: try out all possible edge-edits, costs from low to high, until the subgraph is non-prime.
         log.info(() -> "Computing all possible edit Sets for node " + primeNode);
-        Map<Integer, List<List<WeightedPair<Integer, Integer>>>> allPossibleEdits = subGraph.computeBestEdgeEdit(log,true);
+        Map<Integer, List<List<WeightedPair<Integer, Integer>>>> allPossibleEdits = subGraph.computeBestEdgeEdit(log,method);
 
         TreeSet<Integer> allSizesSorted = new TreeSet<>(allPossibleEdits.keySet());
         int fst = allSizesSorted.first();

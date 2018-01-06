@@ -173,7 +173,7 @@ enum ForbiddenSubgraph {
                 // edge scores
                 for(int u : vertices){
                     for (int v : vertices){
-                        if(u != v){
+                        if(u != v && v > u){
                             // we have an edge of the forbidden subgraph
                            if(matrix[u][v]) {
                                Pair<Integer, Integer> e = new Pair<>(u, v);
@@ -187,6 +187,11 @@ enum ForbiddenSubgraph {
                            }
                         }
                     }
+                }
+
+                // try to get the direction.
+                for(index = 0; index < subs[j].get().length; index++){
+
                 }
             }
         }

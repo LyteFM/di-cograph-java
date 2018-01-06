@@ -648,6 +648,33 @@ public class MDTreeNode extends RootedTreeNode {
 		}
 		return  subVertexToWeight;
 	}
+
+	// F.L. 26.12.17: For Heuristic
+	int getNumPrimeChildren(){
+		int count = 0;
+		if(type == MDNodeType.PRIME){
+			count = getNumChildren();
+		}
+		RootedTreeNode currChild = getFirstChild();
+		while (currChild != null){
+			if(!currChild.isALeaf()){
+				count += ((MDTreeNode) currChild).getNumPrimeChildren();
+			}
+			currChild = currChild.getRightSibling();
+		}
+		return count;
+	}
+
+	/*
+	// check all edge-Weights and add the other edges!
+            List<WeightedPair<Integer,Integer>> addEdges = new LinkedList<>();
+            for( WeightedPair<Integer,Integer> singleEdge : res.get(0)){
+                if(Math.round(singleEdge.getWeight()) > 1){
+                    log.info("Adding edges for " + singleEdge);
+                    Pair<List<Pair>>
+                }
+            }
+	 */
 }
 
 
