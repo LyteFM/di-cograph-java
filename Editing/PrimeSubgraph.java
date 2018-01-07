@@ -35,7 +35,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
 
     private static final int maxCost = 20;
     private int softThreshold = 3; // If no succesful edit found, discard edits with forbiddenSub-score <= this value
-    private int hardThreshold = 1; // Force stop if forbiddenSub-Score <= this value during first run and use brute-force/branching/ILP in second run to complete.
+    private int hardThreshold = 0; // Force stop if forbiddenSub-Score <= this value during first run and use brute-force/branching/ILP in second run to complete.
 
     private final SimpleDirectedGraph<Integer, DefaultWeightedEdge> base;
     private final int nVertices;
@@ -79,6 +79,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
         ArrayList<Map.Entry<Pair<Integer,Integer>,Integer>> edgesToScore = new ArrayList<>(edgeToCount.entrySet());
         edgesToScore.sort( Comparator.comparingInt(e ->  -Math.abs( e.getValue() ))); // descending
         log.info("Favourable edges: " + edgesToScore.size() + "\n" + edgesToScore);
+        int firstScore = edgesToScore.get(0).getValue();
 
         HashMap<Integer, List<List<WeightedPair<Integer, Integer>>>> costToEdges = new HashMap<>();
         Map<Integer, WeightedPair<Integer,Integer>> intToEdge = new HashMap<>();
@@ -118,8 +119,10 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
             double weight;
             for (i = 0; i < edgesToScore.size(); i++) {
                 Map.Entry<Pair<Integer,Integer>,Integer> edge = edgesToScore.get(i);
-                if(first && edge.getValue() <= hardThreshold){
+                // don't do that for very small modules...
+                if(first && allEdgesList.size() > 3 && Math.abs(edge.getValue()) <= hardThreshold){
                     thresholdReached = true;
+                    log.warning("Reached hard threshold " + hardThreshold + " for edge " + edge);
                     break;
                 }
                 u = edge.getKey().getFirst();

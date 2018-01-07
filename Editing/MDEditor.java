@@ -63,12 +63,14 @@ public class MDEditor {
         log.info(()->"Original Tree: " + MDTree.beautify(inputTree.toString()));
         TreeMap<Integer,LinkedList<MDTreeNode>> depthToPrimes = inputTree.getPrimeModulesBottomUp();
         if(!depthToPrimes.isEmpty()){
+            boolean finished = false;
             for(Map.Entry<Integer,LinkedList<MDTreeNode>> entry : depthToPrimes.descendingMap().entrySet()){
                 log.info(()->"Editing primes on lvl " + entry.getKey());
                 for(MDTreeNode primeNode : entry.getValue()){
                     log.info(()->"Editing prime: " + primeNode);
-                    List<Pair<Integer,Integer>> editEdges = editSubgraph(primeNode,  method);
-                    if(editEdges != null) {
+                    List<Pair<Integer,Integer>> editEdges = new LinkedList<>();
+                    finished = editSubgraph(primeNode, editEdges, method);
+                    if(!editEdges.isEmpty()) {
                         log.info(() -> "Found edit with " + editEdges.size() + " Edges for this prime: " + editEdges);
                         allEdits.addAll(editEdges);
                         editGraph.editGraph(editEdges);
@@ -112,7 +114,10 @@ public class MDEditor {
                     }
                 }
             }
-            log.info("Total Cost: " + allEdits.size() + ", edges: " + allEdits);
+            if(finished)
+                log.info("Total Cost: " + allEdits.size() + ", edges: " + allEdits);
+            else
+                log.info("Current Cost: " + allEdits.size() + ", edges: " + allEdits);
         } else {
             log.warning("Input was already a di-cograph!");
         }
@@ -124,8 +129,9 @@ public class MDEditor {
         return allEdits;
     }
 
-    private List<Pair<Integer,Integer>> editSubgraph(MDTreeNode primeNode, int method)throws ImportException, IOException, InterruptedException, IloException{
+    private boolean editSubgraph(MDTreeNode primeNode, List<Pair<Integer,Integer>> resultingEdges, int method)throws ImportException, IOException, InterruptedException, IloException{
 
+        boolean finished = false;
         // 1. create weighted subgraph
         PrimeSubgraph subGraph = new PrimeSubgraph(editGraph,primeNode);
         log.info("Subgraph: " + subGraph.toString());
@@ -152,25 +158,26 @@ public class MDEditor {
             List<List<WeightedPair<Integer,Integer>>> edits = allPossibleEdits.get(fst);
 
             // let's try continue on error:
-            if(fst == -1)
+            if(fst == -1) {
                 fst = edits.size();
+            } else {
+                finished = true;
+            }
 
-            List<Pair<Integer,Integer>> ret = new ArrayList<>(fst);
 
             // add edges between modules
             if (fst != edits.get(0).size()) {
-                ret.addAll(subGraph.addModuleEdges(edits.get(0), log));
+                resultingEdges.addAll(subGraph.addModuleEdges(edits.get(0), log));
             }
 
             // convert subgraph-edge to real edge
             for( WeightedPair<Integer,Integer> subEdge : edits.get(0)){
                 int src = subGraph.getSubNoToBaseNo()[subEdge.getFirst()];
                 int dst = subGraph.getSubNoToBaseNo()[subEdge.getSecond()];
-                ret.add(new Pair<>(src,dst));
+                resultingEdges.add(new Pair<>(src,dst));
             }
-            return ret;
-        } else
-            return null;
+        }
+        return finished;
     }
 
 

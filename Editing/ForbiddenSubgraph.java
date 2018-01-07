@@ -208,6 +208,7 @@ enum ForbiddenSubgraph {
         }
 
 
+        /*
         if(orig){
             for (int i = 0; i < p.getBase().vertexSet().size(); i++) {
                 if(p.getBaseNoTosubNo().get(i) != null) {
@@ -236,6 +237,7 @@ enum ForbiddenSubgraph {
             } );
         }
 
+
         if(orig){
             for (int i = 0; i < p.getBase().vertexSet().size(); i++) {
                 if(p.getBaseNoTosubNo().get(i) != null) {
@@ -248,6 +250,7 @@ enum ForbiddenSubgraph {
                 log.info("v: " + i + " T-score: " + touchingVerticesScores[i]);
             }
         }
+        */
     }
 
 }
