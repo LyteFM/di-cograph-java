@@ -283,6 +283,8 @@ public class GraphGenerator {
             }
         }
 
+        logger.info("Changed edges: " + usedEdges);
+
         return g;
     }
 

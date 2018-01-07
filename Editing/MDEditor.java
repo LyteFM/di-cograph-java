@@ -34,21 +34,34 @@ public class MDEditor {
     final  int nVertices;
     final Logger log;
     final int method;
+    final MDTree inputTree;
+    final List<Pair<Integer,Integer>> allEdits;
+    List<Pair<Integer,Integer>> prevEdits;
+    boolean first;
 
-    public MDEditor(SimpleDirectedGraph<Integer,DefaultWeightedEdge> input, Logger logger, int methodP){
+    public MDEditor(SimpleDirectedGraph<Integer,DefaultWeightedEdge> input, MDTree tree, Logger logger, List<Pair<Integer,Integer>> oldEdits, int methodP, boolean _1st){
         inputGraph = input;
         nVertices = inputGraph.vertexSet().size();
         editGraph = GraphGenerator.deepClone(inputGraph);
         log = logger;
         method = methodP;
+        inputTree = tree;
+        allEdits = new LinkedList<>();
+        prevEdits = oldEdits;
+        first = _1st;
     }
 
-    public SimpleDirectedGraph<Integer,DefaultWeightedEdge> editIntoCograph() throws ImportException, IOException, InterruptedException, IloException{
+    public MDEditor(SimpleDirectedGraph<Integer,DefaultWeightedEdge> input, MDTree tree, Logger logger,int methodP){
+        this(input, tree, logger, null, methodP, true);
+    }
 
-        DirectedMD modDecomp = new DirectedMD(inputGraph, log, false);
-        MDTree currTree = modDecomp.computeModularDecomposition();
-        log.info(()->"Original Tree: " + MDTree.beautify(currTree.toString()));
-        TreeMap<Integer,LinkedList<MDTreeNode>> depthToPrimes = currTree.getPrimeModulesBottomUp();
+
+
+        public SimpleDirectedGraph<Integer,DefaultWeightedEdge> editIntoCograph() throws ImportException, IOException, InterruptedException, IloException{
+
+
+        log.info(()->"Original Tree: " + MDTree.beautify(inputTree.toString()));
+        TreeMap<Integer,LinkedList<MDTreeNode>> depthToPrimes = inputTree.getPrimeModulesBottomUp();
         if(!depthToPrimes.isEmpty()){
             for(Map.Entry<Integer,LinkedList<MDTreeNode>> entry : depthToPrimes.descendingMap().entrySet()){
                 log.info(()->"Editing primes on lvl " + entry.getKey());
@@ -56,7 +69,8 @@ public class MDEditor {
                     log.info(()->"Editing prime: " + primeNode);
                     List<Pair<Integer,Integer>> editEdges = editSubgraph(primeNode,  method);
                     if(editEdges != null) {
-                        log.info(() -> "Found edit with " + editEdges.size() + "Edges for this prime: " + editEdges);
+                        log.info(() -> "Found edit with " + editEdges.size() + " Edges for this prime: " + editEdges);
+                        allEdits.addAll(editEdges);
                         editGraph.editGraph(editEdges);
                     } else {
                         log.warning(() -> "No edit found for this prime. Aborting.");
@@ -64,23 +78,53 @@ public class MDEditor {
                     }
                 }
             }
+            // if we're in a successive run and already did some editing:
+            if(prevEdits != null){
+                log.info("All edits of this run: " + allEdits);
+                log.info("adding previous and removing double edits.");
+                List<Pair<Integer,Integer>> tmp = new ArrayList<>(allEdits);
+                allEdits.removeAll(prevEdits);
+                prevEdits.removeAll(tmp);
+                allEdits.addAll(prevEdits);
+
+                // check for loops:
+                List<Pair<Integer,Integer>> loops = new LinkedList<>();
+                for(int i = 0; i< allEdits.size(); i++){
+                    for (int j = i+1; j < allEdits.size(); j++) {
+                        Pair<Integer,Integer> _1st = allEdits.get(i);
+                        Pair<Integer,Integer> _2nd = allEdits.get(j);
+                        if(_1st != _2nd){
+                            if((int) _1st.getFirst() == _2nd.getSecond() && (int) _1st.getSecond() == _2nd.getFirst()){
+                                loops.add(_1st);
+                                loops.add(_2nd);
+                            }
+                        }
+                    }
+                }
+                if(!loops.isEmpty()){
+                    editGraph.editGraph(loops);
+                    DirectedMD looplessMD = new DirectedMD(editGraph, log, false);
+                    MDTree looplessRes = looplessMD.computeModularDecomposition();
+                    if(looplessRes.getPrimeModulesBottomUp().isEmpty()){
+                        allEdits.removeAll(loops);
+                    } else {
+                        editGraph.editGraph(loops);
+                    }
+                }
+            }
+            log.info("Total Cost: " + allEdits.size() + ", edges: " + allEdits);
+        } else {
+            log.warning("Input was already a di-cograph!");
         }
-        //editIntoCograph();
 
         return editGraph;
     }
 
-//    void editGraph(List<Pair<Integer,Integer>> edgeList){
-//        for(Pair<Integer,Integer> e : edgeList){
-//            if(editGraph.containsEdge(e.getFirst(),e.getSecond())){
-//                editGraph.removeEdge(e.getFirst(),e.getSecond());
-//            } else {
-//                editGraph.addEdge(e.getFirst(), e.getSecond());
-//            }
-//        }
-//    }
+    public List<Pair<Integer, Integer>> getAllEdits() {
+        return allEdits;
+    }
 
-    List<Pair<Integer,Integer>> editSubgraph(MDTreeNode primeNode, int method)throws ImportException, IOException, InterruptedException, IloException{
+    private List<Pair<Integer,Integer>> editSubgraph(MDTreeNode primeNode, int method)throws ImportException, IOException, InterruptedException, IloException{
 
         // 1. create weighted subgraph
         PrimeSubgraph subGraph = new PrimeSubgraph(editGraph,primeNode);
@@ -91,11 +135,13 @@ public class MDEditor {
 
         // brute-Force approach: try out all possible edge-edits, costs from low to high, until the subgraph is non-prime.
         log.info(() -> "Computing all possible edit Sets for node " + primeNode);
-        Map<Integer, List<List<WeightedPair<Integer, Integer>>>> allPossibleEdits = subGraph.computeBestEdgeEdit(log,method);
+        Map<Integer, List<List<WeightedPair<Integer, Integer>>>> allPossibleEdits = subGraph.computeBestEdgeEdit(log,method, first);
+
+
 
         TreeSet<Integer> allSizesSorted = new TreeSet<>(allPossibleEdits.keySet());
         int fst = allSizesSorted.first();
-        log.info(() ->   "Valid Edits computed from cost: " + fst + " to cost: " + allSizesSorted.last());
+        log.info( "Valid Edits computed from cost: " + fst + " to cost: " + allSizesSorted.last());
 
 
 
@@ -103,9 +149,21 @@ public class MDEditor {
             // retrieve the original vertex-Nos and corresponding edges from the main graph
             log.info("Computed Edits: " + allPossibleEdits);
 
-            // here: conversion to real edge
-            ArrayList<Pair<Integer,Integer>> ret = new ArrayList<>(allPossibleEdits.get(fst).get(0).size());
-            for( WeightedPair<Integer,Integer> subEdge : allPossibleEdits.get(fst).get(0)){
+            List<List<WeightedPair<Integer,Integer>>> edits = allPossibleEdits.get(fst);
+
+            // let's try continue on error:
+            if(fst == -1)
+                fst = edits.size();
+
+            List<Pair<Integer,Integer>> ret = new ArrayList<>(fst);
+
+            // add edges between modules
+            if (fst != edits.get(0).size()) {
+                ret.addAll(subGraph.addModuleEdges(edits.get(0), log));
+            }
+
+            // convert subgraph-edge to real edge
+            for( WeightedPair<Integer,Integer> subEdge : edits.get(0)){
                 int src = subGraph.getSubNoToBaseNo()[subEdge.getFirst()];
                 int dst = subGraph.getSubNoToBaseNo()[subEdge.getSecond()];
                 ret.add(new Pair<>(src,dst));

@@ -195,9 +195,9 @@ public class CplexDiCographEditingSolver {
         */
         solver.setOut( ByteStreams.nullOutputStream() );
 
-        // all solutions
+        // want all solutions
         if (parameters[1] != 0){
-            solver.setParam(IloCplex.DoubleParam.SolnPoolAGap, 0.0);
+            solver.setParam(IloCplex.DoubleParam.SolnPoolAGap, 1); // should be 0 to only get the best solution.
             solver.setParam(IloCplex.IntParam.SolnPoolIntensity, 4);
             solver.setParam(IloCplex.IntParam.PopulateLim, 100);
             solver.populate();
@@ -266,7 +266,7 @@ public class CplexDiCographEditingSolver {
         log.fine("CographEditDistance: " + bestObjectiveValue);
 
         for (int solutionId=0; solutionId<noSolutions; solutionId++){
-            if (solver.getObjValue(solutionId)<=bestObjectiveValue){
+            if (solver.getObjValue(solutionId)<=bestObjectiveValue+3){
 
                 // initialize JGraph with same vertex-Set:
                 SimpleDirectedGraph<Integer, DefaultWeightedEdge> solutionGraph = new SimpleDirectedGraph<>(DefaultWeightedEdge.class);

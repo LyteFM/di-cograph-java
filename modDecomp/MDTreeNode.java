@@ -2,6 +2,7 @@ package dicograph.modDecomp;
 
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
+import org.jgrapht.alg.util.Pair;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
@@ -10,9 +11,11 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import dicograph.Editing.PrimeSubgraph;
+import dicograph.utils.WeightedPair;
 
 /*
  * An internal node in a modular decomposition tree.
@@ -665,16 +668,48 @@ public class MDTreeNode extends RootedTreeNode {
 		return count;
 	}
 
-	/*
-	// check all edge-Weights and add the other edges!
-            List<WeightedPair<Integer,Integer>> addEdges = new LinkedList<>();
-            for( WeightedPair<Integer,Integer> singleEdge : res.get(0)){
-                if(Math.round(singleEdge.getWeight()) > 1){
-                    log.info("Adding edges for " + singleEdge);
-                    Pair<List<Pair>>
-                }
-            }
-	 */
+	public List<Pair<Integer,Integer>> addModuleEdges(int u, int v) {
+		List<Pair<Integer,Integer>> ret = new LinkedList<>();
+		BitSet fromU = null;
+		BitSet fromV = null;
+
+		// get the module vertices
+		RootedTreeNode currChild = getFirstChild();
+		while (currChild != null){
+			if(!currChild.isALeaf()){
+				MDTreeNode node = (MDTreeNode) currChild;
+				if(node.vertices.get(u))
+					fromU = (BitSet) node.vertices.clone();
+				else if(node.vertices.get(v))
+					fromV = (BitSet) node.vertices.clone();
+			}
+			currChild = currChild.getRightSibling();
+		}
+
+		if(fromU == null && fromV == null){
+			throw new IllegalStateException("Error: edge (" + u + "," + v + ") has weight, but no module found!");
+		}
+		// one leaf is fine
+		if(fromU == null) {
+			fromU = new BitSet();
+			fromU.set(u);
+		} else if(fromV == null){
+			fromV = new BitSet();
+			fromV.set(v);
+		}
+
+		// all in same direction as (u,v)
+		for (int i = fromU.nextSetBit(0); i >= 0; i = fromU.nextSetBit(i+1)) {
+			final int sourceVertex = i;
+			fromV.stream().forEach( destVertex -> {
+				if(!(sourceVertex == u && destVertex == v))
+					ret.add( new Pair<>(sourceVertex,destVertex));
+			});
+		}
+
+		return ret;
+	}
+
 }
 
 
