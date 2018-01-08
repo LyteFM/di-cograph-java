@@ -197,6 +197,8 @@ enum ForbiddenSubgraph {
         }
     }
 
+    // started investigating here, but edge-score was much better.
+    @Deprecated
     public static void computeScores(Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> subsMap, Logger log, PrimeSubgraph p, boolean orig){
         int[] vertexScores = new int[p.getnVertices()];
 
@@ -208,7 +210,7 @@ enum ForbiddenSubgraph {
         }
 
 
-        /*
+
         if(orig){
             for (int i = 0; i < p.getBase().vertexSet().size(); i++) {
                 if(p.getBaseNoTosubNo().get(i) != null) {
@@ -250,7 +252,7 @@ enum ForbiddenSubgraph {
                 log.info("v: " + i + " T-score: " + touchingVerticesScores[i]);
             }
         }
-        */
+
     }
 
 }
