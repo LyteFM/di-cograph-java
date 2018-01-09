@@ -20,11 +20,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.logging.Logger;
 
 import dicograph.modDecomp.DirectedMD;
 import dicograph.modDecomp.MDTree;
 import dicograph.modDecomp.MDTreeNode;
+import dicograph.utils.IntEdge;
 import dicograph.utils.WeightedPair;
 import ilog.concert.IloException;
 
@@ -35,13 +37,21 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
 
     // parameters
     private static final int maxCost = 20; // from parameter k
-    private int softThreshold = 3; // If no succesful edit found, discard edits with forbiddenSub-score <= this value
+    private int softThreshold = 3; // If no succesful edit found, discard edits with forbiddenSub-score <= this value - atm for my bad tests.
+
     private int excludeThreshold = 0; // Exclude edges with a forbiddenSubgraph-score <= this threshold from the edge-edit-set.
     // prev: Force stop if forbiddenSub-Score <= this value during first run and use brute-force/branching/ILP in second run to complete.
     private boolean skipPaths = true;
     private boolean skipExistingVertices = false;
-    private int weightMultiplier = 1;
-    private int solutionGap = -1; // only one solution by default.
+    private double weightMultiplier = 0.0;
+    private int solutionGap = 2; // only one solution by default.
+    private boolean requireGlobal = false; // only accept local edit if global also improves
+
+    // For brute force:
+    private int primeStartThreshold = 5;
+
+
+    private boolean useMD = false; // takes too long for small n
 
     private final SimpleDirectedGraph<Integer, DefaultWeightedEdge> base;
     private final int nVertices;
@@ -71,18 +81,18 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
     // else: Brute Force
     // an entry in the map means: if present -> remove, if not -> add.
 
-    public Map<Integer, List<List<WeightedPair<Integer, Integer>>>> computeBestEdgeEdit(Logger log, int method, boolean first)
+    public Map<Integer, List<List<WeightedPair<Integer, Integer>>>> computeBestEdgeEdit(Logger log, EditType method, boolean first)
     throws InterruptedException, IOException, ImportException, IloException{
-        HashMap<Integer, List<List<WeightedPair<Integer, Integer>>>> costToEdges = new HashMap<>(); // results
+        Map<Integer, List<List<WeightedPair<Integer, Integer>>>> costToEdges = new TreeMap<>(); // results
         boolean thresholdReached = false;
 
         // Recognize all forbidden subgraphs and compute subgraph-scores for edges.
-        HashMap<Pair<Integer,Integer>,Integer> edgeToCount = new HashMap<>();
-        Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> badSubs = ForbiddenSubgraph.verticesToForbidden(this, edgeToCount);
+        HashMap<IntEdge,Integer> edgeToCount = new HashMap<>();
+        Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> badSubs = ForbiddenSubgraph.verticesToForbidden(this, edgeToCount,false);
         log.info("Length 3:\n" + badSubs.getFirst());
         log.info("Length 4:\n" + badSubs.getSecond());
         // sort descending
-        ArrayList<Map.Entry<Pair<Integer,Integer>,Integer>> edgesToScore = new ArrayList<>(edgeToCount.entrySet());
+        ArrayList<Map.Entry<IntEdge,Integer>> edgesToScore = new ArrayList<>(edgeToCount.entrySet());
         edgesToScore.sort( Comparator.comparingInt(e ->  -Math.abs( e.getValue() )));
         log.info("Edges by subgraph-score: " + edgesToScore.size() + "\n" + edgesToScore);
 
@@ -99,7 +109,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
                     double weight = subVertexToWeight[i] * subVertexToWeight[j];
                     weightMatrix[i][j] = weight;
                     // this only for brute force:
-                    if(method > 1) {
+                    if(method == EditType.Primes) {
                         WeightedPair<Integer, Integer> e = new WeightedPair<>(i, j, weight);
                         intToEdge.put(cnt, e);
                         cnt++;
@@ -108,8 +118,8 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
             }
         }
 
-        if(method == 0) {
-            SimpleDirectedGraph<Integer,DefaultEdge> graphOfEditEdges = new SimpleDirectedGraph<Integer, DefaultEdge>(DefaultEdge.class);
+        if(method == EditType.Lazy || first) {
+            SimpleDirectedGraph<Integer,DefaultEdge> graphOfEditEdges = new SimpleDirectedGraph<>(DefaultEdge.class);
             ConnectivityInspector<Integer,DefaultEdge> pathFinder = new ConnectivityInspector<>(graphOfEditEdges);
             List<WeightedPair<Integer, Integer>> currEdgeList = new LinkedList<>(); // just one edge
             List<WeightedPair<Integer,Integer >> allEdgesList = new LinkedList<>();
@@ -123,7 +133,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
             int cost = 0;
             double weight;
             for (i = 0; i < edgesToScore.size(); i++) {
-                Map.Entry<Pair<Integer,Integer>,Integer> edge = edgesToScore.get(i);
+                Map.Entry<IntEdge,Integer> edge = edgesToScore.get(i);
                 // don't do that for very small modules...
                 if(first && allEdgesList.size() > 3 && Math.abs(edge.getValue()) <= excludeThreshold){
                     thresholdReached = true;
@@ -145,31 +155,35 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
                     }
                 }
                 weight = subVertexToWeight[u] * subVertexToWeight[v];
-                int intWeight = (int) Math.round(weight);
                 log.info("Subgraph-Score: " + edge.getValue() + ", weight: " + weight);
                 // determine the edit direction (Problem: what if both?) todo: Häh???
 
                 // global score might be useful, too.
                 currEdgeList.clear();
-                global_u_v = computeSubgraphScoreForEgde(u,v,weight,currEdgeList,log);
-                log.info("("+ u + ","  +v + ") global: " + global_u_v);
+                global_u_v = computeEditScoreForEgde(u,v,weight,currEdgeList,log);
+                log.info("("+ u + ","  +v + ") global edit-score: " + global_u_v);
                 currEdgeList.clear();
-                global_v_u = computeSubgraphScoreForEgde(v,u,weight,currEdgeList,log);
-                log.info("("+ v + ","  +u + ") global: "+ global_v_u);
+                global_v_u = computeEditScoreForEgde(v,u,weight,currEdgeList,log);
+                log.info("("+ v + ","  +u + ") global edit-score: "+ global_v_u);
                 //currEdgeList.add(new WeightedPair<>(u,v,weight)); v,u already there
-                both = computeSubgraphScoreForEgde(u,v,weight,currEdgeList,log);
+                both = computeEditScoreForEgde(u,v,weight,currEdgeList,log);
                 log.info("both global: "+ both);
                 currEdgeList.clear();
-                //
-                boolean possibleEdge = global_u_v + intWeight <= subCount || global_v_u + intWeight <= subCount || both + intWeight <= subCount;
+
+                boolean globallyFeasable = global_u_v < subCount ||
+                        global_v_u < subCount || both < subCount;
 
                 currEdgeList.addAll(allEdgesList);
 
-                u_v_score = computeSubgraphScoreForEgde(u,v,weight,currEdgeList,log);
+                u_v_score = computeEditScoreForEgde(u,v,weight,currEdgeList,log);
+                log.info("("+ u + ","  +v + ") local edit-score: " + u_v_score);
+
                 if(u_v_score != 0) {
                     currEdgeList.clear();
                     currEdgeList.addAll(allEdgesList);
-                    v_u_score = computeSubgraphScoreForEgde(v, u, weight, currEdgeList, log);
+                    v_u_score = computeEditScoreForEgde(v, u, weight, currEdgeList, log);
+                    log.info("("+ v + ","  +u + ") local edit-score: " + v_u_score);
+
                     if(v_u_score == 0)
                         lastEdge = new WeightedPair<>(v,u,weight);
                 } else {
@@ -188,9 +202,9 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
                 }
                 // todo: gut möglich, dass BEIDE Kantenrichtungen editiert werden...
 
-                if(u_v_score < prevScore || v_u_score < prevScore) {
+                if( (u_v_score < prevScore || v_u_score < prevScore) && (!requireGlobal || globallyFeasable) ) {
 
-                    if(!possibleEdge){
+                    if(!globallyFeasable){
                         log.warning("Adding edge with unexpected global score!");
                     }
                     cost += Math.round(weight);
@@ -202,6 +216,22 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
                         log.warning("Same score for u "+ u + ", v " + v);
                         prevScore = addEditEdge(u,v,weight,u_v_score, v_u_score, log,graphOfEditEdges, allEdgesList);
                     }
+                    // now: check if Prime modules have size less than 5 and try brute force.
+                    if(method == EditType.Primes) {
+                        edit(allEdgesList);
+                        DirectedMD checkSizeMD = new DirectedMD(this, log, false);
+                        MDTree checkSizeTree = checkSizeMD.computeModularDecomposition();
+                        if (checkSizeTree.getMaxPrimeSize() <= primeStartThreshold) {
+                            log.info("Size of prime modules now below " + primeStartThreshold + ". Ready for second run.");
+                            List<List<WeightedPair<Integer, Integer>>> res = new LinkedList<>();
+                            res.add(allEdgesList);
+                            costToEdges.put(-2, res); // different code for this scenario
+                            return costToEdges;
+                        } else {
+                            edit(allEdgesList); // edit back
+                        }
+                    }
+
                     if(edge.getValue() <= softThreshold)
                         edgesToRemove.add(allEdgesList.get(allEdgesList.size() - 1));
                 } else {
@@ -225,7 +255,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
             }
         }
         // ILP
-        else if(method == 1){
+        else if(method == EditType.ILP){
             // todo: later, I only need one best solution!
             CplexDiCographEditingSolver primeSolver = new CplexDiCographEditingSolver(
                     this, new int[]{0,1}, weightMatrix, log);
@@ -244,19 +274,22 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
 
         }
         // Cost-aware Brute Force
-        else {
+        // todo: add other options!
+        else if(method == EditType.Primes){
             int smallestCost = maxCost;
             for (int i = 1; i < maxCost; i++) {
                 // e.g. maxCost=5, smallest cost was 2 but wanted all solutions up to cost 4
                 if (smallestCost + solutionGap < i) {
                     return costToEdges;
                 }
-                System.out.println("Computing all permutations of size " + i + " for n = " + cnt);
+                log.info("Computing all permutations of size " + i + " for n = " + cnt);
                 Set<Set<Integer>> combinations = Sets.combinations(intToEdge.keySet(), i);
-                System.out.println(combinations.size() + " permutations!");
+                log.info(combinations.size() + " permutations!");
                 boolean costStillValid = false;
 
                 int count = 0;
+                boolean success = false;
+
 
                 for (Set<Integer> edgeSubset : combinations) {
                     int cost = 0;
@@ -271,25 +304,35 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
                         costStillValid = true;
 
                         edit(currEdgeList);
-                        // Brute force checking for forbidden subgraphs might be more efficient...
-                        DirectedMD subMD = new DirectedMD(this, log, false);
-                        MDTree subTree = subMD.computeModularDecomposition();
-                        log.info("Edges: " + currEdgeList);
-                        log.info("Tree: " + MDTree.beautify(subTree.toString()));
-                        // edit back.
-                        edit(currEdgeList);
-                        if (subTree.getPrimeModulesBottomUp().isEmpty()) {
+                        // Brute force checking for forbidden subgraphs is way more efficient...
+                        if(useMD) {
+                            DirectedMD subMD = new DirectedMD(this, log, false);
+                            MDTree subTree = subMD.computeModularDecomposition();
+                            if(subTree.getPrimeModulesBottomUp().isEmpty()){
+                                success = true;
+                                log.info("Tree: " + MDTree.beautify(subTree.toString()));
+                            }
+                        } else {
+                            Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> check = ForbiddenSubgraph.verticesToForbidden(this, new HashMap<>(),true);
+                            success = check.getFirst().isEmpty() && check.getSecond().isEmpty();
+                        }
+                        if(success){
                             log.info(() -> " Successful edit found: " + currEdgeList);
                             costToEdges.putIfAbsent(cost, new LinkedList<>());
                             costToEdges.get(cost).add(currEdgeList);
-                            // need this to verify that an early, but expensive edit is best.
+                            // need this to verify if an early, but expensive edit is best.
                             if (cost < smallestCost) {
-                                if(solutionGap <0){
+                                if (solutionGap < 0) {
+                                    edit(currEdgeList);
                                     return costToEdges; // take the first one below maxCost
                                 }
                                 smallestCost = cost;
                             }
                         }
+
+                        // edit back.
+                        edit(currEdgeList);
+
                     }
 
 
@@ -326,14 +369,14 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
     }
 
     // returns the additional edges (With real vertexNos)
-    List<Pair<Integer,Integer>> addModuleEdges(List<WeightedPair<Integer,Integer>> edgeList, Logger log){
-        List<Pair<Integer, Integer>> addEdges = new LinkedList<>();
+    List<IntEdge> addModuleEdges(List<WeightedPair<Integer,Integer>> edgeList, Logger log){
+        List<IntEdge> addEdges = new LinkedList<>();
         for (WeightedPair<Integer, Integer> singleEdge : edgeList) {
             if (Math.round(singleEdge.getWeight()) > 1) {
                 log.info(() -> "Adding edges for " + singleEdge);
                 int realFirstVertex = subNoToBaseNo[singleEdge.getFirst()];
                 int realSecondVertex = subNoToBaseNo[singleEdge.getSecond()];
-                List<Pair<Integer,Integer>> added = primeNode.addModuleEdges(realFirstVertex,realSecondVertex);
+                List<IntEdge> added = primeNode.addModuleEdges(realFirstVertex,realSecondVertex);
                 log.info(() -> "Added: " + added);
                 addEdges.addAll(added);
             }
@@ -341,29 +384,21 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
         return addEdges;
     }
 
-    private int computeSubgraphScoreForEgde(int u,int v, double weight, List<WeightedPair<Integer,Integer>> currEdgeList, Logger log){
-        HashMap<Pair<Integer,Integer>,Integer> edgeToCount = new HashMap<>();
+    private int computeEditScoreForEgde(int u, int v, double weight, List<WeightedPair<Integer,Integer>> currEdgeList, Logger log){
+        HashMap<IntEdge,Integer> edgeToCount = new HashMap<>();
         currEdgeList.add(new WeightedPair<>(u,v,weight));
-        edit(currEdgeList); // todo: I need to keep this edge list or the edit!
-        Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> badSubs = ForbiddenSubgraph.verticesToForbidden(this, edgeToCount);
+        edit(currEdgeList);
+        Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> badSubs = ForbiddenSubgraph.verticesToForbidden(this, edgeToCount,false);
         edit(currEdgeList);
         int unwScore = badSubs.getSecond().size() + badSubs.getFirst().size();
-        //log.info("Edge: (" + u + "," + v + "), #forbiddenSubs: " + res);
-        //if(weight > 1.5)
-        //    return (int) Math.round(unwScore/(weightMultiplier * weight));
-        //else
+        //log.info("Edge: (" + u + "," + v + "), #forbiddenSubs: " + unwScore);
+        if(weight > 1.5){
+            // take weight into account but don't go below 1.
+            int redScore =  (int) Math.round( unwScore - (weightMultiplier * weight));
+            return redScore > 1 ? redScore : 1;
+        }
+        else
             return unwScore;
-    }
-
-    // this doesn't give the desired results.
-    private int computePrimeScoreForEdge(int u,int v, double weight, List<WeightedPair<Integer,Integer>> currEdgeList, Logger log)
-    throws InterruptedException,IOException,ImportException {
-        currEdgeList.add(new WeightedPair<>(u,v,weight));
-        edit(currEdgeList);
-        DirectedMD subMD = new DirectedMD(this, log, false);
-        MDTree subTree = subMD.computeModularDecomposition();
-        edit(currEdgeList);
-        return subTree.getNumPrimeChildren();
     }
 
     public void edit(List<WeightedPair<Integer,Integer>> edgeList){
@@ -377,6 +412,18 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
             }
         }
 
+    }
+
+    // this doesn't give the desired results.
+    @Deprecated
+    private int computePrimeScoreForEdge(int u,int v, double weight, List<WeightedPair<Integer,Integer>> currEdgeList, Logger log)
+            throws InterruptedException,IOException,ImportException {
+        currEdgeList.add(new WeightedPair<>(u,v,weight));
+        edit(currEdgeList);
+        DirectedMD subMD = new DirectedMD(this, log, false);
+        MDTree subTree = subMD.computeModularDecomposition();
+        edit(currEdgeList);
+        return subTree.getNumPrimeChildren();
     }
 
 

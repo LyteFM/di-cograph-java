@@ -12,6 +12,8 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.logging.Logger;
 
+import dicograph.utils.IntEdge;
+
 /**
  * Created by Fynn Leitow on 23.12.17.
  */
@@ -96,7 +98,8 @@ enum ForbiddenSubgraph {
     static ForbiddenSubgraph[] len_3 = {_p3, _a, _b, _c3, _d3};
 
 
-    public static Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> verticesToForbidden(SimpleDirectedGraph<Integer,DefaultWeightedEdge> g, HashMap<Pair<Integer,Integer>,Integer> edgeToCount){
+    public static Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> verticesToForbidden(
+            SimpleDirectedGraph<Integer,DefaultWeightedEdge> g, HashMap<IntEdge,Integer> edgeToCount, boolean stopIfFound){
 
         HashMap<BitSet,ForbiddenSubgraph> len3 = new HashMap<>();
         HashMap<BitSet,ForbiddenSubgraph> len4 = new HashMap<>();
@@ -126,7 +129,11 @@ enum ForbiddenSubgraph {
                             };
 
                             // subgraphs of length 3:
-                            findForbiddenSubgraphs(ForbiddenSubgraph.len_3,len3, edgeToCount, E, vars_3,w,x,y);
+                            if(findForbiddenSubgraphs(ForbiddenSubgraph.len_3,len3, edgeToCount, E, vars_3, stopIfFound, w,x,y) && stopIfFound) {
+                                return new Pair<>(len3, len4);
+                            }
+
+
 
                             // subgraphs of length 4:
                             for (z = 0; z<n; z++){
@@ -137,7 +144,9 @@ enum ForbiddenSubgraph {
                                             E[y][w], E[y][x],          E[y][z],
                                             E[z][w], E[z][x], E[z][y]
                                     };
-                                    findForbiddenSubgraphs(ForbiddenSubgraph.len_4,len4, edgeToCount, E, vars_4,w,x,y,z);
+                                    if(findForbiddenSubgraphs(ForbiddenSubgraph.len_4,len4, edgeToCount, E, vars_4, stopIfFound, w,x,y,z) && stopIfFound){
+                                        return new Pair<>(len3, len4);
+                                    }
                                 }
                             }
                         }
@@ -149,8 +158,8 @@ enum ForbiddenSubgraph {
         return new Pair<>(len3,len4);
     }
 
-    private static void findForbiddenSubgraphs(ForbiddenSubgraph[] subs, Map<BitSet,ForbiddenSubgraph> subsMap, Map<Pair<Integer,Integer>,Integer> edgeCount,
-                                               boolean[][] matrix, boolean[] subMatrix, int ... vertices){
+    private static boolean findForbiddenSubgraphs(ForbiddenSubgraph[] subs, Map<BitSet,ForbiddenSubgraph> subsMap, Map<IntEdge,Integer> edgeCount,
+                                               boolean[][] matrix, boolean[] subMatrix, boolean stop, int ... vertices){
         int sum, index;
         // check every subgraph:
         for(int j = 0; j< subs.length; j++){
@@ -162,6 +171,7 @@ enum ForbiddenSubgraph {
                     sum += subs[j].get()[index];
                 }
             }
+            // found one.
             if(sum > subs[j].getThreshold()) {
                 BitSet vertexSet = new BitSet();
                 // subs
@@ -169,6 +179,9 @@ enum ForbiddenSubgraph {
                     vertexSet.set(v);
                 }
                 subsMap.put(vertexSet, subs[j]);
+                if(stop){
+                    return true;
+                }
 
                 // edge scores
                 for(int u : vertices){
@@ -176,12 +189,12 @@ enum ForbiddenSubgraph {
                         if(u != v && v > u){
                             // we have an edge of the forbidden subgraph
                            if(matrix[u][v]) {
-                               Pair<Integer, Integer> e = new Pair<>(u, v);
+                               IntEdge e = new IntEdge(u, v);
                                int cnt = edgeCount.getOrDefault(e, 0);
                                edgeCount.put(e, ++cnt);
                            } else {
                                // non-edge that might change it into a legal subgraph todo!!
-                               Pair<Integer, Integer> e = new Pair<>(u, v);
+                               IntEdge e = new IntEdge(u, v);
                                int cnt = edgeCount.getOrDefault(e, 0);
                                edgeCount.put(e, --cnt);
                            }
@@ -189,12 +202,9 @@ enum ForbiddenSubgraph {
                     }
                 }
 
-                // try to get the direction.
-                for(index = 0; index < subs[j].get().length; index++){
-
-                }
             }
         }
+        return false;
     }
 
     // started investigating here, but edge-score was much better.

@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 import dicograph.Editing.PrimeSubgraph;
+import dicograph.utils.IntEdge;
 import dicograph.utils.WeightedPair;
 
 /*
@@ -668,8 +669,8 @@ public class MDTreeNode extends RootedTreeNode {
 		return count;
 	}
 
-	public List<Pair<Integer,Integer>> addModuleEdges(int u, int v) {
-		List<Pair<Integer,Integer>> ret = new LinkedList<>();
+	public List<IntEdge> addModuleEdges(int u, int v) {
+		List<IntEdge> ret = new LinkedList<>();
 		BitSet fromU = null;
 		BitSet fromV = null;
 
@@ -703,7 +704,7 @@ public class MDTreeNode extends RootedTreeNode {
 			final int sourceVertex = i;
 			fromV.stream().forEach( destVertex -> {
 				if(!(sourceVertex == u && destVertex == v))
-					ret.add( new Pair<>(sourceVertex,destVertex));
+					ret.add( new IntEdge(sourceVertex,destVertex));
 			});
 		}
 

@@ -273,5 +273,18 @@ public class MDTree extends RootedTree {
         return ((MDTreeNode) root).getNumPrimeChildren();
     }
 
+    public int getMaxPrimeSize(){
+        TreeMap<Integer,LinkedList<MDTreeNode>> primes = getPrimeModulesBottomUp();
+        int ret = 0;
+        for(List<MDTreeNode> lvPrimes : primes.values()){
+            for(MDTreeNode prime : lvPrimes){
+                int cnt = prime.getNumChildren();
+                if(cnt > ret )
+                    ret = cnt;
+            }
+        }
+        return ret;
+    }
+
 
 }
