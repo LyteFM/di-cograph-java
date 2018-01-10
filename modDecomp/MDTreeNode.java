@@ -2,7 +2,6 @@ package dicograph.modDecomp;
 
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
-import org.jgrapht.alg.util.Pair;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
@@ -15,8 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 import dicograph.Editing.PrimeSubgraph;
-import dicograph.utils.IntEdge;
-import dicograph.utils.WeightedPair;
+import dicograph.utils.Edge;
 
 /*
  * An internal node in a modular decomposition tree.
@@ -669,8 +667,8 @@ public class MDTreeNode extends RootedTreeNode {
 		return count;
 	}
 
-	public List<IntEdge> addModuleEdges(int u, int v) {
-		List<IntEdge> ret = new LinkedList<>();
+	public List<Edge> addModuleEdges(int u, int v) {
+		List<Edge> ret = new LinkedList<>();
 		BitSet fromU = null;
 		BitSet fromV = null;
 
@@ -704,7 +702,7 @@ public class MDTreeNode extends RootedTreeNode {
 			final int sourceVertex = i;
 			fromV.stream().forEach( destVertex -> {
 				if(!(sourceVertex == u && destVertex == v))
-					ret.add( new IntEdge(sourceVertex,destVertex));
+					ret.add( new Edge(sourceVertex,destVertex));
 			});
 		}
 

@@ -4,15 +4,12 @@ import org.jgrapht.alg.util.Pair;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
-import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.logging.Logger;
 
-import dicograph.utils.IntEdge;
+import dicograph.utils.Edge;
 
 /**
  * Created by Fynn Leitow on 23.12.17.
@@ -99,7 +96,7 @@ enum ForbiddenSubgraph {
 
 
     public static Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> verticesToForbidden(
-            SimpleDirectedGraph<Integer,DefaultWeightedEdge> g, HashMap<IntEdge,Integer> edgeToCount, boolean stopIfFound){
+            SimpleDirectedGraph<Integer,DefaultWeightedEdge> g, HashMap<Edge,Integer> edgeToCount, boolean stopIfFound){
 
         HashMap<BitSet,ForbiddenSubgraph> len3 = new HashMap<>();
         HashMap<BitSet,ForbiddenSubgraph> len4 = new HashMap<>();
@@ -158,7 +155,7 @@ enum ForbiddenSubgraph {
         return new Pair<>(len3,len4);
     }
 
-    private static boolean findForbiddenSubgraphs(ForbiddenSubgraph[] subs, Map<BitSet,ForbiddenSubgraph> subsMap, Map<IntEdge,Integer> edgeCount,
+    private static boolean findForbiddenSubgraphs(ForbiddenSubgraph[] subs, Map<BitSet,ForbiddenSubgraph> subsMap, Map<Edge,Integer> edgeCount,
                                                boolean[][] matrix, boolean[] subMatrix, boolean stop, int ... vertices){
         int sum, index;
         // check every subgraph:
@@ -189,12 +186,12 @@ enum ForbiddenSubgraph {
                         if(u != v && v > u){
                             // we have an edge of the forbidden subgraph
                            if(matrix[u][v]) {
-                               IntEdge e = new IntEdge(u, v);
+                               Edge e = new Edge(u, v);
                                int cnt = edgeCount.getOrDefault(e, 0);
                                edgeCount.put(e, ++cnt);
                            } else {
                                // non-edge that might change it into a legal subgraph todo!!
-                               IntEdge e = new IntEdge(u, v);
+                               Edge e = new Edge(u, v);
                                int cnt = edgeCount.getOrDefault(e, 0);
                                edgeCount.put(e, --cnt);
                            }
