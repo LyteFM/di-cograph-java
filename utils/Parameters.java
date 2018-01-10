@@ -15,6 +15,7 @@ import org.apache.commons.cli.ParseException;
 public class Parameters {
     private String[] args;
     private Options options;
+    private CommandLine input;
 
 
     // Editing-Parameters with Default values:
@@ -75,32 +76,35 @@ public class Parameters {
 
     public void parse() throws ParseException{
         CommandLineParser parser = new DefaultParser();
-        if(args.length == 0){
+        if(args.length == 0) {
             help();
-        } else {
-            CommandLine input = parser.parse(options, args);
+            return;
+        }
+        input = parser.parse(options, args);
 
-            if (input.hasOption("h")) {
-                    help();
-            } else {
-                if (input.hasOption("test")) {
-                    // use my default testing options
-                } else{
-                    if (!isMDOnly()){
-                        // init for Editing
-                        if(isPrime() || isHard() || isSoft() || isIlpMD() || isIlpOnly()){
-                            lazy = input.hasOption("glazy");
-                        }
-                        if(options.hasOption("gap")){
-                            solutionGap = Integer.valueOf( input.getOptionValue("gap"));
-                        }
-                        if(options.hasOption("t")){
-                            timeOut = Integer.valueOf( input.getOptionValue("t"));
-                        }
-                    }
+        if (input.hasOption("h")) {
+            help();
+            return;
+        }
+
+        if (input.hasOption("test")) {
+            // use my default testing options
+        } else{
+            if (!isMDOnly()){
+                // init for Editing
+                if(isPrime() || isHard() || isSoft() || isIlpMD() || isIlpOnly()){
+                    lazy = input.hasOption("glazy");
+                }
+                if(options.hasOption("gap")){
+                    solutionGap = Integer.valueOf( input.getOptionValue("gap"));
+                }
+                if(options.hasOption("t")){
+                    timeOut = Integer.valueOf( input.getOptionValue("t"));
                 }
             }
         }
+
+
     }
 
     private void help(){
@@ -124,11 +128,11 @@ public class Parameters {
     }
 
     public boolean isMDOnly(){
-        return options.hasOption("md");
+        return input.hasOption("md");
     }
 
     public boolean isVerbose(){
-        return options.hasOption("v");
+        return input.hasOption("v");
     }
 
 
@@ -173,22 +177,22 @@ public class Parameters {
     }
 
     public boolean isPrime() {
-        return options.hasOption("gprime");
+        return input.hasOption("gprime");
     }
 
     public boolean isSoft() {
-        return options.hasOption("gsoft");
+        return input.hasOption("gsoft");
     }
 
     public boolean isHard() {
-        return options.hasOption("ghard");
+        return input.hasOption("ghard");
     }
 
     public boolean isIlpMD() {
-        return options.hasOption("ilp");
+        return input.hasOption("ilp");
     }
 
     public boolean isIlpOnly() {
-        return options.hasOption("ilpglobal");
+        return input.hasOption("ilpglobal");
     }
 }
