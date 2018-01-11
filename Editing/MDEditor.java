@@ -7,6 +7,7 @@ import org.jgrapht.io.ImportException;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -36,14 +37,14 @@ public class MDEditor {
     final EditType type;
     final Parameters p;
 
-    boolean first;
+    boolean firstRun;
 
     SimpleDirectedGraph<Integer, DefaultWeightedEdge> workGraph; // in theory, I can have several! One best enough, though.
 
 
     // 1st run: just one. Easy.
     // 2nd run:
-    //      first prime: Simply add all the edits that worked on this prime, with count as key.
+    //      firstRun prime: Simply add all the edits that worked on this prime, with count as key.
     //
     //      next primes: combine with ALL previous solutions, updating the count. Assert: no same!
     //
@@ -62,11 +63,11 @@ public class MDEditor {
         type = ed;
         inputTree = tree;
         oldInputEdits = oldEdits;
+        firstRun = oldEdits == null;
     }
 
-    MDEditor(SimpleDirectedGraph<Integer,DefaultWeightedEdge> input, MDTree tree, Logger logger,EditType ed, Parameters params){
+    public MDEditor(SimpleDirectedGraph<Integer,DefaultWeightedEdge> input, MDTree tree, Logger logger,EditType ed, Parameters params){
         this(input, tree, logger, null, ed, params);
-        first = true;
     }
 
 
@@ -107,12 +108,16 @@ public class MDEditor {
                 // Combine every new edit with every previous edit
                 for(Map.Entry<Integer, List<List<Edge>>> editsForCost : currentEditResults.entrySet() ){
                     for(List<Edge> newEdit : editsForCost.getValue()) {
-                        for (List<Edge> previousEdit : currentSolutions) {
+                        if(currentSolutions.isEmpty()){
+                            allNewSolutions.add(newEdit); // for 1st & 1st prime
+                        } else {
+                            for (List<Edge> previousEdit : currentSolutions) {
 
-                            assert editIsValid(oldInputEdits, previousEdit,newEdit) : "Illegal situation - edit of one prime included in edit of other!!!";
-                            newEdit.addAll(previousEdit);
-                            allNewSolutions.add(newEdit);
-                            // todo: is List enough or do I need Map for current solution??? -> should be ok as I check all of them for the best one...
+                                //assert editIsValid(oldInputEdits, previousEdit, newEdit) : "Illegal situation - edit of one prime included in edit of other!!!";
+                                newEdit.addAll(previousEdit);
+                                allNewSolutions.add(newEdit);
+                                // todo: is List enough or do I need Map for current solution??? -> should be ok as I check all of them for the best one...
+                            }
                         }
                     }
                 }
@@ -140,11 +145,11 @@ public class MDEditor {
             if ( p.getSolutionGap() < 0 && cost < lowestCost ||
                     p.getSolutionGap() >= 0 && cost <= lowestCost + p.getSolutionGap()){
 
-                if(cost > 0 || first) {
+                if(cost > 0 || firstRun) {
                     if(cost > 0) {
                         solved = true;
                         lowestCost = cost;
-                        log.info(()->"Found edit with cost " + cost + ": " + possibleEdit);
+                        log.info(()->"Found valid edit with cost " + cost + ": " + possibleEdit);
                     }
                     // final solutions: add with real cost (or negative, if 1st run)
                     finalSolutions.putIfAbsent(cost, new LinkedList<>());
@@ -170,17 +175,16 @@ public class MDEditor {
 
         TreeMap<Integer,List<List<Edge>>> allRealEdits = new TreeMap<>();
         // 1. create weighted subgraph todo: but only from this node, right??? Also, need to make sure: on second run, oldEdit must be included.
-        PrimeSubgraph subGraph = new PrimeSubgraph(workGraph,primeNode);
+        PrimeSubgraph subGraph = new PrimeSubgraph(workGraph,primeNode,p);
         log.info("Subgraph: " + subGraph.toString());
         log.info("Base-Vertex to Sub-Vertex " + subGraph.getBaseNoTosubNo());
 
         log.info(() -> "Computing all possible edit Sets for node " + primeNode);
         // negative cost - not yet successful (aborted in step 1 due to threshold/ processed all)
         // empty: nothing found in step 2
-        TreeMap<Integer, List<List<WeightedPair<Integer, Integer>>>> allPossibleEdits = subGraph.computeEdits(log, type, first);
+        TreeMap<Integer, List<List<WeightedPair<Integer, Integer>>>> allPossibleEdits = subGraph.computeEdits(log, type, firstRun);
 
-        int fst = allPossibleEdits.firstKey();
-        log.info( "Edits computed from cost: " + fst + " to cost: " + allPossibleEdits.lastKey());
+
 
 
         // Todo: With the second-round-brute-force-approach, I should:
@@ -218,7 +222,7 @@ public class MDEditor {
 
         // check for loops and doubles:
         List<Edge> loops = new LinkedList<>();
-        List<Edge> doubles = new LinkedList<>();
+        HashMap<Edge, Integer> doubles = new HashMap<>();
         for(int i = 0; i< currentList.size(); i++){
             for (int j = i+1; j < currentList.size(); j++) {
                 Edge _1st = currentList.get(i);
@@ -227,15 +231,21 @@ public class MDEditor {
                     // loop: might be necessary
                     loops.add(_1st);
                     loops.add(_2nd);
-                } else if( (int) _1st.getFirst() == _2nd.getFirst() && (int) _1st.getSecond() == _2nd.getSecond()){
-                    // double: can safely be deleted (assert-Err can only occur from oldEdits)
-                    doubles.add(_1st);
-                    doubles.add(_2nd);
+                } else if( _1st.equals(_2nd)){
+                    // doubles: can be deleted.
+                    int cnt = doubles.getOrDefault(_1st,0);
+                    doubles.put(_1st, ++cnt);
                 }
 
             }
         }
-        currentList.removeAll(doubles);
+        // I have a problem if they occur more often
+        for(Map.Entry<Edge,Integer> e: doubles.entrySet()){
+            if(e.getValue() > 1){
+                throw new IllegalStateException("Error: Multiple duplicates in edit: " + currentList);
+            }
+        }
+        currentList.removeAll(doubles.keySet());
 
         // 1st: is this edit a solution?
         editGraph(workGraph,currentList); // no loops removed yet
@@ -268,6 +278,9 @@ public class MDEditor {
 
     // testing purposes only
     static boolean editIsValid(List<Edge> oldInputEdits, List<Edge> _prev, List<Edge> _new){
+        if(oldInputEdits == null)
+            return true;
+
         HashSet<Edge> validator = new HashSet<>(_prev);
         validator.removeAll(oldInputEdits);
         return !_prev.removeAll(_new);

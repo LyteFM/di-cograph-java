@@ -9,7 +9,8 @@ public enum  EditType {
     SoftTH,
     HardTH,
     ILP,
-    ILPGlobal;
+    ILPGlobal,
+    None;
 
     boolean oneIsEnogh(){
         return (this == Lazy || this == ILP || this == ILPGlobal);

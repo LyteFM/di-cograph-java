@@ -30,10 +30,8 @@ public class MetaEditor {
     final int nVertices;
 
 
-
-
     // Original Graph and all the parameters
-    // Calls MDEditor twice for each mode (first & oldInputEdits as flag)
+    // Calls MDEditor twice for each mode (firstRun & oldInputEdits as flag)
     public MetaEditor(SimpleDirectedGraph<Integer,DefaultWeightedEdge> g, Parameters params, Logger logger)
             throws IOException, ImportException, InterruptedException{
         inputGraph = g;
@@ -44,16 +42,19 @@ public class MetaEditor {
         origTree = modDecomp.computeModularDecomposition();
     }
 
-    public void computeAllMethods() throws IOException, ImportException, IloException, InterruptedException, ExportException{
+    public List<Solution> computeSolutionsForMethods() throws IOException, ImportException, IloException, InterruptedException, ExportException{
+
+        List<Solution> bestSolutions = new LinkedList<>();
 
         // already cograph?
         log.info("Input graph:\n" + inputGraph);
         log.info("MD of input graph:\n" + MDTree.beautify(origTree.toString()));
         if(origTree.getPrimeModulesBottomUp().isEmpty()){
             log.info("Input graph is already a dicograph. Aborting.");
-            return;
+            Solution trivial = new Solution(inputGraph, new LinkedList<>(), EditType.None);
+            bestSolutions.add(trivial);
+            return bestSolutions;
         }
-
 
         // List of Maps: Cost -> One best Edit-Graph with Edit-Edges. No zeros here!
         List<TreeMap<Integer,List<Solution>>> allMethodsSolutions = new ArrayList<>(6);
@@ -78,7 +79,6 @@ public class MetaEditor {
 
         // best solution(s) - with gap
         int best = nVertices * nVertices;
-        List<Solution> bestSolutions = new LinkedList<>();
         for(TreeMap<Integer, List<Solution>> solutionMap : allMethodsSolutions){
             int cost = solutionMap.firstKey();
             if( cost <= best){
@@ -97,14 +97,16 @@ public class MetaEditor {
                 System.out.println("//Edits: " + solution.getEdits());
                 DOTExporter<Integer,DefaultWeightedEdge> exporter = new DOTExporter<>();
                 exporter.exportGraph(solution.getGraph(), System.out);
+                break;
             }
         }
 
+        return bestSolutions;
     }
 
     private TreeMap<Integer, List<Solution>> computeEditFor(EditType method) throws
     IOException, ImportException, InterruptedException, IloException{
-        // first call: just one solution
+        // firstRun call: just one solution
         MDEditor firstEditor = new MDEditor(inputGraph, origTree, log, method, p);
         TreeMap<Integer, List<Solution>> firstSolns = firstEditor.editIntoCograph();
         Solution firstSol = firstSolns.firstEntry().getValue().get(0);
@@ -114,7 +116,7 @@ public class MetaEditor {
         if(method.oneIsEnogh()){
             if(firstTree.getPrimeModulesBottomUp().isEmpty()){
                 if(method == EditType.Lazy){
-                    log.info(()->"Lazy method successful after first run.");
+                    log.info(()->"Lazy method successful after firstRun run.");
                 }
                 return firstSolns;
             }

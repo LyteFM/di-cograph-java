@@ -26,12 +26,12 @@ public class Parameters {
     // prev: Force stop if forbiddenSub-Score <= this value during first run and use brute-force/branching/ILP in second run to complete.
     private boolean skipPaths = true;
     private boolean skipExistingVertices = false;
-    private double weightMultiplier = 0.0;
+    private double weightMultiplier = 1.0;
     private int solutionGap = -1; // only one solution by default.
     private boolean requireGlobal = false; // only accept local edit if global also improves?
 
     // When to start brute force:
-    private int primeStartThreshold = 5;
+    private int bruteForceThreshold = 5;
 
     // methods
     private boolean lazy = true;
@@ -43,6 +43,8 @@ public class Parameters {
         options = new Options();
 
         // globals:
+        options.addOption("h", false, "show help.");
+
         options.addOption("md","Just compute the modular decomposition.");
         options.addOption("v","verbose - only the editgraph or MDTree as .dot");
         options.addOption("test", true, "Test run...");
@@ -68,21 +70,23 @@ public class Parameters {
         options.addOption("ilp", "Use MD and ILP");
         options.addOption("ilpglobal","Use ILP withoud MD");
 
+        // method parameters:
+        options.addOption("noeskip", "Disables skipping edges in graph of the edit-edge-set");
+        options.addOption("vskip", "Skips (u,v) if u,v in vertex set of edit-edge-set's graph");
 
+        options.addOption("sth", "Soft threshold: No edit found in 1st run => discards edges with subgraph-score <= this");
+        options.addOption("hth", "Hard threshold: Stops at this subgraph-score");
+        options.addOption("bfth","Brute Force threshold"); // todo...
 
-        options.addOption("h", false, "show help.");
+        options.addOption("wm","Weight multiplier. Default: 1.0; Set lower if no solution, higher if too expensive");
 
     }
 
     public void parse() throws ParseException{
         CommandLineParser parser = new DefaultParser();
-        if(args.length == 0) {
-            help();
-            return;
-        }
         input = parser.parse(options, args);
 
-        if (input.hasOption("h")) {
+        if (input.hasOption("h") || args.length == 0) {
             help();
             return;
         }
@@ -168,8 +172,8 @@ public class Parameters {
         return requireGlobal;
     }
 
-    public int getPrimeStartThreshold() {
-        return primeStartThreshold;
+    public int getBruteForceThreshold() {
+        return bruteForceThreshold;
     }
 
     public boolean isLazy() {
@@ -194,5 +198,9 @@ public class Parameters {
 
     public boolean isIlpOnly() {
         return input.hasOption("ilpglobal");
+    }
+
+    public int getTimeOut() {
+        return timeOut;
     }
 }
