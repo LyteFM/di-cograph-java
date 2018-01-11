@@ -104,8 +104,8 @@ public class MetaEditor {
 
     private TreeMap<Integer, List<Solution>> computeEditFor(EditType method) throws
     IOException, ImportException, InterruptedException, IloException{
-        // first call
-        MDEditor firstEditor = new MDEditor(inputGraph, origTree, log, method);
+        // first call: just one solution
+        MDEditor firstEditor = new MDEditor(inputGraph, origTree, log, method, p);
         TreeMap<Integer, List<Solution>> firstSolns = firstEditor.editIntoCograph();
         Solution firstSol = firstSolns.firstEntry().getValue().get(0);
         DirectedMD firstMD = new DirectedMD(firstSol.getGraph(), log, false);
@@ -120,8 +120,8 @@ public class MetaEditor {
             }
         }
 
-        // second call
-        MDEditor secondEdit = new MDEditor(firstSol.getGraph(), firstTree, log, firstSol.getEdits(), method);
+        // second call. todo: input graph  original but firstTree edited... is that ok???
+        MDEditor secondEdit = new MDEditor(inputGraph, firstTree, log, firstSol.getEdits(), method, p);
         TreeMap<Integer, List<Solution>> secondSolns = secondEdit.editIntoCograph();
         if(secondSolns.isEmpty()){
             log.warning(()-> method + " method was unsuccessful.");

@@ -7,12 +7,10 @@ import org.jgrapht.io.ImportException;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Logger;
 
@@ -21,6 +19,7 @@ import dicograph.modDecomp.DirectedMD;
 import dicograph.modDecomp.MDTree;
 import dicograph.modDecomp.MDTreeNode;
 import dicograph.utils.Edge;
+import dicograph.utils.Parameters;
 import dicograph.utils.WeightedPair;
 import ilog.concert.IloException;
 
@@ -35,10 +34,10 @@ public class MDEditor {
     final MDTree inputTree;
     final List<Edge> oldInputEdits;
     final EditType type;
+    final Parameters p;
 
     boolean first;
 
-    final List<Edge> newEdits; // All Edits -> local. But need all NEW edits (i.e. from prev/lower primes)
     SimpleDirectedGraph<Integer, DefaultWeightedEdge> workGraph; // in theory, I can have several! One best enough, though.
 
 
@@ -51,26 +50,22 @@ public class MDEditor {
     //      last prime: again, combine with ALL before.
     //                  - in the end, combine every of them with _prevEdits_
     //                  - check the Tree / forbiddenSubs. If successful: try removing loops.
-    List< List<Edge>> currentSolutions;
 
 
-    public MDEditor(SimpleDirectedGraph<Integer,DefaultWeightedEdge> input, MDTree tree, Logger logger, List<Edge> oldEdits, EditType ed){
+    public MDEditor(SimpleDirectedGraph<Integer,DefaultWeightedEdge> input, MDTree tree, Logger logger,
+                    List<Edge> oldEdits, EditType ed, Parameters params){
         inputGraph = input;
+        p = params;
         nVertices = inputGraph.vertexSet().size();
         workGraph = GraphGenerator.deepClone(inputGraph);
         log = logger;
         type = ed;
         inputTree = tree;
-        newEdits = new LinkedList<>();
         oldInputEdits = oldEdits;
-        currentSolutions = new LinkedList<>();
-        if(oldInputEdits != null){
-            currentSolutions.add(new ArrayList<>(oldInputEdits));
-        }
     }
 
-    public MDEditor(SimpleDirectedGraph<Integer,DefaultWeightedEdge> input, MDTree tree, Logger logger,EditType ed){
-        this(input, tree, logger, null, ed);
+    MDEditor(SimpleDirectedGraph<Integer,DefaultWeightedEdge> input, MDTree tree, Logger logger,EditType ed, Parameters params){
+        this(input, tree, logger, null, ed, params);
         first = true;
     }
 
@@ -85,139 +80,88 @@ public class MDEditor {
         // ret todo nur die ist am Ende wichtig!!!
         TreeMap<Integer, List<Solution>> finalSolutions = new TreeMap<>();
 
-        TreeMap<Integer, List<List<Edge>>> currentEditResults = new TreeMap<>();
+        TreeMap<Integer, List<List<Edge>>> currentEditResults;
+        List< List<Edge>> currentSolutions = new LinkedList<>(); // All Edits -> local. But need all NEW edits (i.e. from prev/lower primes)
+        if(oldInputEdits != null){
+            currentSolutions.add(new ArrayList<>(oldInputEdits));
+            editGraph(workGraph,oldInputEdits); // start working on the primes from here. todo: atm input is original, so I need this!
+        }
+
 
         log.info(()->"Original Tree: " + MDTree.beautify(inputTree.toString()));
         TreeMap<Integer,LinkedList<MDTreeNode>> depthToPrimes = inputTree.getPrimeModulesBottomUp();
-        if(!depthToPrimes.isEmpty()){
-            boolean finished = false;
-            for(Map.Entry<Integer,LinkedList<MDTreeNode>> entry : depthToPrimes.descendingMap().entrySet()){
-                log.info(()->"Editing primes on lvl " + entry.getKey());
-                for(MDTreeNode primeNode : entry.getValue()){
-                    log.info(()->"Editing prime: " + primeNode);
-                    
-                    List<Edge> editEdges = new LinkedList<>();
-                    currentEditResults = computeRealEditsForNode(primeNode);
-                    if(currentEditResults.isEmpty()){
-                        log.warning(() -> "Aborting, no edit found for this prime: " + primeNode);
-                        return finalSolutions;
-                    }
+        assert !depthToPrimes.isEmpty();
 
-                    List<List<Edge>> allNewSolutions = new LinkedList<>();
-                    // Combine every new edit with every previous edit
-                    for(Map.Entry<Integer, List<List<Edge>>> editsForCost : currentEditResults.entrySet() ){
-                        for(List<Edge> newEdit : editsForCost.getValue()) {
-                            for (List<Edge> previousEdit : currentSolutions) {
+        for(Map.Entry<Integer,LinkedList<MDTreeNode>> entry : depthToPrimes.descendingMap().entrySet()){
+            log.info(()->"Editing primes on lvl " + entry.getKey());
+            for(MDTreeNode primeNode : entry.getValue()){
+                log.info(()->"Editing prime: " + primeNode);
 
-                                assert editIsValid(previousEdit,newEdit) : "Illegal situation - edit of one prime included in edit of other!!!";
-                                newEdit.addAll(previousEdit);
-                                allNewSolutions.add(newEdit);
-                                // todo: is List enough or do I need Map for current solution??? -> should be ok as I check all of them for the best one...
-                            }
+                currentEditResults = computeRealEditsForNode(primeNode);
+                if(currentEditResults.isEmpty()){
+                    log.warning(() -> "Aborting, no edit found for this prime: " + primeNode);
+                    return finalSolutions;
+                }
+
+                List<List<Edge>> allNewSolutions = new LinkedList<>();
+                // Combine every new edit with every previous edit
+                for(Map.Entry<Integer, List<List<Edge>>> editsForCost : currentEditResults.entrySet() ){
+                    for(List<Edge> newEdit : editsForCost.getValue()) {
+                        for (List<Edge> previousEdit : currentSolutions) {
+
+                            assert editIsValid(oldInputEdits, previousEdit,newEdit) : "Illegal situation - edit of one prime included in edit of other!!!";
+                            newEdit.addAll(previousEdit);
+                            allNewSolutions.add(newEdit);
+                            // todo: is List enough or do I need Map for current solution??? -> should be ok as I check all of them for the best one...
                         }
                     }
-                    log.info("Total number of current solutions: " + allNewSolutions.size());
-                    currentSolutions = allNewSolutions;
                 }
+                log.info("Total number of current solutions: " + allNewSolutions.size());
+                currentSolutions = allNewSolutions;
             }
-            // if we're in a successive run and already did some editing:
-            if(oldInputEdits != null){
-                log.info("Initially all edits of this run: " + newEdits);
-                log.info("adding previous and removing double edits.");
-                ArrayList<Edge> checkRemoved = new ArrayList<>(newEdits);
-                if(checkRemoved.size() != removeDoublesCheckLoops(newEdits)){
-                    checkRemoved.removeAll(newEdits); // now only the loops and doubles
-                    editGraph(workGraph,checkRemoved);// away with them.
-                }
-
-                // todo: After the last edit...
-                /*
-
-                 // second round with brute force, want to choose from ALL possible solutions if gap >= 0 todo!!!
-                int bestScore = nVertices * nVertices;
-                int score = 0;
-                for (Map.Entry<Integer, List<List<WeightedPair<Integer, Integer>>>> listOfEdits : allPossibleEdits.entrySet()) {
-                    for (List<WeightedPair<Integer, Integer>> oneEdit : listOfEdits.getValue()) {
-
-                        ArrayList<Edge> currentList = new ArrayList<>(oneEdit.size());
-                        // edits between modules
-                        if (listOfEdits.getKey() != oneEdit.size()) {
-                            currentList.addAll(subGraph.addModuleEdges(oneEdit, log));
-                        }
-                        // convert subgraph-edge to real edge
-                        for (WeightedPair<Integer, Integer> subEdge : oneEdit) {
-                            int src = subGraph.getSubNoToBaseNo()[subEdge.getFirst()];
-                            int dst = subGraph.getSubNoToBaseNo()[subEdge.getSecond()];
-                            currentList.add(new Edge(src, dst));
-                        }
-                        // remove doubles, check loops
-                        score = removeDoublesCheckLoops(currentList);
-                        if (score <= bestScore) {
-                            log.info("Found edit with cost " + score + ": " + currentList);
-                            bestScore = score;
-                            costToEdits.clear();
-                            costToEdits.addAll(currentList);
-                        }
-
-
-                    }
-                }
-
-                 */
-
-
-                /*
-                List<IntEdge> tmp = new ArrayList<>(newEdits);
-                newEdits.removeAll(oldInputEdits);
-                oldInputEdits.removeAll(tmp);
-                newEdits.addAll(oldInputEdits);
-
-
-                // check for loops:
-                List<IntEdge> loops = new LinkedList<>();
-                for(int i = 0; i< newEdits.size(); i++){
-                    for (int j = i+1; j < newEdits.size(); j++) {
-                        Pair<Integer,Integer> _1st = newEdits.get(i);
-                        Pair<Integer,Integer> _2nd = newEdits.get(j);
-                        if(_1st != _2nd){
-                            if((int) _1st.getFirst() == _2nd.getSecond() && (int) _1st.getSecond() == _2nd.getFirst()){
-                                loops.add(_1st);
-                                loops.add(_2nd);
-                            }
-                        }
-                    }
-                }
-                if(!loops.isEmpty()){
-                    workGraph.workGraph(loops);
-                    DirectedMD looplessMD = new DirectedMD(workGraph, log, false);
-                    MDTree looplessRes = looplessMD.computeModularDecomposition();
-                    if(looplessRes.getPrimeModulesBottomUp().isEmpty()){
-                        newEdits.removeAll(loops);
-                    } else {
-                        workGraph.workGraph(loops);
-                    }
-                }
-                */
-            } // else: just need to verify one solution. Error ok if 1st.
-
-            if(finished)
-                log.info("Total Cost: " + newEdits.size() + ", edits: " + newEdits);
-            else
-                log.info("Current Cost: " + newEdits.size() + ", edits: " + newEdits);
-        } else {
-            log.info("Input was already a di-cograph!");
         }
 
-        //return workGraph;
+        log.info("Initially all edits of this run: " + currentSolutions);
+        log.info("Verifying, eleminating loops and comparing.");
+
+        if(oldInputEdits != null){
+            editGraph(workGraph,oldInputEdits); //need to edit back
+        }
+        int lowestCost = nVertices * nVertices;
+        boolean solved = false;
+
+        // - Check all edits if valid
+        // - Want to choose from ALL possible solutions if gap >= 0
+        for ( List<Edge> possibleEdit : currentSolutions) {
+
+            // verify, remove doubles, check loops
+            int cost = verifyAndClean(possibleEdit);
+            // only consider better edits or edits within gap
+            if ( p.getSolutionGap() < 0 && cost < lowestCost ||
+                    p.getSolutionGap() >= 0 && cost <= lowestCost + p.getSolutionGap()){
+
+                if(cost > 0 || first) {
+                    if(cost > 0) {
+                        solved = true;
+                        lowestCost = cost;
+                        log.info(()->"Found edit with cost " + cost + ": " + possibleEdit);
+                    }
+                    // final solutions: add with real cost (or negative, if 1st run)
+                    finalSolutions.putIfAbsent(cost, new LinkedList<>());
+                    editGraph(workGraph, possibleEdit);
+                    Solution sol = new Solution(GraphGenerator.deepClone(workGraph), possibleEdit, type);
+                    finalSolutions.get(cost).add(sol);
+                    editGraph(workGraph,possibleEdit);
+                }
+            }
+        }
+
+        if(solved)
+            log.info("Best Cost: " + lowestCost + ", edits: "+ finalSolutions.get(lowestCost));
+        else
+            log.info("Not yet a solution.");
+
         return finalSolutions;
-    }
-
-    public int getCost(){
-        return newEdits.size();
-    }
-
-    public List<Edge> getNewEdits() {
-        return newEdits;
     }
 
     // Positive, empty or negative.
@@ -225,7 +169,7 @@ public class MDEditor {
             IloException{
 
         TreeMap<Integer,List<List<Edge>>> allRealEdits = new TreeMap<>();
-        // 1. create weighted subgraph todo: but only from this node, right???
+        // 1. create weighted subgraph todo: but only from this node, right??? Also, need to make sure: on second run, oldEdit must be included.
         PrimeSubgraph subGraph = new PrimeSubgraph(workGraph,primeNode);
         log.info("Subgraph: " + subGraph.toString());
         log.info("Base-Vertex to Sub-Vertex " + subGraph.getBaseNoTosubNo());
@@ -270,45 +214,60 @@ public class MDEditor {
         return allRealEdits;
     }
 
-    private int removeDoublesCheckLoops(List<Edge> currentList) throws ImportException, InterruptedException, IOException{
+    private int verifyAndClean(List<Edge> currentList) throws ImportException, InterruptedException, IOException{
 
-        // remove doubles
-        List<Edge> tmp = new ArrayList<>(currentList);
-        log.info("Previous: " + oldInputEdits);
-        List<Edge> prev = new ArrayList<>(oldInputEdits);
-        currentList.removeAll(prev);
-        prev.removeAll(tmp);
-        currentList.addAll(prev);
-
-        // check for loops:
+        // check for loops and doubles:
         List<Edge> loops = new LinkedList<>();
+        List<Edge> doubles = new LinkedList<>();
         for(int i = 0; i< currentList.size(); i++){
             for (int j = i+1; j < currentList.size(); j++) {
                 Edge _1st = currentList.get(i);
                 Edge _2nd = currentList.get(j);
-                if(_1st != _2nd){
-                    if((int) _1st.getFirst() == _2nd.getSecond() && (int) _1st.getSecond() == _2nd.getFirst()){
-                        loops.add(_1st);
-                        loops.add(_2nd);
-                    }
+                if((int) _1st.getFirst() == _2nd.getSecond() && (int) _1st.getSecond() == _2nd.getFirst()){
+                    // loop: might be necessary
+                    loops.add(_1st);
+                    loops.add(_2nd);
+                } else if( (int) _1st.getFirst() == _2nd.getFirst() && (int) _1st.getSecond() == _2nd.getSecond()){
+                    // double: can safely be deleted (assert-Err can only occur from oldEdits)
+                    doubles.add(_1st);
+                    doubles.add(_2nd);
                 }
-            }
-        }
-        if(!loops.isEmpty()){
-            editGraph(workGraph,loops);
-            DirectedMD looplessMD = new DirectedMD(workGraph, log, false);
-            MDTree looplessRes = looplessMD.computeModularDecomposition();
-            if(looplessRes.getPrimeModulesBottomUp().isEmpty()){
-                currentList.removeAll(loops);
-            }
-            editGraph(workGraph,loops); // edit back.
-        }
 
-        return currentList.size();
+            }
+        }
+        currentList.removeAll(doubles);
+
+        // 1st: is this edit a solution?
+        editGraph(workGraph,currentList); // no loops removed yet
+        DirectedMD verifyMD = new DirectedMD(workGraph, log, false);
+        MDTree verifyTree = verifyMD.computeModularDecomposition();
+        int ret;
+
+        if(verifyTree.getPrimeModulesBottomUp().isEmpty()) {
+
+            // 2nd: if yes - can I remove loops?
+            if (!loops.isEmpty()) {
+                editGraph(workGraph, loops);
+                DirectedMD looplessMD = new DirectedMD(workGraph, log, false);
+                MDTree looplessRes = looplessMD.computeModularDecomposition();
+                if (looplessRes.getPrimeModulesBottomUp().isEmpty()) {
+                    log.info(()->"Removing Loops: " + loops);
+                    currentList.removeAll(loops);
+                }
+                editGraph(workGraph, loops); // edit back.
+            }
+            ret = currentList.size();
+
+        } else {
+            ret = - currentList.size();
+        }
+        editGraph(workGraph, currentList);
+
+        return ret;
     }
 
     // testing purposes only
-    boolean editIsValid(List<Edge> _prev, List<Edge> _new){
+    static boolean editIsValid(List<Edge> oldInputEdits, List<Edge> _prev, List<Edge> _new){
         HashSet<Edge> validator = new HashSet<>(_prev);
         validator.removeAll(oldInputEdits);
         return !_prev.removeAll(_new);
