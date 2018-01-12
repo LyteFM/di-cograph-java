@@ -62,7 +62,7 @@ public class MetaEditor {
             allMethodsSolutions.add( computeEditFor(EditType.Lazy) );
         }
         if(p.isPrime()){
-
+            allMethodsSolutions.add( computeEditFor(EditType.Primes) );
         }
         if(p.isSoft()){
 
@@ -109,15 +109,15 @@ public class MetaEditor {
         // firstRun call: just one solution
         MDEditor firstEditor = new MDEditor(inputGraph, origTree, log, method, p);
         TreeMap<Integer, List<Solution>> firstSolns = firstEditor.editIntoCograph();
+
+        // todo: why not take more than one??? Makes much sense if I have several small Prime modules and gap 0 or 1.
         Solution firstSol = firstSolns.firstEntry().getValue().get(0);
         DirectedMD firstMD = new DirectedMD(firstSol.getGraph(), log, false);
         MDTree firstTree = firstMD.computeModularDecomposition();
 
-        if(method.oneIsEnogh()){
+        if(method.oneIsEnough()){
             if(firstTree.getPrimeModulesBottomUp().isEmpty()){
-                if(method == EditType.Lazy){
-                    log.info(()->"Lazy method successful after firstRun run.");
-                }
+                log.info(()-> method + " method was successful after firstRun run.");
                 return firstSolns;
             }
         }

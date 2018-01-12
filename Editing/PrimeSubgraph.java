@@ -70,7 +70,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
 
 
     // an entry in the map means: if present -> remove, if not -> add.
-    // Key > 0 => success! Key < 0 => not yet done, but ok after round 1; empty => fail after step 2.
+    // Key > 0 => success! Key < 0 => not yet done, but ok after round 1; Key = 0 ->  empty => fail after step 2.
     public TreeMap<Integer, List<List<WeightedPair<Integer, Integer>>>> computeEdits(Logger log, EditType method, boolean first)
     throws InterruptedException, IOException, ImportException, IloException{
         TreeMap<Integer, List<List<WeightedPair<Integer, Integer>>>> costToEdges = new TreeMap<>(); // results
@@ -108,7 +108,10 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
             }
         }
 
-        if(method == EditType.Lazy || first) {
+        if(method == EditType.Lazy || first ){//&& p.getBruteForceThreshold() < primeNode.getNumPrimeChildren()) { todo: want more than one near-solution in first run!
+
+
+
             SimpleDirectedGraph<Integer,DefaultEdge> graphOfEditEdges = new SimpleDirectedGraph<>(DefaultEdge.class);
             ConnectivityInspector<Integer,DefaultEdge> pathFinder = new ConnectivityInspector<>(graphOfEditEdges);
             List<WeightedPair<Integer, Integer>> currEdgeList = new LinkedList<>(); // just one edge
@@ -116,11 +119,12 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
             List<WeightedPair<Integer, Integer>> edgesToRemove = new LinkedList<>(); // remove edits below threshold, if no successful edit found.
             WeightedPair<Integer,Integer > lastEdge = null;
             int i, u,v, u_v_score, global_u_v,global_v_u, both;
-            int v_u_score = 0;
+            int v_u_score = 0, both_local = 0;
             int prevScore = badSubs.getFirst().size() + badSubs.getSecond().size();
             int subCount = prevScore;
             log.info("Total no of forbidden subs: " + subCount);
             int cost = 0;
+            cnt = 0; // to init intToEdge for other edit-sets (by global edit-score)
             double weight;
             for (i = 0; i < edgesToScore.size(); i++) {
                 Map.Entry<Edge,Integer> edge = edgesToScore.get(i);
@@ -174,8 +178,16 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
                     v_u_score = computeEditScoreForEgde(v, u, weight, currEdgeList);
                     log.info("("+ v + ","  +u + ") local edit-score: " + v_u_score);
 
-                    if(v_u_score == 0)
-                        lastEdge = new WeightedPair<>(v,u,weight);
+
+                    both_local = computeEditScoreForEgde(u,v,weight,currEdgeList); // (v,u) still there
+                    log.info( "Both local edit-score: " + both_local);
+
+                    if(v_u_score == 0 || both_local == 0) {
+                        lastEdge = new WeightedPair<>(v, u, weight);
+                    }
+
+
+
                 } else {
                     lastEdge = new WeightedPair<>(u,v,weight);
                 }
@@ -184,6 +196,9 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
                     // we're done.
                     log.info("Subgraph edited into Cograph with edge " + lastEdge);
                     allEdgesList.add(lastEdge);
+                    if(v_u_score != 0 && both_local == 0){ // need both
+                        allEdgesList.add(new WeightedPair<>(u,v,weight));
+                    }
                     List<List<WeightedPair<Integer, Integer>>> res = new LinkedList<>();
                     res.add(allEdgesList);
                     cost += Math.round(weight);
@@ -208,7 +223,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
                     }
                     // This is only for the Primes-Brute-Force method atm.
                     // todo: introduce the entry points for all other methods!
-                    if(method == EditType.Primes && first) {
+                    if(method == EditType.Primes) {
                         edit(allEdgesList);
                         DirectedMD checkSizeMD = new DirectedMD(this, log, false);
                         MDTree checkSizeTree = checkSizeMD.computeModularDecomposition();
@@ -216,11 +231,18 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
                             log.info("Size of prime modules now below " + p.getBruteForceThreshold() + ". Ready for second run.");
                             List<List<WeightedPair<Integer, Integer>>> res = new LinkedList<>();
                             res.add(allEdgesList);
-                            costToEdges.put(-res.size(), res); // not yet a solution, but ok.
+                            costToEdges.put(-allEdgesList.size(), res); // not yet a solution, but ok.
                             return costToEdges;
                         } else {
                             edit(allEdgesList); // edit back
                         }
+                    }else if(method == EditType.SoftTH){
+                        // 3.: 1st until # with acceptable by SoftTH <= bfth^2
+                        //     2nd: Start brute force with them
+                    }
+                    else if(method == EditType.HardTH){
+                        // 4.: 1st until HardTH
+                        //     2nd: Start brute force when bfth^2 reached (by global score)
                     }
 
                     if(edge.getValue() <= p.getSoftThreshold())
@@ -245,7 +267,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
                     // remove those below soft threshold:
                     allEdgesList.removeAll(edgesToRemove);
                     res.add(allEdgesList);
-                    costToEdges.put(-res.size(), res);
+                    costToEdges.put(-allEdgesList.size(), res);
                     return costToEdges;
                 } else {
                     log.warning(()->"All Chosen Subgraph edges so far: " + allEdgesList);
@@ -283,7 +305,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
                     return costToEdges;
                 }
                 log.info("Computing all permutations of size " + i + " for n = " + cnt);
-                Set<Set<Integer>> combinations = Sets.combinations(intToEdge.keySet(), i);
+                Set<Set<Integer>> combinations = Sets.combinations(intToEdge.keySet(), i); // todo: Want option for other edge-sets.
                 log.info(combinations.size() + " permutations!");
                 boolean costStillValid = false;
 
@@ -317,13 +339,14 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
                             success = check.getFirst().isEmpty() && check.getSecond().isEmpty();
                         }
                         if(success){
-                            log.info(() -> " Successful subgraph edit found: " + currEdgeList);
+                            log.info(() -> method + ": Successful subgraph edit found: " + currEdgeList);
                             costToEdges.putIfAbsent(cost, new LinkedList<>());
                             costToEdges.get(cost).add(currEdgeList);
                             // need this to verify if an early, but expensive edit is best.
                             if (cost < smallestCost) {
                                 if (p.getSolutionGap() < 0) {
                                     edit(currEdgeList);
+                                    log.info("returning first found solution.");
                                     return costToEdges; // take the firstRun one below maxCost
                                 }
                                 smallestCost = cost;
@@ -350,6 +373,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
 
 
                 if (!costStillValid) {
+                    log.info("Exiting: i = " + i + ", every cost was > " + maxCost);
                     break; // no need to continue
                 }
 

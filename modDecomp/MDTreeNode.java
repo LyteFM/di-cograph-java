@@ -652,7 +652,7 @@ public class MDTreeNode extends RootedTreeNode {
 	}
 
 	// F.L. 26.12.17: For Heuristic
-	int getNumPrimeChildren(){
+	public int getNumPrimeChildren(){
 		int count = 0;
 		if(type == MDNodeType.PRIME){
 			count = getNumChildren();

@@ -96,6 +96,13 @@ public class MDEditor {
         for(Map.Entry<Integer,LinkedList<MDTreeNode>> entry : depthToPrimes.descendingMap().entrySet()){
             log.info(()->"Editing primes on lvl " + entry.getKey());
             for(MDTreeNode primeNode : entry.getValue()){
+
+                // Skip them during first edit.
+                if(firstRun && type.skipSmallPrimes() &&  primeNode.getNumPrimeChildren() <= p.getBruteForceThreshold()){
+                    log.info("Skipping small prime during first run: " + primeNode);
+                    continue;
+                }
+
                 log.info(()->"Editing prime: " + primeNode);
 
                 currentEditResults = computeRealEditsForNode(primeNode);
@@ -107,21 +114,24 @@ public class MDEditor {
                 List<List<Edge>> allNewSolutions = new LinkedList<>();
                 // Combine every new edit with every previous edit
                 for(Map.Entry<Integer, List<List<Edge>>> editsForCost : currentEditResults.entrySet() ){
-                    for(List<Edge> newEdit : editsForCost.getValue()) {
-                        if(currentSolutions.isEmpty()){
-                            allNewSolutions.add(newEdit); // for 1st & 1st prime
-                        } else {
+                    if(currentSolutions.isEmpty()){
+                        log.info("Adding to empty 'currentSolutions': " + editsForCost.getValue());
+                        allNewSolutions.addAll(editsForCost.getValue()); // addAll only OK if just one.
+
+                    } else {
+                        for (List<Edge> newEdit : editsForCost.getValue()) { // todo: If I allow brute force as first run, this won't work.
                             for (List<Edge> previousEdit : currentSolutions) {
 
+                                List<Edge> newEditCopy = new LinkedList<>(newEdit);
                                 //assert editIsValid(oldInputEdits, previousEdit, newEdit) : "Illegal situation - edit of one prime included in edit of other!!!";
-                                newEdit.addAll(previousEdit);
-                                allNewSolutions.add(newEdit);
+                                newEditCopy.addAll(previousEdit);
+                                allNewSolutions.add(newEditCopy);
                                 // todo: is List enough or do I need Map for current solution??? -> should be ok as I check all of them for the best one...
                             }
                         }
                     }
                 }
-                log.info("Total number of current solutions: " + allNewSolutions.size());
+                log.info("Current solutions. Count: " + allNewSolutions.size() + ", Solutions: " + allNewSolutions);
                 currentSolutions = allNewSolutions;
             }
         }
@@ -146,7 +156,7 @@ public class MDEditor {
                     p.getSolutionGap() >= 0 && cost <= lowestCost + p.getSolutionGap()){
 
                 if(cost > 0 || firstRun) {
-                    if(cost > 0) {
+                    if(cost > 0 && cost < lowestCost) {
                         solved = true;
                         lowestCost = cost;
                         log.info(()->"Found valid edit with cost " + cost + ": " + possibleEdit);
@@ -162,7 +172,7 @@ public class MDEditor {
         }
 
         if(solved)
-            log.info("Best Cost: " + lowestCost + ", edits: "+ finalSolutions.get(lowestCost));
+            log.info("Finals Solution(s): "+ finalSolutions.get(lowestCost));
         else
             log.info("Not yet a solution.");
 
@@ -199,10 +209,9 @@ public class MDEditor {
                 for (List<WeightedPair<Integer, Integer>> oneEdit : listOfEdits.getValue()) {
 
                     ArrayList<Edge> currentList = new ArrayList<>(oneEdit.size());
-                    // edits between modules (as real edges)
-                    if (listOfEdits.getKey() != oneEdit.size()) {
-                        currentList.addAll(subGraph.addModuleEdges(oneEdit, log));
-                    }
+                    // edits between modules (as real edges). Also, if unsuccessful!
+                    currentList.addAll(subGraph.addModuleEdges(oneEdit, log));
+
                     // convert subgraph-edges to real edges
                     currentList.addAll( subGraph.getRealEdges(oneEdit) );
                     // remove doubles, check loops -> later. Here, just add all to map.
@@ -239,12 +248,12 @@ public class MDEditor {
 
             }
         }
-        // I have a problem if they occur more often
-        for(Map.Entry<Edge,Integer> e: doubles.entrySet()){
-            if(e.getValue() > 1){
-                throw new IllegalStateException("Error: Multiple duplicates in edit: " + currentList);
-            }
-        }
+        // I have a problem if they occur more often todo happens with 12er!
+//        for(Map.Entry<Edge,Integer> e: doubles.entrySet()){
+//            if(e.getValue() > 1){
+//                throw new IllegalStateException("Error: Multiple duplicates in edit: " + currentList);
+//            }
+//        }
         currentList.removeAll(doubles.keySet());
 
         // 1st: is this edit a solution?

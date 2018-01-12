@@ -71,6 +71,10 @@ public class Parameters {
         options.addOption("ilpglobal","Use ILP withoud MD");
 
         // method parameters:
+        Option gap = new Option("gap",true,"Solution gap: Also used internally!");
+        gap.setArgName("value");
+        options.addOption(gap);
+
         options.addOption("noeskip", "Disables skipping edges in graph of the edit-edge-set");
         options.addOption("vskip", "Skips (u,v) if u,v in vertex set of edit-edge-set's graph");
 
@@ -78,7 +82,9 @@ public class Parameters {
         options.addOption("hth", "Hard threshold: Stops at this subgraph-score");
         options.addOption("bfth","Brute Force threshold"); // todo...
 
-        options.addOption("wm","Weight multiplier. Default: 1.0; Set lower if no solution, higher if too expensive");
+        Option weightm = new Option("wm",true,"Weight multiplier. Default: 1.0; Set lower if no solution, higher if too expensive");
+        gap.setArgName("value");
+        options.addOption(weightm);
 
     }
 
@@ -99,10 +105,10 @@ public class Parameters {
                 if(isPrime() || isHard() || isSoft() || isIlpMD() || isIlpOnly()){
                     lazy = input.hasOption("glazy");
                 }
-                if(options.hasOption("gap")){
+                if(input.hasOption("gap")){
                     solutionGap = Integer.valueOf( input.getOptionValue("gap"));
                 }
-                if(options.hasOption("t")){
+                if(input.hasOption("t")){
                     timeOut = Integer.valueOf( input.getOptionValue("t"));
                 }
             }

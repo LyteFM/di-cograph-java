@@ -12,7 +12,11 @@ public enum  EditType {
     ILPGlobal,
     None;
 
-    boolean oneIsEnogh(){
+    boolean oneIsEnough(){
         return (this == Lazy || this == ILP || this == ILPGlobal);
+    }
+
+    boolean skipSmallPrimes(){
+        return (this == Primes || this == SoftTH || this == HardTH);
     }
 }
