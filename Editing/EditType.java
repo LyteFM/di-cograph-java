@@ -5,18 +5,27 @@ package dicograph.Editing;
  */
 public enum  EditType {
     Lazy,
-    Primes,
-    SoftTH,
-    HardTH,
+    BruteForce,
+    GreedyILP,
     ILP,
     ILPGlobal,
     None;
 
-    boolean oneIsEnough(){
-        return (this == Lazy || this == ILP || this == ILPGlobal);
+
+//    boolean oneIsEnough(){
+//        return (this == Lazy || this == ILP || this == ILPGlobal);
+//    }
+
+    boolean checkPrimesSize(){
+        return (this == BruteForce || this == GreedyILP);
     }
 
-    boolean skipSmallPrimes(){
-        return (this == Primes || this == SoftTH || this == HardTH);
+
+    boolean doLazyOnFirst(){
+        return (this == Lazy || this == BruteForce || this == GreedyILP );
+    }
+
+    boolean doLazyOnSecond(boolean useGlobalScore){
+        return (this == Lazy || useGlobalScore && this == BruteForce);
     }
 }

@@ -73,13 +73,14 @@ public class MDEditor {
 
 
     // want:
-    // TreeMap<Integer, List<Solution>>
-    // key < -1 means unsuccessful.
+    // key < -1 means unsuccessful. Need empty entry if already below prime trh
     public TreeMap<Integer, List<Solution>> editIntoCograph()
             throws ImportException, IOException, InterruptedException, IloException{
 
         // ret todo nur die ist am Ende wichtig!!!
         TreeMap<Integer, List<Solution>> finalSolutions = new TreeMap<>();
+
+
 
         TreeMap<Integer, List<List<Edge>>> currentEditResults;
         List< List<Edge>> currentSolutions = new LinkedList<>(); // All Edits -> local. But need all NEW edits (i.e. from prev/lower primes)
@@ -98,7 +99,7 @@ public class MDEditor {
             for(MDTreeNode primeNode : entry.getValue()){
 
                 // Skip them during first edit.
-                if(firstRun && type.skipSmallPrimes() &&  primeNode.getNumPrimeChildren() <= p.getBruteForceThreshold()){
+                if(firstRun && type.checkPrimesSize() &&  primeNode.getNumPrimeChildren() <= p.getBruteForceThreshold()){
                     log.info("Skipping small prime during first run: " + primeNode);
                     continue;
                 }
@@ -134,6 +135,15 @@ public class MDEditor {
                 log.info("Current solutions. Count: " + allNewSolutions.size() + ", Solutions: " + allNewSolutions);
                 currentSolutions = allNewSolutions;
             }
+        }
+
+        // happens if all primes small enough in step 1.
+        if(currentSolutions.isEmpty()){
+            log.info(()->"No changes after first step.");
+            LinkedList<Solution> trivial = new LinkedList<>();
+            trivial.add( new Solution(workGraph, new LinkedList<>(), type));
+            finalSolutions.put(0,trivial);
+            return finalSolutions;
         }
 
         log.info("Initially all edits of this run: " + currentSolutions);

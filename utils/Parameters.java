@@ -30,8 +30,14 @@ public class Parameters {
     private int solutionGap = -1; // only one solution by default.
     private boolean requireGlobal = false; // only accept local edit if global also improves?
 
+    private boolean useGlobal = false;
+
+    public boolean isUseGlobal() {
+        return useGlobal;
+    }
+
     // When to start brute force:
-    private int bruteForceThreshold = 5;
+    private int bruteForceThreshold = 12; // default: 5
 
     // methods
     private boolean lazy = true;
@@ -46,7 +52,7 @@ public class Parameters {
         options.addOption("h", false, "show help.");
 
         options.addOption("md","Just compute the modular decomposition.");
-        options.addOption("v","verbose - only the editgraph or MDTree as .dot");
+        options.addOption("v","if not, console outputs only the editgraph or MDTree as .dot");
         options.addOption("test", true, "Test run...");
 
         Option input = new Option("i",true,"Input file: .dot, .txt (Matrix) or .jtxt (JGraph)");
@@ -63,12 +69,15 @@ public class Parameters {
         options.addOption(log);
 
         //methods:
-        options.addOption("glazy", "Default: determnistic lazy greedy method");
-        options.addOption("gprime","Step 2 when prime threshold reached");
-        options.addOption("gsoft", "Step 2 when #edges with subgraph-score > soft-trh is < prime-thr ^2");
-        options.addOption("ghard","Step 2 when subgraph-score < hard-trh");
+        options.addOption("glazy", "Use lazy greedy method");
+        options.addOption("gforce","Use Brute Force in Step 2. Exit step 1 when bf- or hard thr reached");
+        options.addOption("gilp", "Use ILP in step 2. Exit step 1 when bf- or hard thr reached");
         options.addOption("ilp", "Use MD and ILP");
         options.addOption("ilpglobal","Use ILP withoud MD");
+
+        // todo: is param
+        options.addOption("ghard","Step 2 when subgraph-score < hard-trh");
+
 
         // method parameters:
         Option gap = new Option("gap",true,"Solution gap: Also used internally!");
@@ -102,7 +111,7 @@ public class Parameters {
         } else{
             if (!isMDOnly()){
                 // init for Editing
-                if(isPrime() || isHard() || isSoft() || isIlpMD() || isIlpOnly()){
+                if(isBruteForce() || isGreedyPlusILP()|| isIlpMD() || isIlpOnly()){
                     lazy = input.hasOption("glazy");
                 }
                 if(input.hasOption("gap")){
@@ -123,7 +132,7 @@ public class Parameters {
         String header = "Global flags: -i, -o, -log, -v, -md, -test\n" +
                 "General editing flags: -t -gap\n" +
                 "Editing methods (If several, chooses best solution):  \n" +
-                "  -glazy, -gprime, -gsoft, -ghard; -ilp, -ilpglobal\n" +
+                "  -glazy, -gforce, -gsoft, -ghard; -ilp, -ilpglobal\n" +
                 "Other parameters adjust the greedy methods.\n\n";
         String footer = "\nRefer to thesis for details.";
         helpF.printHelp(usage,header,options,footer,false);
@@ -186,17 +195,18 @@ public class Parameters {
         return lazy;
     }
 
-    public boolean isPrime() {
-        return input.hasOption("gprime");
+    public boolean isBruteForce() {
+        return input.hasOption("gforce");
     }
 
-    public boolean isSoft() {
-        return input.hasOption("gsoft");
-    }
-
-    public boolean isHard() {
+    public boolean isStopOnlyAtHardThreshold() { // todo...
         return input.hasOption("ghard");
     }
+
+    public boolean isGreedyPlusILP(){
+        return input.hasOption("gilp");
+    }
+
 
     public boolean isIlpMD() {
         return input.hasOption("ilp");

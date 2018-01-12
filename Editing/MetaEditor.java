@@ -15,7 +15,9 @@ import java.util.logging.Logger;
 
 import dicograph.modDecomp.DirectedMD;
 import dicograph.modDecomp.MDTree;
+import dicograph.utils.Edge;
 import dicograph.utils.Parameters;
+import dicograph.utils.WeightedPair;
 import ilog.concert.IloException;
 
 /**
@@ -61,20 +63,17 @@ public class MetaEditor {
         if(p.isLazy()){
             allMethodsSolutions.add( computeEditFor(EditType.Lazy) );
         }
-        if(p.isPrime()){
-            allMethodsSolutions.add( computeEditFor(EditType.Primes) );
-        }
-        if(p.isSoft()){
-
-        }
-        if(p.isHard()){
-
+        if(p.isBruteForce()){
+            allMethodsSolutions.add( computeEditFor(EditType.BruteForce) );
         }
         if(p.isIlpMD()){
-
+            allMethodsSolutions.add( computeEditFor(EditType.ILP) );
+        }
+        if(p.isGreedyPlusILP()){
+            allMethodsSolutions.add( computeEditFor(EditType.GreedyILP));
         }
         if(p.isIlpOnly()){
-
+            allMethodsSolutions.add(  computeGlobalILP() );
         }
 
         // best solution(s) - with gap
@@ -104,25 +103,43 @@ public class MetaEditor {
         return bestSolutions;
     }
 
+    private TreeMap<Integer, List<Solution>> computeGlobalILP() throws IloException{
+        TreeMap<Integer, List<Solution>> ret = new TreeMap<>();
+        CplexDiCographEditingSolver glSolver = new CplexDiCographEditingSolver(inputGraph, p, log);
+        glSolver.solve();
+        for (int i = 0; i < glSolver.getEditingDistances().size(); i++) {
+
+            int val = (int) Math.round(glSolver.getEditingDistances().get(i));
+            List<Edge> edges = new ArrayList<>(glSolver.getSolutionEdgeEdits().get(i).size());
+            for(WeightedPair<Integer,Integer> e : glSolver.getSolutionEdgeEdits().get(i)){
+                edges.add( new Edge(e.getFirst(), e.getSecond()));
+            }
+            ret.putIfAbsent(val,new LinkedList<>());
+            ret.get(val).add(new Solution(glSolver.getSolutionGraphs().get(i),edges, EditType.ILPGlobal));
+        }
+        return ret;
+    }
+
     private TreeMap<Integer, List<Solution>> computeEditFor(EditType method) throws
     IOException, ImportException, InterruptedException, IloException{
-        // firstRun call: just one solution
+
         MDEditor firstEditor = new MDEditor(inputGraph, origTree, log, method, p);
         TreeMap<Integer, List<Solution>> firstSolns = firstEditor.editIntoCograph();
 
-        // todo: why not take more than one??? Makes much sense if I have several small Prime modules and gap 0 or 1.
+        // 1st run gives only one solution whenever we plan a 2nd run.
         Solution firstSol = firstSolns.firstEntry().getValue().get(0);
         DirectedMD firstMD = new DirectedMD(firstSol.getGraph(), log, false);
         MDTree firstTree = firstMD.computeModularDecomposition();
 
-        if(method.oneIsEnough()){
-            if(firstTree.getPrimeModulesBottomUp().isEmpty()){
-                log.info(()-> method + " method was successful after firstRun run.");
-                return firstSolns;
-            }
+        if(firstTree.getPrimeModulesBottomUp().isEmpty()){
+            log.info(()-> method + " method was successful after first run.");
+            return firstSolns;
+        } else if (method == EditType.ILP){
+            log.warning(()-> "ILP found no solution.");
         }
 
-        // second call. todo: input graph  original but firstTree edited... is that ok???
+        // second call. Input graph original but firstTree edited.
+        log.info(() ->"Starting second run.");
         MDEditor secondEdit = new MDEditor(inputGraph, firstTree, log, firstSol.getEdits(), method, p);
         TreeMap<Integer, List<Solution>> secondSolns = secondEdit.editIntoCograph();
         if(secondSolns.isEmpty()){

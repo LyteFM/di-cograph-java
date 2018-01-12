@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.TreeSet;
 import java.util.logging.Logger;
 
+import dicograph.utils.Parameters;
 import dicograph.utils.WeightedPair;
 import ilog.concert.IloException;
 import ilog.concert.IloIntVar;
@@ -21,22 +22,19 @@ import ilog.cplex.IloCplex;
 
 /**
  * Taken from package paraphylo by Mark Hellmuth. Adapted for Directed Graphs.
- * Todo: Link
+ * Todo: URL
  */
 
 public class CplexDiCographEditingSolver {
-
-
-
 
     // input data. Also works, if has self-loops (will be ignored)
     SimpleDirectedGraph<Integer, DefaultWeightedEdge> inputGraph;
     TreeSet<Integer> sortedVertexSet;
     // parameters
-    int [] parameters;
+    Parameters parameters;
 
-    List<SimpleDirectedGraph<Integer, DefaultWeightedEdge>> solutionGraphs;
-    List<Double> editingDistances;
+    private List<SimpleDirectedGraph<Integer, DefaultWeightedEdge>> solutionGraphs;
+    private List<Double> editingDistances;
 
     // CPLEX solver
     IloCplex solver;
@@ -46,14 +44,12 @@ public class CplexDiCographEditingSolver {
     // number of vertices
     private int vertexCount;
 
-    // orthology variables -> Adjacency Matrix?
+    // Adjacency Matrix
     private IloIntVar[][] E;
+
     private final double[][] weightMatrix;
     private List<List<WeightedPair<Integer, Integer>>> solutionEdgeEdits;
     private Logger log;
-
-    // sets the time limit (default: 2h), if given by parameter #1
-    private int timelimit;
 
     /**
      * Constructs a new Cplex-Solver for the Di-Cograph-Editing Problem.
@@ -61,12 +57,12 @@ public class CplexDiCographEditingSolver {
      * @param parameters the parameter array:
      * @throws IloException
      */
-    public CplexDiCographEditingSolver(SimpleDirectedGraph<Integer, DefaultWeightedEdge> inputGraph, int[] parameters, Logger log) throws IloException {
+    public CplexDiCographEditingSolver(SimpleDirectedGraph<Integer, DefaultWeightedEdge> inputGraph, Parameters parameters, Logger log) throws IloException {
         this(inputGraph,parameters,null,log);
     }
 
 
-    public CplexDiCographEditingSolver(SimpleDirectedGraph<Integer, DefaultWeightedEdge> inputGraph, int[] parameters, double[][] weights, Logger log) throws IloException {
+    public CplexDiCographEditingSolver(SimpleDirectedGraph<Integer, DefaultWeightedEdge> inputGraph, Parameters params, double[][] weights, Logger logger) throws IloException {
         this.inputGraph = inputGraph;
         // want the vertex set of the graph in sorted order for easier display and to uniquely define the matrix
         sortedVertexSet = new TreeSet<>(inputGraph.vertexSet()); // todo: not necessary!
@@ -77,8 +73,8 @@ public class CplexDiCographEditingSolver {
         solutionGraphs = new ArrayList<>();
         editingDistances = new ArrayList<>();
 
-        this.parameters = parameters;
-        this.log = log;
+        parameters = params;
+        log = logger;
         weightMatrix = weights;
         solutionEdgeEdits = new LinkedList<>();
 
@@ -119,10 +115,8 @@ public class CplexDiCographEditingSolver {
 //                }
 //            }
 //        }
-        if(weightMatrix == null)
-            initSymDiffUnweighted(symDiff1Expr,symDiff2Expr);
-        else
-            initSymDiffWeighted(symDiff1Expr,symDiff2Expr);
+
+        initSymDiff(symDiff1Expr,symDiff2Expr);
 
 
         this.objFn = solver.sum(solver.sum(symDiff1Expr),solver.sum(symDiff2Expr));
@@ -183,21 +177,20 @@ public class CplexDiCographEditingSolver {
         }
 
         // todo: diese optionen verstehen und auch einbauen!
-        /*
-        if (this.timelimit>0){
-            solver.setParam(IloCplex.DoubleParam.TiLim, parameters.getTimelimitCGE());
+
+        if (parameters.getTimeOut()>0){
+            solver.setParam(IloCplex.DoubleParam.TiLim, parameters.getTimeOut());
         }
 
         // solve
         if (!parameters.isVerbose()){
-            solver.setOut(new NullOutputStream());
+            solver.setOut( ByteStreams.nullOutputStream() );
         }
-        */
-        solver.setOut( ByteStreams.nullOutputStream() );
+
 
         // want all solutions
-        if (parameters[1] != 0){
-            solver.setParam(IloCplex.DoubleParam.SolnPoolAGap, 1); // should be 0 to only get the best solution.
+        if (parameters.getSolutionGap() >= 0){
+            solver.setParam(IloCplex.DoubleParam.SolnPoolAGap, parameters.getSolutionGap()); // should be 0 to only get the best solutions.
             solver.setParam(IloCplex.IntParam.SolnPoolIntensity, 4);
             solver.setParam(IloCplex.IntParam.PopulateLim, 100);
             solver.populate();
@@ -217,6 +210,7 @@ public class CplexDiCographEditingSolver {
         return solutionGraphs;
     }
 
+    /*
     private void initSymDiffUnweighted(IloNumExpr symDiff1Expr[], IloNumExpr symDiff2Expr[]) throws IloException{
         DefaultWeightedEdge edge;
         int i = 0;
@@ -225,7 +219,6 @@ public class CplexDiCographEditingSolver {
                 if(sourceVertex != targetVertext) {
                     edge = inputGraph.getEdge(sourceVertex, targetVertext);
                     int hasEdge =  edge == null ? 0 :1;
-                    // new: add weights!
                     symDiff1Expr[i] = solver.prod((1 - hasEdge), E[sourceVertex][targetVertext]);
                     symDiff2Expr[i] = solver.prod(hasEdge, solver.diff(1, E[sourceVertex][targetVertext] ));
                     i++;
@@ -233,8 +226,9 @@ public class CplexDiCographEditingSolver {
             }
         }
     }
+    */
 
-    private void initSymDiffWeighted(IloNumExpr symDiff1Expr[], IloNumExpr symDiff2Expr[]) throws IloException{
+    private void initSymDiff(IloNumExpr symDiff1Expr[], IloNumExpr symDiff2Expr[]) throws IloException{
         DefaultWeightedEdge edge;
         int i = 0;
         for(int sourceVertex = 0; sourceVertex < vertexCount; sourceVertex++){
@@ -242,9 +236,10 @@ public class CplexDiCographEditingSolver {
                 if(sourceVertex != targetVertext) {
                     edge = inputGraph.getEdge(sourceVertex, targetVertext);
                     int hasEdge =  edge == null ? 0 :1;
+                    double weight = weightMatrix == null ? 1.0 : weightMatrix[sourceVertex][targetVertext];
                     // new: add weights!
-                    symDiff1Expr[i] = solver.prod( weightMatrix[sourceVertex][targetVertext]*(1 - hasEdge), E[sourceVertex][targetVertext]);
-                    symDiff2Expr[i] = solver.prod(weightMatrix[sourceVertex][targetVertext]*hasEdge, solver.diff(1, E[sourceVertex][targetVertext] ));
+                    symDiff1Expr[i] = solver.prod( weight*(1 - hasEdge), E[sourceVertex][targetVertext]);
+                    symDiff2Expr[i] = solver.prod(weight*hasEdge, solver.diff(1, E[sourceVertex][targetVertext] ));
                     i++;
                 }
             }
@@ -323,5 +318,9 @@ public class CplexDiCographEditingSolver {
 
     public List<List<WeightedPair<Integer, Integer>>> getSolutionEdgeEdits() {
         return solutionEdgeEdits;
+    }
+
+    public List<SimpleDirectedGraph<Integer, DefaultWeightedEdge>> getSolutionGraphs() {
+        return solutionGraphs;
     }
 }
