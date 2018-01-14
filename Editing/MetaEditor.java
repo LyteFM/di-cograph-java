@@ -1,6 +1,6 @@
 package dicograph.Editing;
 
-import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.io.DOTExporter;
 import org.jgrapht.io.ExportException;
@@ -26,7 +26,7 @@ import ilog.concert.IloException;
 public class MetaEditor {
 
     final Parameters p;
-    final SimpleDirectedGraph<Integer,DefaultWeightedEdge> inputGraph;
+    final SimpleDirectedGraph<Integer,DefaultEdge> inputGraph;
     final Logger log;
     final MDTree origTree;
     final int nVertices;
@@ -34,7 +34,7 @@ public class MetaEditor {
 
     // Original Graph and all the parameters
     // Calls MDEditor twice for each mode (firstRun & oldInputEdits as flag)
-    public MetaEditor(SimpleDirectedGraph<Integer,DefaultWeightedEdge> g, Parameters params, Logger logger)
+    public MetaEditor(SimpleDirectedGraph<Integer,DefaultEdge> g, Parameters params, Logger logger)
             throws IOException, ImportException, InterruptedException{
         inputGraph = g;
         nVertices = g.vertexSet().size();
@@ -94,7 +94,7 @@ public class MetaEditor {
             log.info(() ->"Edit-Graph: " + solution.getGraph());
             if(solution.getCost() == best){
                 System.out.println("//Edits: " + solution.getEdits());
-                DOTExporter<Integer,DefaultWeightedEdge> exporter = new DOTExporter<>();
+                DOTExporter<Integer,DefaultEdge> exporter = new DOTExporter<>();
                 exporter.exportGraph(solution.getGraph(), System.out);
                 break;
             }

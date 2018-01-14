@@ -7,7 +7,7 @@ import org.jgrapht.alg.ConnectivityInspector;
 import org.jgrapht.alg.util.Pair;
 import org.jgrapht.graph.ClassBasedEdgeFactory;
 import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.io.ImportException;
 
@@ -34,17 +34,12 @@ import ilog.concert.IloException;
 /**
  * Created by Fynn Leitow on 21.12.17.
  */
-public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEdge> {
+public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
 
     private final Parameters p;
 
 
-    // prev: Force stop if forbiddenSub-Score <= this value during firstRun run and use brute-force/branching/ILP in second run to complete.
-
-    // For brute force:
-    private static boolean useMD = false; // takes too long for small n
-
-    private final SimpleDirectedGraph<Integer, DefaultWeightedEdge> base;
+    private final SimpleDirectedGraph<Integer, DefaultEdge> base;
     private final int nVertices;
 
     private final HashMap<Integer,Integer> baseNoTosubNo;
@@ -53,8 +48,8 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
     private final MDTreeNode primeNode;
 
 
-    public PrimeSubgraph(SimpleDirectedGraph<Integer,DefaultWeightedEdge> baseGraph, MDTreeNode node, Parameters params){
-        super(new ClassBasedEdgeFactory<>(DefaultWeightedEdge.class),true);
+    public PrimeSubgraph(SimpleDirectedGraph<Integer,DefaultEdge> baseGraph, MDTreeNode node, Parameters params){
+        super(new ClassBasedEdgeFactory<>(DefaultEdge.class),true);
         base = baseGraph;
         p = params;
         baseNoTosubNo = new HashMap<>();
@@ -451,8 +446,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
             if(containsEdge(e.getFirst(),e.getSecond())){
                 removeEdge(e.getFirst(),e.getSecond());
             } else {
-                // todo: due to weighted Pair, I might not need weightedEdge at all.
-                Graphs.addEdge(this, e.getFirst(), e.getSecond(), e.getWeight());
+                addEdge(e.getFirst(), e.getSecond());
             }
         }
 
@@ -486,7 +480,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultWeightedEd
         return baseNoTosubNo;
     }
 
-    public SimpleDirectedGraph<Integer, DefaultWeightedEdge> getBase() {
+    public SimpleDirectedGraph<Integer, DefaultEdge> getBase() {
         return base;
     }
 

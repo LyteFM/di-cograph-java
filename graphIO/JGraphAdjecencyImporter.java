@@ -1,6 +1,6 @@
 package dicograph.graphIO;
 
-import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
 import java.io.BufferedReader;
@@ -16,7 +16,7 @@ import java.util.StringTokenizer;
  */
 public class JGraphAdjecencyImporter {
 
-    public static SimpleDirectedGraph<Integer, DefaultWeightedEdge> importIntGraph(File file){
+    public static SimpleDirectedGraph<Integer, DefaultEdge> importIntGraph(File file){
         return importIntGraph(file,false);
     }
     /**
@@ -25,7 +25,7 @@ public class JGraphAdjecencyImporter {
      * @param file
      * @return
      */
-    public static SimpleDirectedGraph<Integer, DefaultWeightedEdge> importIntGraph(File file, boolean startAtOne) {
+    public static SimpleDirectedGraph<Integer, DefaultEdge> importIntGraph(File file, boolean startAtOne) {
 
         try(InputStream inStream = Files.newInputStream(file.toPath())) {
             BufferedReader in = new BufferedReader(new InputStreamReader(inStream));
@@ -38,7 +38,7 @@ public class JGraphAdjecencyImporter {
             String edgeLine = null;
 
 
-            SimpleDirectedGraph<Integer, DefaultWeightedEdge> graph = new SimpleDirectedGraph<>(DefaultWeightedEdge.class);
+            SimpleDirectedGraph<Integer, DefaultEdge> graph = new SimpleDirectedGraph<>(DefaultEdge.class);
 
             while ( (line = in.readLine()) != null){
                 line = line.trim(); // remove whitespace at start and end

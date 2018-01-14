@@ -1,7 +1,7 @@
 package dicograph.Editing;
 
 import org.jgrapht.alg.util.Pair;
-import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
 import java.util.BitSet;
@@ -96,7 +96,7 @@ enum ForbiddenSubgraph {
 
 
     public static Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> verticesToForbidden(
-            SimpleDirectedGraph<Integer,DefaultWeightedEdge> g, HashMap<Edge,Integer> edgeToCount, boolean stopIfFound){
+            SimpleDirectedGraph<Integer,DefaultEdge> g, HashMap<Edge,Integer> edgeToCount, boolean stopIfFound){
 
         HashMap<BitSet,ForbiddenSubgraph> len3 = new HashMap<>();
         HashMap<BitSet,ForbiddenSubgraph> len4 = new HashMap<>();
@@ -236,7 +236,7 @@ enum ForbiddenSubgraph {
         int[] touchingVerticesScores = new int[p.getnVertices()];
         for(BitSet vertices : subsMap.getFirst().keySet()){
             vertices.stream().forEach( v -> {
-                for(DefaultWeightedEdge e : p.edgesOf(v)){
+                for(DefaultEdge e : p.edgesOf(v)){
                     if(p.getEdgeSource(e) == v){
                         touchingVerticesScores[p.getEdgeTarget(e)]++;
                     } else {

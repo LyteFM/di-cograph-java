@@ -1,6 +1,6 @@
 package dicograph.modDecomp;
 
-import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleGraph;
 
 import java.util.Collection;
@@ -104,7 +104,7 @@ class RecSubProblem extends RootedTreeNode {
 	}
 
 	// F.L. 04.09.2017:
-	RecSubProblem(SimpleGraph<Integer, DefaultWeightedEdge> graph){
+	RecSubProblem(SimpleGraph<Integer, DefaultEdge> graph){
 
 	    this();
 
@@ -120,8 +120,8 @@ class RecSubProblem extends RootedTreeNode {
         // Adds the vertex neighbors of the graph as leaf neighbors of the recursion tree:
         for ( MDTreeLeafNode currLeaf : nodeToLeaves.values()){
             int currLeafNo = currLeaf.getVertexNo();
-            Set<DefaultWeightedEdge> edges = graph.edgesOf( currLeafNo );
-            for( DefaultWeightedEdge edge : edges ) {
+            Set<DefaultEdge> edges = graph.edgesOf( currLeafNo );
+            for( DefaultEdge edge : edges ) {
                 int neighbour = graph.getEdgeTarget(edge);
                 // edges are saved uniquely with source and target!
                 // faster like this than with .getEdge != null

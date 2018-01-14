@@ -1,7 +1,7 @@
 package dicograph.Editing;
 
 import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.io.ImportException;
 
@@ -29,7 +29,7 @@ import ilog.concert.IloException;
  */
 public class MDEditor {
 
-    final SimpleDirectedGraph<Integer,DefaultWeightedEdge> inputGraph;
+    final SimpleDirectedGraph<Integer,DefaultEdge> inputGraph;
     final  int nVertices;
     final Logger log;
     final MDTree inputTree;
@@ -39,7 +39,7 @@ public class MDEditor {
 
     boolean firstRun;
 
-    SimpleDirectedGraph<Integer, DefaultWeightedEdge> workGraph; // in theory, I can have several! One best enough, though.
+    SimpleDirectedGraph<Integer, DefaultEdge> workGraph; // in theory, I can have several! One best enough, though.
 
 
     // 1st run: just one. Easy.
@@ -53,7 +53,7 @@ public class MDEditor {
     //                  - check the Tree / forbiddenSubs. If successful: try removing loops.
 
 
-    public MDEditor(SimpleDirectedGraph<Integer,DefaultWeightedEdge> input, MDTree tree, Logger logger,
+    public MDEditor(SimpleDirectedGraph<Integer,DefaultEdge> input, MDTree tree, Logger logger,
                     List<Edge> oldEdits, EditType ed, Parameters params){
         inputGraph = input;
         p = params;
@@ -66,7 +66,7 @@ public class MDEditor {
         firstRun = oldEdits == null;
     }
 
-    public MDEditor(SimpleDirectedGraph<Integer,DefaultWeightedEdge> input, MDTree tree, Logger logger,EditType ed, Parameters params){
+    public MDEditor(SimpleDirectedGraph<Integer,DefaultEdge> input, MDTree tree, Logger logger,EditType ed, Parameters params){
         this(input, tree, logger, null, ed, params);
     }
 
@@ -306,7 +306,7 @@ public class MDEditor {
     }
 
 
-    static void editGraph(Graph<Integer,DefaultWeightedEdge> g, List<Edge> edgeList){
+    static void editGraph(Graph<Integer,DefaultEdge> g, List<Edge> edgeList){
         for(Edge e : edgeList){
             if(g.containsEdge(e.getFirst(),e.getSecond())){
                 g.removeEdge(e.getFirst(),e.getSecond());

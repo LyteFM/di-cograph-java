@@ -1,7 +1,7 @@
 package dicograph.modDecomp;
 
 import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.DefaultEdge;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -30,7 +30,7 @@ public enum MDNodeType {
 	// F.L. 17.11.17: added verification methods
 	// independent of MDTree/Partivive Tree
 
-	public static String verifyNodeType(boolean isDirected, Graph<Integer,DefaultWeightedEdge> subgraph, Graph<Integer,DefaultWeightedEdge> mainGraph,
+	public static String verifyNodeType(boolean isDirected, Graph<Integer,DefaultEdge> subgraph, Graph<Integer,DefaultEdge> mainGraph,
 										MDNodeType expected, List<Integer> childRepresentatives, RootedTreeNode node){
 		StringBuilder builder = new StringBuilder();
 
@@ -92,9 +92,9 @@ public enum MDNodeType {
 	// if it's none of these two cases, it should be prime. However, in order to detect "false primes",
 	// it's necessary to combine any two vertices and check again.
 
-	public static MDNodeType determineNodeType(Graph<Integer,DefaultWeightedEdge> subgraph, boolean directed){
+	public static MDNodeType determineNodeType(Graph<Integer,DefaultEdge> subgraph, boolean directed){
 
-		Set<DefaultWeightedEdge> subEdgeSet = subgraph.edgeSet();
+		Set<DefaultEdge> subEdgeSet = subgraph.edgeSet();
 
 		if(subEdgeSet.isEmpty()){
 			// no edges means 0-complete
@@ -109,7 +109,7 @@ public enum MDNodeType {
 			if (directed)
 				expCountSeries *= 2;
 			for(int vertex : vertices){
-				Set<DefaultWeightedEdge> touchingEdges = subgraph.edgesOf(vertex);
+				Set<DefaultEdge> touchingEdges = subgraph.edgesOf(vertex);
 				int count = touchingEdges.size();
 				if (count != expCountSeries) {
 					// order needs n-1 touching vertices, but Series required twice as many in directed case
@@ -121,7 +121,7 @@ public enum MDNodeType {
 				if(directed){
 					// for order: need all outdegs from 0 to n-1
 					int outDeg = 0;
-					for(DefaultWeightedEdge edge : touchingEdges){
+					for(DefaultEdge edge : touchingEdges){
 						if(subgraph.getEdgeTarget(edge) == vertex)
 							outDeg++;
 					}

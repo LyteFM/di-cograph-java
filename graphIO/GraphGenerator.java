@@ -4,7 +4,7 @@ import org.jgrapht.Graph;
 import org.jgrapht.generate.EmptyGraphGenerator;
 import org.jgrapht.generate.GnmRandomGraphGenerator;
 import org.jgrapht.generate.GnpRandomGraphGenerator;
-import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.graph.SimpleGraph;
 
@@ -43,11 +43,11 @@ public class GraphGenerator {
      * @param edgeProbability the probability of a directed edge (u,v) between any two vertices u,v
      * @return the random graph
      */
-    public SimpleDirectedGraph<String, DefaultWeightedEdge> generateRandomGnp(int numberVertices, double edgeProbability){
+    public SimpleDirectedGraph<String, DefaultEdge> generateRandomGnp(int numberVertices, double edgeProbability){
 
-        SimpleDirectedGraph<String, DefaultWeightedEdge> graph = new SimpleDirectedGraph<>(DefaultWeightedEdge.class);
+        SimpleDirectedGraph<String, DefaultEdge> graph = new SimpleDirectedGraph<>(DefaultEdge.class);
 
-        GnpRandomGraphGenerator<String, DefaultWeightedEdge> generator =
+        GnpRandomGraphGenerator<String, DefaultEdge> generator =
                 new GnpRandomGraphGenerator<>(numberVertices, edgeProbability, random, false);
         generator.generateGraph(graph, new StringVertexFactory(),null);
 
@@ -62,16 +62,16 @@ public class GraphGenerator {
      */
     public SimpleDirectedGraph generateRandomGnm(int numberVertices, int numberEdges){
 
-        SimpleDirectedGraph<String, DefaultWeightedEdge> graph = new SimpleDirectedGraph<>(DefaultWeightedEdge.class);
+        SimpleDirectedGraph<String, DefaultEdge> graph = new SimpleDirectedGraph<>(DefaultEdge.class);
 
-        GnmRandomGraphGenerator<String, DefaultWeightedEdge> generator =
+        GnmRandomGraphGenerator<String, DefaultEdge> generator =
                 new GnmRandomGraphGenerator<>(numberVertices, numberEdges, random, false, false);
         generator.generateGraph(graph, new StringVertexFactory(), null);
 
         return graph;
     }
 
-    public void generateRandomCograph(SimpleGraph<Integer,DefaultWeightedEdge> graph, int nVertices){
+    public void generateRandomCograph(SimpleGraph<Integer,DefaultEdge> graph, int nVertices){
 
         generateCograph(graph, nVertices, false, false);
 
@@ -80,15 +80,15 @@ public class GraphGenerator {
         // - everything else is ok!
     }
 
-    public Set<BitSet> generateRandomDirectedCograph(SimpleDirectedGraph<Integer, DefaultWeightedEdge> graph, int nVertices, boolean getBitSets){
+    public Set<BitSet> generateRandomDirectedCograph(SimpleDirectedGraph<Integer, DefaultEdge> graph, int nVertices, boolean getBitSets){
         return generateCograph(graph, nVertices,true, true);
     }
 
 
-    private Set<BitSet> generateCograph(Graph<Integer,DefaultWeightedEdge> graph, int nVertices, boolean isDirected, boolean getBitSets){
+    private Set<BitSet> generateCograph(Graph<Integer,DefaultEdge> graph, int nVertices, boolean isDirected, boolean getBitSets){
 
         // adds n vertices
-        EmptyGraphGenerator<Integer, DefaultWeightedEdge> gen = new EmptyGraphGenerator<>(nVertices);
+        EmptyGraphGenerator<Integer, DefaultEdge> gen = new EmptyGraphGenerator<>(nVertices);
         gen.generateGraph(graph, new IntegerVertexFactory(), null);
 
         // Save the Graph's modules in BitSets for easy comparison
@@ -209,7 +209,7 @@ public class GraphGenerator {
         }
     }
 
-    private HashSet<Integer> union(Graph<Integer,DefaultWeightedEdge> g, ArrayList<HashSet<Integer>> selectedModules, MDNodeType type){
+    private HashSet<Integer> union(Graph<Integer,DefaultEdge> g, ArrayList<HashSet<Integer>> selectedModules, MDNodeType type){
 
         // merge all vertices into the first module
         HashSet<Integer> ret = new HashSet<>(selectedModules.get(0));
@@ -253,7 +253,7 @@ public class GraphGenerator {
      * @param nEdgeEdits the number of edge edits
      * @return the disturbed cograph
      */
-    public SimpleDirectedGraph<Integer, DefaultWeightedEdge> disturbDicograph(SimpleDirectedGraph<Integer, DefaultWeightedEdge> g, int nEdgeEdits){
+    public SimpleDirectedGraph<Integer, DefaultEdge> disturbDicograph(SimpleDirectedGraph<Integer, DefaultEdge> g, int nEdgeEdits){
 
         HashSet<String> usedEdges = new HashSet<>(nEdgeEdits*4/3);
         ArrayList<Integer> vertices = new ArrayList<>(g.vertexSet());
@@ -272,7 +272,7 @@ public class GraphGenerator {
             // May not be the same and may not have been altered already
             if( ! (u==v) && !usedEdges.contains(edgeString) ){
 
-                DefaultWeightedEdge edge = g.getEdge(u,v);
+                DefaultEdge edge = g.getEdge(u,v);
                 if( edge == null){
                     g.addEdge(u,v);
                 } else {
@@ -305,8 +305,8 @@ public class GraphGenerator {
      * @param input input graph
      * @return cloned graph
      */
-    public static SimpleDirectedGraph<Integer,DefaultWeightedEdge> deepClone(final SimpleDirectedGraph<Integer, DefaultWeightedEdge> input){
-        SimpleDirectedGraph<Integer,DefaultWeightedEdge> ret = new SimpleDirectedGraph<>(DefaultWeightedEdge.class);
+    public static SimpleDirectedGraph<Integer,DefaultEdge> deepClone(final SimpleDirectedGraph<Integer, DefaultEdge> input){
+        SimpleDirectedGraph<Integer,DefaultEdge> ret = new SimpleDirectedGraph<>(DefaultEdge.class);
         input.vertexSet().forEach( ret::addVertex );
         input.edgeSet().forEach( e -> ret.addEdge( input.getEdgeSource(e), input.getEdgeTarget(e) ));
         return ret;

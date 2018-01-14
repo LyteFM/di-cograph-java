@@ -2,7 +2,7 @@ package dicograph.Editing;
 
 import com.google.common.io.ByteStreams;
 
-import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
 
@@ -28,12 +28,12 @@ import ilog.cplex.IloCplex;
 public class CplexDiCographEditingSolver {
 
     // input data. Also works, if has self-loops (will be ignored)
-    SimpleDirectedGraph<Integer, DefaultWeightedEdge> inputGraph;
+    SimpleDirectedGraph<Integer, DefaultEdge> inputGraph;
     TreeSet<Integer> sortedVertexSet;
     // parameters
     Parameters parameters;
 
-    private List<SimpleDirectedGraph<Integer, DefaultWeightedEdge>> solutionGraphs;
+    private List<SimpleDirectedGraph<Integer, DefaultEdge>> solutionGraphs;
     private List<Double> editingDistances;
 
     // CPLEX solver
@@ -57,12 +57,12 @@ public class CplexDiCographEditingSolver {
      * @param parameters the parameter array:
      * @throws IloException
      */
-    public CplexDiCographEditingSolver(SimpleDirectedGraph<Integer, DefaultWeightedEdge> inputGraph, Parameters parameters, Logger log) throws IloException {
+    public CplexDiCographEditingSolver(SimpleDirectedGraph<Integer, DefaultEdge> inputGraph, Parameters parameters, Logger log) throws IloException {
         this(inputGraph,parameters,null,log);
     }
 
 
-    public CplexDiCographEditingSolver(SimpleDirectedGraph<Integer, DefaultWeightedEdge> inputGraph, Parameters params, double[][] weights, Logger logger) throws IloException {
+    public CplexDiCographEditingSolver(SimpleDirectedGraph<Integer, DefaultEdge> inputGraph, Parameters params, double[][] weights, Logger logger) throws IloException {
         this.inputGraph = inputGraph;
         // want the vertex set of the graph in sorted order for easier display and to uniquely define the matrix
         sortedVertexSet = new TreeSet<>(inputGraph.vertexSet()); // todo: not necessary!
@@ -80,7 +80,7 @@ public class CplexDiCographEditingSolver {
 
     }
 
-    public List<SimpleDirectedGraph<Integer,DefaultWeightedEdge>> solve() throws IloException{
+    public List<SimpleDirectedGraph<Integer,DefaultEdge>> solve() throws IloException{
         this.solver.setName("CplexCographSolver");
 
         // initialize boolean variables as "E_x,y"
@@ -100,7 +100,7 @@ public class CplexDiCographEditingSolver {
         IloNumExpr symDiff1Expr[] = new IloNumExpr[noOfAdjacencies];
         IloNumExpr symDiff2Expr[] = new IloNumExpr[noOfAdjacencies];
 
-//        DefaultWeightedEdge edge;
+//        DefaultEdge edge;
 //        int i = 0;
 //        // Initializes the symmetric difference for the Cograph Computation
 ////        for(int sourceVertex = 0; sourceVertex < vertexCount; sourceVertex++){
@@ -212,7 +212,7 @@ public class CplexDiCographEditingSolver {
 
     /*
     private void initSymDiffUnweighted(IloNumExpr symDiff1Expr[], IloNumExpr symDiff2Expr[]) throws IloException{
-        DefaultWeightedEdge edge;
+        DefaultEdge edge;
         int i = 0;
         for(int sourceVertex = 0; sourceVertex < vertexCount; sourceVertex++){
             for(int targetVertext = 0; targetVertext < vertexCount; targetVertext++) {
@@ -229,7 +229,7 @@ public class CplexDiCographEditingSolver {
     */
 
     private void initSymDiff(IloNumExpr symDiff1Expr[], IloNumExpr symDiff2Expr[]) throws IloException{
-        DefaultWeightedEdge edge;
+        DefaultEdge edge;
         int i = 0;
         for(int sourceVertex = 0; sourceVertex < vertexCount; sourceVertex++){
             for(int targetVertext = 0; targetVertext < vertexCount; targetVertext++) {
@@ -264,7 +264,7 @@ public class CplexDiCographEditingSolver {
             if (solver.getObjValue(solutionId)<=bestObjectiveValue+3){
 
                 // initialize JGraph with same vertex-Set:
-                SimpleDirectedGraph<Integer, DefaultWeightedEdge> solutionGraph = new SimpleDirectedGraph<>(DefaultWeightedEdge.class);
+                SimpleDirectedGraph<Integer, DefaultEdge> solutionGraph = new SimpleDirectedGraph<>(DefaultEdge.class);
                 for(int vertex = 0; vertex < vertexCount; vertex++){
                     solutionGraph.addVertex(vertex);
                 }
@@ -320,7 +320,7 @@ public class CplexDiCographEditingSolver {
         return solutionEdgeEdits;
     }
 
-    public List<SimpleDirectedGraph<Integer, DefaultWeightedEdge>> getSolutionGraphs() {
+    public List<SimpleDirectedGraph<Integer, DefaultEdge>> getSolutionGraphs() {
         return solutionGraphs;
     }
 }

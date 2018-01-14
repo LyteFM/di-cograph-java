@@ -1,6 +1,6 @@
 package dicograph.graphIO;
 
-import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
 import java.io.BufferedReader;
@@ -17,7 +17,7 @@ import java.util.HashMap;
  */
 public class SimpleMatrixImporter {
 
-    public static SimpleDirectedGraph<String, DefaultWeightedEdge> importStringGraph(File file) throws IOException {
+    public static SimpleDirectedGraph<String, DefaultEdge> importStringGraph(File file) throws IOException {
 
         InputStream inStream = Files.newInputStream(file.toPath());
         BufferedReader in = new BufferedReader(new InputStreamReader(inStream));
@@ -27,7 +27,7 @@ public class SimpleMatrixImporter {
         int numberVertices = 0;
         int rowNumber = 0;
 
-        SimpleDirectedGraph<String, DefaultWeightedEdge> graph = new SimpleDirectedGraph<>(DefaultWeightedEdge.class);
+        SimpleDirectedGraph<String, DefaultEdge> graph = new SimpleDirectedGraph<>(DefaultEdge.class);
 
         while ((line = in.readLine()) != null) {
 
@@ -73,7 +73,7 @@ public class SimpleMatrixImporter {
         return graph;
     }
 
-    public static SimpleDirectedGraph<Integer, DefaultWeightedEdge> importIntGraph(File file) throws IOException{
+    public static SimpleDirectedGraph<Integer, DefaultEdge> importIntGraph(File file) throws IOException{
         InputStream inStream = Files.newInputStream(file.toPath());
         BufferedReader in = new BufferedReader(new InputStreamReader(inStream));
 
@@ -82,7 +82,7 @@ public class SimpleMatrixImporter {
         int numberVertices = 0;
         int outVertex = 0;
 
-        SimpleDirectedGraph<Integer, DefaultWeightedEdge> graph = new SimpleDirectedGraph<>(DefaultWeightedEdge.class);
+        SimpleDirectedGraph<Integer, DefaultEdge> graph = new SimpleDirectedGraph<>(DefaultEdge.class);
 
         while ((line = in.readLine()) != null) {
 

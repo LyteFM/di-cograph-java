@@ -1,6 +1,6 @@
 package dicograph.Editing;
 
-import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
 import java.util.List;
@@ -13,10 +13,10 @@ import dicograph.utils.Edge;
 public class Solution {
 
     private EditType type;
-    private SimpleDirectedGraph<Integer,DefaultWeightedEdge> graph;
+    private SimpleDirectedGraph<Integer,DefaultEdge> graph;
     private List<Edge> edits;
 
-    Solution(SimpleDirectedGraph<Integer,DefaultWeightedEdge> _graph, List<Edge> _edges, EditType _type){
+    Solution(SimpleDirectedGraph<Integer,DefaultEdge> _graph, List<Edge> _edges, EditType _type){
         graph = _graph;
         edits = _edges;
         type = _type;
@@ -26,7 +26,7 @@ public class Solution {
         return type;
     }
 
-    public SimpleDirectedGraph<Integer, DefaultWeightedEdge> getGraph() {
+    public SimpleDirectedGraph<Integer, DefaultEdge> getGraph() {
         return graph;
     }
 

@@ -2,7 +2,7 @@ package dicograph.modDecomp;
 
 import org.jgrapht.Graph;
 import org.jgrapht.alg.util.Pair;
-import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleGraph;
 
 import java.util.ArrayList;
@@ -173,7 +173,7 @@ class RootedTree {
 
 
     // F.L. 16.11.17: Debug option (via moduleToTreenode)
-    public String verifyNodeTypes(Graph<Integer, DefaultWeightedEdge> graph, boolean directed) {
+    public String verifyNodeTypes(Graph<Integer, DefaultEdge> graph, boolean directed) {
 
         StringBuilder builder = new StringBuilder();
         LinkedList<RootedTreeNode> allNodes = new LinkedList<>(moduleToTreenode.values());
@@ -205,7 +205,7 @@ class RootedTree {
             }
 
 
-            Graph<Integer, DefaultWeightedEdge> subgraph;
+            Graph<Integer, DefaultEdge> subgraph;
             MDNodeType currNodeType = ((MDTreeNode) node).getType();
             if (directed) {
                 //currNodeType = ((PartitiveFamilyTreeNode) node).getType();

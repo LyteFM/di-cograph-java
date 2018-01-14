@@ -2,7 +2,7 @@ package dicograph.modDecomp;
 
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
-import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
 import java.util.BitSet;
@@ -609,7 +609,7 @@ public class MDTreeNode extends RootedTreeNode {
 	}
 
 	// inits Graph, baseVnoToSubVno and returns the weights of each new vertex.
-	public double[] initWeightedSubgraph(PrimeSubgraph subGraph, SimpleDirectedGraph<Integer,DefaultWeightedEdge> base){
+	public double[] initWeightedSubgraph(PrimeSubgraph subGraph, SimpleDirectedGraph<Integer,DefaultEdge> base){
 
 		HashMap<Integer,Integer> baseVNoTosubVNo = subGraph.getBaseNoTosubNo();
 
@@ -619,7 +619,7 @@ public class MDTreeNode extends RootedTreeNode {
 		int subIndex = 0;
 		// add Vertices
 		while (currChild != null) {
-			double edgeWeight = Graph.DEFAULT_EDGE_WEIGHT;
+			double edgeWeight = 1;
 			int vertexNo;
 			if (currChild.isALeaf())
 				vertexNo = ((MDTreeLeafNode) currChild).vertexNo;
@@ -637,14 +637,13 @@ public class MDTreeNode extends RootedTreeNode {
 		// add edges. Cost of editing is the product, as this many edges would have to be edited.
 		// is it smarter to check all Vertices or all edges? Hmm, not if the modules is large...
 		for (Map.Entry<Integer,Integer> source : baseVNoTosubVNo.entrySet()) {
-			for (DefaultWeightedEdge outEdge : base.outgoingEdgesOf(source.getKey())) {
+			for (DefaultEdge outEdge : base.outgoingEdgesOf(source.getKey())) {
 				int target = base.getEdgeTarget(outEdge);
 
 				if (baseVNoTosubVNo.containsKey(target)) {
 					int subSourceV = source.getValue();
 					int subTargetV = baseVNoTosubVNo.get(target);
-					double weight = subVertexToWeight[subSourceV] * subVertexToWeight[subTargetV];
-					Graphs.addEdge(subGraph,subSourceV,subTargetV,weight);
+					subGraph.addEdge(subSourceV,subTargetV);
 				}
 			}
 		}
