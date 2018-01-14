@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * Created by Fynn Leitow on 15.11.17.
+ * Created by Fynn Leitow on 15.11.17. Export to the format used by M.Tedder's undirected MD for testing purposes.
  */
 public class TedFormatExporter<V,E> implements GraphExporter<V,E> {
 

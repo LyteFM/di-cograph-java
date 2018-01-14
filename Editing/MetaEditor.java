@@ -84,19 +84,21 @@ public class MetaEditor {
                 if( cost < best && best - cost > p.getSolutionGap()){
                     bestSolutions.clear();
                 }
+                best = cost;
                 bestSolutions.addAll(solutionMap.firstEntry().getValue());
             }
         }
         // output one best solution as .dot:
+        boolean done = false;
         for(Solution solution : bestSolutions){
             int cost = solution.getCost();
-            log.info(() -> "Found solution with " + cost + " edits: " + solution.getEdits());
+            log.info(() -> solution.getType() + ": Found solution with " + cost + " edits: " + solution.getEdits());
             log.info(() ->"Edit-Graph: " + solution.getGraph());
-            if(solution.getCost() == best){
+            if(!done && solution.getCost() == best){
                 System.out.println("//Edits: " + solution.getEdits());
                 DOTExporter<Integer,DefaultEdge> exporter = new DOTExporter<>();
                 exporter.exportGraph(solution.getGraph(), System.out);
-                break;
+                done = true;
             }
         }
 
@@ -123,6 +125,7 @@ public class MetaEditor {
     private TreeMap<Integer, List<Solution>> computeEditFor(EditType method) throws
     IOException, ImportException, InterruptedException, IloException{
 
+        log.info("Starting Editor for method: " + method);
         MDEditor firstEditor = new MDEditor(inputGraph, origTree, log, method, p);
         TreeMap<Integer, List<Solution>> firstSolns = firstEditor.editIntoCograph();
 

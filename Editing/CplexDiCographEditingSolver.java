@@ -21,8 +21,9 @@ import ilog.concert.IloRange;
 import ilog.cplex.IloCplex;
 
 /**
- * Taken from package paraphylo by Mark Hellmuth. Adapted for Directed Graphs.
- * Todo: URL
+ * Blueprint from package ParaPhylo by Mark Hellmuth. Adapted for Directed Graphs.
+ *
+ * http://pacosy.informatik.uni-leipzig.de/209-0-Downloads.html
  */
 
 public class CplexDiCographEditingSolver {
@@ -81,7 +82,6 @@ public class CplexDiCographEditingSolver {
     }
 
     public List<SimpleDirectedGraph<Integer,DefaultEdge>> solve() throws IloException{
-        this.solver.setName("CplexCographSolver");
 
         // initialize boolean variables as "E_x,y"
         int x,y;
@@ -93,41 +93,13 @@ public class CplexDiCographEditingSolver {
         }
 
 
-
-
         // No diagonal entries as self-loops are excluded:
         int noOfAdjacencies = (this.vertexCount *(this.vertexCount -1));
         IloNumExpr symDiff1Expr[] = new IloNumExpr[noOfAdjacencies];
         IloNumExpr symDiff2Expr[] = new IloNumExpr[noOfAdjacencies];
-
-//        DefaultEdge edge;
-//        int i = 0;
-//        // Initializes the symmetric difference for the Cograph Computation
-////        for(int sourceVertex = 0; sourceVertex < vertexCount; sourceVertex++){
-////            for(int targetVertext = 0; targetVertext < vertexCount; targetVertext++) {
-////                if(sourceVertex != targetVertext) {
-////                    edge = inputGraph.getEdge(sourceVertex, targetVertext);
-//                    int hasEdge =  edge == null ? 0 :1;
-//                    // new: add weights!
-//                    symDiff1Expr[i] = solver.prod((1 - hasEdge), E[sourceVertex][targetVertext]); // arrayOutOfBound!!
-//                    symDiff2Expr[i] = solver.prod(hasEdge, solver.diff(1, E[sourceVertex][targetVertext] ));
-//                    i++;
-//                }
-//            }
-//        }
-
         initSymDiff(symDiff1Expr,symDiff2Expr);
 
-
         this.objFn = solver.sum(solver.sum(symDiff1Expr),solver.sum(symDiff2Expr));
-
-        // Maximum number of edge edits todo: was ist das???
-
-        //int cographDistance = parameters[0];
-        //if(cographDistance > 0) {
-        //    solver.addLe(this.objFn, noOfAdjacencies * cographDistance);
-        //}
-
         solver.addMinimize(objFn);
 
         int w, z, j, k;
@@ -137,7 +109,6 @@ public class CplexDiCographEditingSolver {
                 if (w!=x){
                     for (y = 0; y<vertexCount; y++){
                         if (w!=y && x!=y){
-                            // todo: oder innere Schleife?
                             IloIntVar vars_3[] = {
                                     E[w][x], E[w][y],
                                     E[x][w],          E[x][y],
@@ -176,8 +147,6 @@ public class CplexDiCographEditingSolver {
             }
         }
 
-        // todo: diese optionen verstehen und auch einbauen!
-
         if (parameters.getTimeOut()>0){
             solver.setParam(IloCplex.DoubleParam.TiLim, parameters.getTimeOut());
         }
@@ -196,8 +165,6 @@ public class CplexDiCographEditingSolver {
             solver.populate();
         }
 
-
-        //solver.exportModel("DiCographEdit_" + new Date());
         boolean ret = solver.solve();
         String solution = "none";
         if (ret) {
@@ -209,24 +176,6 @@ public class CplexDiCographEditingSolver {
 
         return solutionGraphs;
     }
-
-    /*
-    private void initSymDiffUnweighted(IloNumExpr symDiff1Expr[], IloNumExpr symDiff2Expr[]) throws IloException{
-        DefaultEdge edge;
-        int i = 0;
-        for(int sourceVertex = 0; sourceVertex < vertexCount; sourceVertex++){
-            for(int targetVertext = 0; targetVertext < vertexCount; targetVertext++) {
-                if(sourceVertex != targetVertext) {
-                    edge = inputGraph.getEdge(sourceVertex, targetVertext);
-                    int hasEdge =  edge == null ? 0 :1;
-                    symDiff1Expr[i] = solver.prod((1 - hasEdge), E[sourceVertex][targetVertext]);
-                    symDiff2Expr[i] = solver.prod(hasEdge, solver.diff(1, E[sourceVertex][targetVertext] ));
-                    i++;
-                }
-            }
-        }
-    }
-    */
 
     private void initSymDiff(IloNumExpr symDiff1Expr[], IloNumExpr symDiff2Expr[]) throws IloException{
         DefaultEdge edge;
@@ -256,8 +205,6 @@ public class CplexDiCographEditingSolver {
         double bestObjectiveValue = solver.getBestObjValue();
 
         log.fine("Solution status = " + solver.getStatus());
-        // todo: das hier...
-        //this.gf.setCographEditDistance((int) Math.round(bestObjectiveValue));
         log.fine("CographEditDistance: " + bestObjectiveValue);
 
         for (int solutionId=0; solutionId<noSolutions; solutionId++){
@@ -270,7 +217,6 @@ public class CplexDiCographEditingSolver {
                 }
                 List<WeightedPair<Integer, Integer>> edgeEdits = new LinkedList<>();
 
-                //Boolean[][] cograph = new Boolean[this.vertexCount][this.vertexCount];
                 solution.append("Adjacency Matrix:\n");
 
                 for (int vertex_x = 0; vertex_x < vertexCount; vertex_x++ ){
@@ -280,7 +226,6 @@ public class CplexDiCographEditingSolver {
                             variable = solver.getValue(E[vertex_x][vertex_y], solutionId);
                         }
                         boolean hasEdge = variable>0.5;
-                        //cograph[x][y]=(hasEdge);
                         solution.append( hasEdge ?"1 " : "0 ");
                         boolean edgeEdit;
                         if(hasEdge){
@@ -299,7 +244,6 @@ public class CplexDiCographEditingSolver {
                     }
                     solution.append("\n");
                 }
-                // gf.addCograph(cograph);
                 solutionEdgeEdits.add(edgeEdits);
                 editingDistances.add(solver.getObjValue(solutionId));
                 solutionGraphs.add(solutionGraph);

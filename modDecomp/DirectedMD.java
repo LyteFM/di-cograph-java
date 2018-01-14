@@ -23,6 +23,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -54,7 +55,7 @@ public class DirectedMD {
 
         inputGraph = input;
         log = logger;
-        timeLog = new TimerLog(log,false);
+        timeLog = new TimerLog(log, Level.FINER);
         nVertices = input.vertexSet().size();
         leavesOfT_s = new MDTreeLeafNode[nVertices];
         leavesOfT_g = new MDTreeLeafNode[nVertices];
@@ -127,7 +128,7 @@ public class DirectedMD {
         }
         log.finer("  G_d of digraph: " + G_d);
 
-        // G_s: undirected graph s.t. {u,v} in E_s iff (u,v) in E or (v,u) in E todo: ändert nix :(
+        // G_s: undirected graph s.t. {u,v} in E_s iff (u,v) in E or (v,u) in E
         G_s = new SimpleGraph<>(DefaultEdge.class);
         inputGraph.vertexSet().forEach( G_s::addVertex );
         for (DefaultEdge edge : inputGraph.edgeSet()) {
@@ -232,7 +233,6 @@ public class DirectedMD {
     }
 
 
-    // todo: possible to use the same edge Objects???
     int getEdgeValueForH(int u, int v) {
 
         boolean inG_s = G_s.containsEdge(u, v);
@@ -265,7 +265,6 @@ public class DirectedMD {
         // F = F_a \cap F_b is family of sets which are members in both F_a and F_b.
 
         // 0.) get the sets from the tree and compute their union.
-        // -> Iteration über die Bäume liefert die Eingabe-Daten für DH
 
         // Not a problem according to Th 22. Just retrieve the vertices unsorted as arraylist -> |M| < 2m + 3n
         // 1. bucket sort the array lists by size (bound met)
@@ -273,9 +272,8 @@ public class DirectedMD {
         //    2.a) sort them at the same time and keep an "equals" boolean-flag OR
         //    2.b) iterate again, setting checking for equality
         // -> Create the String at the same time.
-        // much better than my current approach with BitSets of size n :)
+        // might be better than my current approach with BitSets of size n :)
 
-        // todo: Brauche ich die corresp. TreeNode irgendwann? Muss hier auch die leaves mit Index abfragen. Könnte das BitSet auch an die Node schreiben.
         HashMap<BitSet, RootedTreeNode> strongModulesBoolT_s = of_Gs_T_s.getStrongModulesBool(leavesOfT_s);
         HashMap<BitSet, RootedTreeNode> strongModulesBoolT_d = of_Gd_T_g.getStrongModulesBool(leavesOfT_g);
 
@@ -330,7 +328,7 @@ public class DirectedMD {
             e.printStackTrace();
         }
 
-        // I need to make sure that the program breaks if the char-Buffer would overflow // todo: edit code to get rid of this.
+        // I need to make sure that the program breaks if the char-Buffer would overflow // todo: edit C code to get rid of this.
         if (nVertices > 324)
             throw new IndexOutOfBoundsException("Error: adapt the size of the char buff[1000] in OverlapComponentProg/main.cc and recompile.");
 
@@ -378,18 +376,11 @@ public class DirectedMD {
         log.finer(() -> MDTree.beautify(overlapInclusionTree.toString()));
         HashMap<BitSet, RootedTreeNode> bitsetToOverlapTreenNode = overlapInclusionTree.getModuleToTreenode();
 
-
         // 4.) Algorithm 1: compute Ü(T_s,T_g) = A* \cap B*;
         //     A* = {X | X ∈ σ(T_s, T_g) AND X node in T_s OR P_a not prime in T_s}, B analog
         //     and number its members according to the number pairs from P_a, P_b
 
-
-        LinkedList<Integer> test2 = new LinkedList<>();
-        Object test3;
-
         // Necessary for the equivalence classes
-        // todo: I'm losing the double ones
-        // todo: I did forget the direct members which are nodes...
         HashMap<RootedTreeNode, RootedTreeNode> elementOfAToP_a = new HashMap<>();
         HashMap<RootedTreeNode, RootedTreeNode> elementOfBToP_b = new HashMap<>();
 
@@ -426,7 +417,7 @@ public class DirectedMD {
         //     union of each eq. class via boolean array (BitSet) to get result from Th. 10
 
 
-        // Compute the equivalence classes. todo: what if nice smaller classes get eaten up???
+        // Compute the equivalence classes.
         HashMap<Pair<RootedTreeNode, RootedTreeNode>, BitSet> equivalenceClassesR_U = new HashMap<>((elementOfAToP_a.size() + elementOfBToP_b.size()) * 2 / 3);
 
         for( Map.Entry<RootedTreeNode, BitSet> entry : intersectionOfAandB.entrySet()){
@@ -482,8 +473,7 @@ public class DirectedMD {
     private HashMap<RootedTreeNode, BitSet> computeNodesWithCompleteParent(Map<BitSet, RootedTreeNode> bitsetToOverlapTreenNode, boolean isT_s, PartitiveFamilyLeafNode[] leavesOfOverlapTree,
                                                                            Map<RootedTreeNode, RootedTreeNode> elementOfAToP_a, Map<BitSet, RootedTreeNode> strongModules, MDTree mdTree) {
 
-        // todo: note - usually only use the nodes not Bitsets: Except for the leavesOf...
-        //
+        // note: usually only using the nodes not Bitsets: Except for the leavesOf...
 
         // Compute P_a(S) for every S \in σ with alg 1.
         // "P_a(S) is the smallest node of T_s that contains S as proper subset"

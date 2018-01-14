@@ -2,11 +2,9 @@ package dicograph.Editing;
 
 import com.google.common.collect.Sets;
 
-import org.jgrapht.Graphs;
 import org.jgrapht.alg.ConnectivityInspector;
 import org.jgrapht.alg.util.Pair;
 import org.jgrapht.graph.ClassBasedEdgeFactory;
-import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.io.ImportException;
@@ -28,6 +26,7 @@ import dicograph.modDecomp.MDTree;
 import dicograph.modDecomp.MDTreeNode;
 import dicograph.utils.Edge;
 import dicograph.utils.Parameters;
+import dicograph.utils.TimerLog;
 import dicograph.utils.WeightedPair;
 import ilog.concert.IloException;
 
@@ -37,7 +36,6 @@ import ilog.concert.IloException;
 public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
 
     private final Parameters p;
-
 
     private final SimpleDirectedGraph<Integer, DefaultEdge> base;
     private final int nVertices;
@@ -54,7 +52,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
         p = params;
         baseNoTosubNo = new HashMap<>();
         primeNode = node;
-        subVertexToWeight = node.initWeightedSubgraph(this,base);
+        subVertexToWeight = node.initWeigthsAndSubgraph(this,base);
         nVertices = subVertexToWeight.length;
         subNoToBaseNo = new int[nVertices];
         for(Map.Entry<Integer, Integer> base2Sub : baseNoTosubNo.entrySet()){
@@ -79,7 +77,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
         log.info("Length 4:\n" + badSubs.getSecond());
         // sort descending
         ArrayList<Map.Entry<Edge,Integer>> edgesToScore = new ArrayList<>(edgeToCount.entrySet());
-        edgesToScore.sort( Comparator.comparingInt(e ->  -Math.abs( e.getValue() )));
+        edgesToScore.sort( Comparator.comparingInt(e ->  -e.getValue()));
         log.info("Edges by subgraph-score: " + edgesToScore.size() + "\n" + edgesToScore);
 
 
@@ -124,7 +122,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
             for (i = 0; i < edgesToScore.size(); i++) {
                 Map.Entry<Edge,Integer> edge = edgesToScore.get(i);
 
-                if(Math.abs(edge.getValue()) < p.getHardThreshold()){
+                if(method.stopAtHard(first) && edge.getValue() < p.getHardThreshold()){
                     log.warning("Reached hard threshold " + p.getHardThreshold() + " for edge " + edge);
                     break;
                 }
@@ -161,109 +159,113 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
 
                 boolean globallyFeasable = global_u_v < subCount ||
                         global_v_u < subCount || both_global < subCount;
-                if(p.isUseGlobal() && !first && globallyFeasable){
+                if(p.isUseGlobal() && !first){
 
-                    if(global_u_v < global_v_u && global_u_v <= both_global){
-                        intToEdge.put(++cnt, new WeightedPair<>(u,v, weight));
+                    if(globallyFeasable) {
+                        log.info("Adding edge(s) for (" + u + "," + v + ")");
+                        if (global_u_v < global_v_u && global_u_v <= both_global) {
+                            intToEdge.put(++cnt, new WeightedPair<>(u, v, weight));
 
-                    } else if(global_v_u < global_u_v && global_v_u <= both_global){
-                        intToEdge.put(++cnt, new WeightedPair<>(v,u, weight));
+                        } else if (global_v_u < global_u_v && global_v_u <= both_global) {
+                            intToEdge.put(++cnt, new WeightedPair<>(v, u, weight));
 
-                    } else {
-                        intToEdge.put(++cnt, new WeightedPair<>(u,v, weight));
-                        intToEdge.put(++cnt, new WeightedPair<>(v,u, weight));
-                    }
-                    if(intToEdge.size() >= limit){
-                        log.info("Computed globally feasable edits");
-                        break;
-                    }
-                }
-
-                currEdgeList.addAll(allEdgesList);
-
-                u_v_score = computeEditScoreForEgde(u,v,weight,currEdgeList);
-                log.info("("+ u + ","  +v + ") local edit-score: " + u_v_score);
-
-                if(u_v_score != 0) {
-                    currEdgeList.clear();
-                    currEdgeList.addAll(allEdgesList);
-                    v_u_score = computeEditScoreForEgde(v, u, weight, currEdgeList);
-                    log.info("("+ v + ","  +u + ") local edit-score: " + v_u_score);
-
-                    both_local = computeEditScoreForEgde(u,v,weight,currEdgeList);
-                    if(v_u_score == 0 || both_local == 0) {
-                        lastEdge = new WeightedPair<>(v, u, weight);
-                    } else {
-                        both_local = (int) Math.round(both_local + weight * p.getWeightMultiplier()); // if not a solution, consider weight.
-                    }
-                    log.info( "Both local: " + both_local);
-
-                } else {
-                    lastEdge = new WeightedPair<>(u,v,weight);
-                }
-
-                if(lastEdge != null){
-                    // we're done.
-                    log.info("Subgraph edited into Cograph with edge " + lastEdge);
-                    allEdgesList.add(lastEdge);
-                    if(v_u_score != 0 && both_local == 0){ // need both
-                        allEdgesList.add(new WeightedPair<>(u,v,weight));
-                    }
-                    List<List<WeightedPair<Integer, Integer>>> res = new LinkedList<>();
-                    res.add(allEdgesList);
-                    cost += Math.round(weight);
-                    costToEdges.put(cost,res);
-                    return costToEdges;
-                }
-
-                // todo: gut möglich, dass BEIDE Kantenrichtungen editiert werden... -> IMMER NOCH TODO
-                if( (u_v_score < prevScore || v_u_score < prevScore || both_local < prevScore) && (!p.isRequireGlobal() || globallyFeasable) ) {
-
-                    if(!globallyFeasable){
-                        log.warning("Adding edge-edit with unexpected global score!");
-                    }
-                    cost += Math.round(weight);
-                    if (u_v_score < v_u_score && u_v_score <= both_local) {
-                        prevScore = addEditEdge(u,v,weight,u_v_score, log,graphOfEditEdges, allEdgesList);
-                    } else if (v_u_score < u_v_score && v_u_score <= both_local) {
-                        prevScore = addEditEdge(v,u,weight, v_u_score, log,graphOfEditEdges, allEdgesList);
-                    } else if (both_local < u_v_score && both_local < v_u_score){
-                        log.info("Adding edge-edits for both directions!");
-                        addEditEdge(u,v,weight,u_v_score, log,graphOfEditEdges, allEdgesList);
-                        prevScore = addEditEdge(v,u,weight, v_u_score, log,graphOfEditEdges, allEdgesList);
-                    }
-                    else {
-                        log.warning("Same score for u "+ u + ", v " + v);
-                        prevScore = addEditEdge(u,v,weight,u_v_score,log,graphOfEditEdges, allEdgesList);
-                    }
-
-                    // exit point for brute force/ greedy ILP
-                    if(!p.isStopOnlyAtHardThreshold() && method.checkPrimesSize()){
-                        edit(allEdgesList);
-                        DirectedMD checkSizeMD = new DirectedMD(this, log, false);
-                        MDTree checkSizeTree = checkSizeMD.computeModularDecomposition();
-                        if (checkSizeTree.getMaxPrimeSize() <= p.getBruteForceThreshold()) {
-                            log.info("Size of prime modules now below " + p.getBruteForceThreshold() + ". Ready for second run.");
-                            List<List<WeightedPair<Integer, Integer>>> res = new LinkedList<>();
-                            res.add(allEdgesList);
-                            costToEdges.put(-allEdgesList.size(), res); // not yet a solution, but ok.
-                            return costToEdges;
                         } else {
-                            edit(allEdgesList); // edit back
+                            intToEdge.put(++cnt, new WeightedPair<>(u, v, weight));
+                            intToEdge.put(++cnt, new WeightedPair<>(v, u, weight));
                         }
+                        if (intToEdge.size() >= limit) {
+                            log.info("Computed globally feasable edits");
+                            break;
+                        }
+                    } else {
+                        log.info("Discarded: edge (" + u + "," + v + ") which doesn't improve the global score");
                     }
 
-                    if(edge.getValue() <= p.getSoftThreshold())
-                        edgesToRemove.add(allEdgesList.get(allEdgesList.size() - 1));
+                } else { // usual run
+                    currEdgeList.addAll(allEdgesList);
 
-                } else {
-                    log.info("Discarded: edge (" + u + "," + v + ") which doesn't improve the module" );
-                    if(addedU)
-                        graphOfEditEdges.removeVertex(u);
-                    if(addedV)
-                        graphOfEditEdges.removeVertex(v);
+                    u_v_score = computeEditScoreForEgde(u, v, weight, currEdgeList);
+                    log.info("(" + u + "," + v + ") local edit-score: " + u_v_score);
+
+                    if (u_v_score != 0) {
+                        currEdgeList.clear();
+                        currEdgeList.addAll(allEdgesList);
+                        v_u_score = computeEditScoreForEgde(v, u, weight, currEdgeList);
+                        log.info("(" + v + "," + u + ") local edit-score: " + v_u_score);
+
+                        both_local = computeEditScoreForEgde(u, v, weight, currEdgeList);
+                        if (v_u_score == 0 || both_local == 0) {
+                            lastEdge = new WeightedPair<>(v, u, weight);
+                        } else {
+                            both_local = (int) Math.round(both_local + weight * p.getWeightMultiplier()); // if not a solution, consider weight.
+                        }
+                        log.info("Both local: " + both_local);
+
+                    } else {
+                        lastEdge = new WeightedPair<>(u, v, weight);
+                    }
+
+                    if (lastEdge != null) {
+                        // we're done.
+                        log.info("Subgraph edited into Cograph with edge " + lastEdge);
+                        allEdgesList.add(lastEdge);
+                        if (v_u_score != 0 && both_local == 0) { // need both
+                            allEdgesList.add(new WeightedPair<>(u, v, weight));
+                        }
+                        List<List<WeightedPair<Integer, Integer>>> res = new LinkedList<>();
+                        res.add(allEdgesList);
+                        cost += Math.round(weight);
+                        costToEdges.put(cost, res);
+                        return costToEdges;
+                    }
+
+                    if ((u_v_score < prevScore || v_u_score < prevScore || both_local < prevScore) && (!p.isRequireGlobal() || globallyFeasable)) {
+
+                        if (!globallyFeasable) {
+                            log.warning("Adding edge-edit with unexpected global score!");
+                        }
+                        cost += Math.round(weight);
+                        if (u_v_score < v_u_score && u_v_score <= both_local) {
+                            prevScore = addEditEdge(u, v, weight, u_v_score, log, graphOfEditEdges, allEdgesList);
+                        } else if (v_u_score < u_v_score && v_u_score <= both_local) {
+                            prevScore = addEditEdge(v, u, weight, v_u_score, log, graphOfEditEdges, allEdgesList);
+                        } else if (both_local < u_v_score && both_local < v_u_score) {
+                            log.info("Adding edge-edits for both directions!");
+                            addEditEdge(u, v, weight, u_v_score, log, graphOfEditEdges, allEdgesList);
+                            prevScore = addEditEdge(v, u, weight, v_u_score, log, graphOfEditEdges, allEdgesList);
+                        } else {
+                            log.warning("Same score for u " + u + ", v " + v);
+                            prevScore = addEditEdge(u, v, weight, u_v_score, log, graphOfEditEdges, allEdgesList);
+                        }
+
+                        // exit point for brute force/ greedy ILP
+                        if (first && !p.isStopOnlyAtHardThreshold() && method.checkPrimesSize()) {
+                            edit(allEdgesList);
+                            DirectedMD checkSizeMD = new DirectedMD(this, log, false);
+                            MDTree checkSizeTree = checkSizeMD.computeModularDecomposition();
+                            if (checkSizeTree.getMaxPrimeSize() <= p.getBruteForceThreshold()) {
+                                log.info("Size of prime modules now below " + p.getBruteForceThreshold() + ". Ready for second run.");
+                                List<List<WeightedPair<Integer, Integer>>> res = new LinkedList<>();
+                                res.add(allEdgesList);
+                                costToEdges.put(-allEdgesList.size(), res); // not yet a solution, but ok.
+                                return costToEdges;
+                            } else {
+                                edit(allEdgesList); // edit back
+                            }
+                        }
+
+                        if (edge.getValue() <= p.getSoftThreshold())
+                            edgesToRemove.add(allEdgesList.get(allEdgesList.size() - 1));
+
+                    } else {
+                        log.info("Discarded: edge (" + u + "," + v + ") which doesn't improve the module");
+                        if (addedU)
+                            graphOfEditEdges.removeVertex(u);
+                        if (addedV)
+                            graphOfEditEdges.removeVertex(v);
+                    }
+                    currEdgeList.clear();
                 }
-                currEdgeList.clear();
             }
 
             // either continue with global brute force or no solution found
@@ -308,6 +310,8 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
         }
         // Cost-aware Brute Force
         else if(method == EditType.BruteForce){
+            TimerLog timer = new TimerLog(log, log.getLevel());
+            boolean timeOut = false;
             int maxCost;
             if(p.getBruteForceLimit() > 0){
                 maxCost = p.getBruteForceLimit();
@@ -377,20 +381,20 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
 
 
                     count++;
-                    if (count % 1000000 == 0)
-                        log.info("i: " + i + ", Count: " + count + ", Edges: " + currEdgeList);
-
-                    // todo: timer instead!
-                    //if(count == 50000000) {
-                    //    log.info("Aborted after 500");
-                    //    break;
-                    //}
+                    timeOut = count % 5000 == 0 && timer.elapsedSeconds() > p.getTimeOut();
+                    if(timeOut)
+                        break;
                 }
+                if(i > 3)
+                    timer.logTime("i = " + i);
                 // all of size i are done now.
 
 
                 if (!costStillValid) {
                     log.info("Exiting: i = " + i + ", every cost was > " + maxCost);
+                    return costToEdges;
+                } else if(timeOut){
+                    log.warning("Aborting due to timeout.");
                     return costToEdges;
                 }
             }

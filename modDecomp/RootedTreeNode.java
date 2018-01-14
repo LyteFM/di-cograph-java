@@ -62,14 +62,13 @@ public class RootedTreeNode {
     }
 
     // F.L. 30.10. Flags for Algorithm 1:
-
     public int getNumMarkedChildren() {
         return numMarkedChildren;
     }
 
     protected void mark() {
         marked = true;
-        // todo: what if root?
+        // shouldn't be root...
 		RootedTreeNode parent = getParent();
 		parent.numMarkedChildren++;
     }
@@ -94,7 +93,7 @@ public class RootedTreeNode {
         if (numMarkedChildren != 0)
             System.err.println("Illegal number of marked children after unmarking!!!");
     }
-    // end
+    // end F.L.
 
     /*
      * Creates a node with a single child.
@@ -358,7 +357,7 @@ public class RootedTreeNode {
 	}
 
     /**
-     * F.L. just for display
+     * F.L. 2017 just for display
 	 * This is the desired format. Separating members my " " and using -1 to end a module.
      * 2 3 4 5 6 7 -1
      * 1 8 9 10 11 -1
@@ -394,6 +393,7 @@ public class RootedTreeNode {
 	    return thisNodesMembers;
     }
 
+    // F.L. 2017
      int exportAsDot(StringBuilder output, int[] counter){
 
          // first action: increment the counter, used for this
@@ -456,6 +456,7 @@ public class RootedTreeNode {
      	return myParent;
 	}
 
+	// F.L. 2017
 	void verifyModuleStatus(StringBuilder res, Graph<Integer, DefaultEdge> graph){
 		ArrayList<Integer> moduleVertices = new ArrayList<>(vertices.cardinality());
 		vertices.stream().forEach(moduleVertices::add);
@@ -465,7 +466,6 @@ public class RootedTreeNode {
 
 
 	// F.L. 27.11.17: trying to fix the directed MD
-
 	/* Returns a List of leaves directly attached to this node. */
 	protected List<RootedTreeNode> getDirectLeaves() {
 

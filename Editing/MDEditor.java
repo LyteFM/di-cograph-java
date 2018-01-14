@@ -77,16 +77,13 @@ public class MDEditor {
     public TreeMap<Integer, List<Solution>> editIntoCograph()
             throws ImportException, IOException, InterruptedException, IloException{
 
-        // ret todo nur die ist am Ende wichtig!!!
         TreeMap<Integer, List<Solution>> finalSolutions = new TreeMap<>();
-
-
-
         TreeMap<Integer, List<List<Edge>>> currentEditResults;
         List< List<Edge>> currentSolutions = new LinkedList<>(); // All Edits -> local. But need all NEW edits (i.e. from prev/lower primes)
+
         if(oldInputEdits != null){
             currentSolutions.add(new ArrayList<>(oldInputEdits));
-            editGraph(workGraph,oldInputEdits); // start working on the primes from here. todo: atm input is original, so I need this!
+            editGraph(workGraph,oldInputEdits); // start working on the primes from here.
         }
 
 
@@ -120,14 +117,13 @@ public class MDEditor {
                         allNewSolutions.addAll(editsForCost.getValue()); // addAll only OK if just one.
 
                     } else {
-                        for (List<Edge> newEdit : editsForCost.getValue()) { // todo: If I allow brute force as first run, this won't work.
+                        for (List<Edge> newEdit : editsForCost.getValue()) {
                             for (List<Edge> previousEdit : currentSolutions) {
 
                                 List<Edge> newEditCopy = new LinkedList<>(newEdit);
                                 //assert editIsValid(oldInputEdits, previousEdit, newEdit) : "Illegal situation - edit of one prime included in edit of other!!!";
                                 newEditCopy.addAll(previousEdit);
                                 allNewSolutions.add(newEditCopy);
-                                // todo: is List enough or do I need Map for current solution??? -> should be ok as I check all of them for the best one...
                             }
                         }
                     }
@@ -194,21 +190,16 @@ public class MDEditor {
             IloException{
 
         TreeMap<Integer,List<List<Edge>>> allRealEdits = new TreeMap<>();
-        // 1. create weighted subgraph todo: but only from this node, right??? Also, need to make sure: on second run, oldEdit must be included.
         PrimeSubgraph subGraph = new PrimeSubgraph(workGraph,primeNode,p);
+
         log.info("Subgraph: " + subGraph.toString());
         log.info("Base-Vertex to Sub-Vertex " + subGraph.getBaseNoTosubNo());
-
         log.info(() -> "Computing all possible edit Sets for node " + primeNode);
         // negative cost - not yet successful (aborted in step 1 due to threshold/ processed all)
         // empty: nothing found in step 2
         TreeMap<Integer, List<List<WeightedPair<Integer, Integer>>>> allPossibleEdits = subGraph.computeEdits(log, type, firstRun);
 
-
-
-
-        // Todo: With the second-round-brute-force-approach, I should:
-        // - compute ALL feasable edits up to size k
+        // - compute ALL feasable edits within bruteForceGap
         // - choose the BEST edit when taking the original graph into account
         //      - Problem: difficult if there are several new prime modules. Would need to combine them all...
         if(!allPossibleEdits.isEmpty()){
@@ -258,7 +249,7 @@ public class MDEditor {
 
             }
         }
-        // I have a problem if they occur more often todo happens with 12er!
+//        // Do I have a problem if they occur more often?
 //        for(Map.Entry<Edge,Integer> e: doubles.entrySet()){
 //            if(e.getValue() > 1){
 //                throw new IllegalStateException("Error: Multiple duplicates in edit: " + currentList);
@@ -305,7 +296,7 @@ public class MDEditor {
         return !_prev.removeAll(_new);
     }
 
-
+    // remove edge if present, add if not.
     static void editGraph(Graph<Integer,DefaultEdge> g, List<Edge> edgeList){
         for(Edge e : edgeList){
             if(g.containsEdge(e.getFirst(),e.getSecond())){

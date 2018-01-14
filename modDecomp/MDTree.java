@@ -40,7 +40,7 @@ public class MDTree extends RootedTree {
 	public MDTree(SimpleGraph<Integer,DefaultEdge> jGraph) {
 		super();
 		setRoot( buildMDTree(jGraph) );
-		root.setParent(null); // still has the recSubProblem, that kills by LCA-computations.
+		root.setParent(null); // F.L.: Still has the recSubProblem, that kills by LCA-computations.
 	}
 
 	protected MDTree(){
@@ -63,7 +63,6 @@ public class MDTree extends RootedTree {
     }
 
     // F.L. 27.09.17:
-
     public HashMap<BitSet, RootedTreeNode> getStrongModulesBool(MDTreeLeafNode[] leaves) {
         HashMap<BitSet, RootedTreeNode> ret = new HashMap<>();
         MDTreeNode rootAsMd = (MDTreeNode) root;
@@ -72,9 +71,6 @@ public class MDTree extends RootedTree {
 
         return ret;
     }
-
-
-
 
     /**
      * F.L. Makes the String representation of MDTree human-readable.
@@ -209,7 +205,7 @@ public class MDTree extends RootedTree {
         }
     }
 
-    // F.L.
+    // F.L. 2017
     private void readFromDot(Reader dotReader) throws IOException, ImportException {
 
         SimpleDirectedGraph< Integer ,DefaultEdge> treeGraph = new SimpleDirectedGraph<>(DefaultEdge.class);

@@ -10,7 +10,7 @@ import java.util.ListIterator;
  */
 class MDTreeLeafNode extends MDTreeNode {
 
-	// F.L.
+	// F.L. 2017
 	int vertexNo;
 
 
@@ -51,7 +51,7 @@ class MDTreeLeafNode extends MDTreeNode {
 		this.vertex = vertex;		
 	}
 
-	// neu: verwende eine int anstatt Vertex.
+	// F.L. 2017: use int instead of Vertex
 	protected MDTreeLeafNode(int vertexNo){
 		this();
 		this.vertexNo = vertexNo;
@@ -151,7 +151,6 @@ class MDTreeLeafNode extends MDTreeNode {
 		visited = false;
 	}
 	
-	// todo: Änderungen dokumentieren
 	/*
 	 * Returns a string representation of this node.  Merely uses the string
 	 * representation of the vertex with which it is associated.
@@ -159,7 +158,8 @@ class MDTreeLeafNode extends MDTreeNode {
 	public String toString() {
 	    if(vertex != null)
 		    return String.format("(no= %s)", vertex.getLabel());
-	    else{ // F.L.
+	    else{
+	    	// F.L. 2017
 //            StringBuilder result = new StringBuilder("(no= " + vertexNo);
 
 //            // unnecessary overhead.
@@ -180,11 +180,12 @@ class MDTreeLeafNode extends MDTreeNode {
             return (String.format("(no= %s)", vertexNo));
         }
 	}
-
+	// F.L. 2017
     public int getVertexNo() {
         return vertexNo;
     }
 
+    // F.L. 2017
     @Override
 	int exportAsDot(StringBuilder output, int[] counter){
 	    counter[0]++;
@@ -193,8 +194,8 @@ class MDTreeLeafNode extends MDTreeNode {
 		return myCounter;
 	}
 
-
-		@Override
+	// F.L. 2017
+	@Override
     public String getSetRepresentation(ArrayList<String> bla) {
         return Integer.toString(vertexNo);
     }

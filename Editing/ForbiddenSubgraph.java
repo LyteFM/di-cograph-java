@@ -190,10 +190,10 @@ enum ForbiddenSubgraph {
                                int cnt = edgeCount.getOrDefault(e, 0);
                                edgeCount.put(e, ++cnt);
                            } else {
-                               // non-edge that might change it into a legal subgraph todo!!
+                               // non-edge that might change it into a legal subgraph
                                Edge e = new Edge(u, v);
                                int cnt = edgeCount.getOrDefault(e, 0);
-                               edgeCount.put(e, --cnt);
+                               edgeCount.put(e, ++cnt);
                            }
                         }
                     }

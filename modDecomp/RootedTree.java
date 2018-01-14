@@ -163,7 +163,6 @@ class RootedTree {
 
     /** F.L. 16.10.17:
      * Returns a String representation of the strong members of the tree's set family, i.e. the inner nodes.
-     * todo: ggf das zu PartitiveFamilyTreeNode extends MDTreeNode...
      */
     public ArrayList<String> getSetRepresentationAsStrings(){
         ArrayList<String> ret = new ArrayList<String>();

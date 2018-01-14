@@ -4,6 +4,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
@@ -22,8 +23,7 @@ public class Parameters {
     private CommandLine input;
 
     // Editing-Parameters with Default values:
-    private int timeOut = 120;
-    private static final int maxCost = 20; // from parameter k todo: not needed?
+    private long timeOut = 3600;
     private int softThreshold = 3; // If no succesful edit found, discard edits with forbiddenSub-score <= this value - atm for my bad tests.
     private int hardThreshold = 0; // Exclude edges with a forbiddenSubgraph-score <= this threshold from the edge-edit-set.
     // prev: Force stop if forbiddenSub-Score <= this value during first run and use brute-force/branching/ILP in second run to complete.
@@ -82,8 +82,8 @@ public class Parameters {
 
 
         // method tweaking:
-        options.addOption("gap",true,"Accept solutions with: cost <= best cost + gap. Default: 0; -1 exits after first"); // todo:
-        options.addOption("t",true, "Time limit for editing");
+        options.addOption("gap",true,"Accept solutions with: cost <= best cost + gap. Default: 0; -1 exits after first");
+        options.addOption("t",true, "Time limit of an ILP/Brute-Force-Computation in s. Default: 1h");
 
         options.addOption("reqgl","Require improvements on global score in 1st run/lazy");
         options.addOption("bfth",true,"Step 2 when number of primes < brute-force-TH. Default: 7");
@@ -100,11 +100,17 @@ public class Parameters {
 
     }
 
-    public void parse() throws ParseException{
+    public void parse(){
         CommandLineParser parser = new DefaultParser();
-        input = parser.parse(options, args);
+        boolean err = false;
+        try {
+            input = parser.parse(options, args);
+        } catch ( ParseException e){
+            System.err.println( e.getMessage());
+            err = true;
+        }
 
-        if (input.hasOption("h") || args.length == 0) {
+        if ( err || input.hasOption("h") || args.length == 0) {
             help();
             return;
         }
@@ -118,7 +124,7 @@ public class Parameters {
                 solutionGap = Integer.parseInt( input.getOptionValue("gap"));
             }
             if(input.hasOption("t")){
-                timeOut = Integer.parseInt( input.getOptionValue("t"));
+                timeOut = Long.parseLong( input.getOptionValue("t"));
             }
             if(input.hasOption("hth")){
                 hardThreshold = Integer.parseInt( input.getOptionValue("hth"));
@@ -129,6 +135,9 @@ public class Parameters {
             if(input.hasOption("bfgap")){
                 bruteForceGap = Integer.parseInt( input.getOptionValue("bfgap"));
             }
+            if(input.hasOption("bflimit")){
+                bruteForceLimit = Integer.parseInt( input.getOptionValue("bflimit"));
+            }
             if(input.hasOption("sth")){
                 softThreshold = Integer.parseInt( input.getOptionValue("sth"));
             }
@@ -136,16 +145,6 @@ public class Parameters {
                 weightMultiplier = Double.parseDouble( input.getOptionValue("wm"));
             }
         }
-    }
-
-
-
-    public String[] getArgs() {
-        return args;
-    }
-
-    public Options getOptions() {
-        return options;
     }
 
     private void help(){
@@ -160,6 +159,10 @@ public class Parameters {
 
         String footer = "\nRefer to thesis for details."; // todo: page/diagram!!!
         helpF.printHelp(usage,header,options,footer,false);
+    }
+
+    public boolean isValid(){
+        return input != null;
     }
 
     public boolean isMDOnly(){
@@ -222,7 +225,7 @@ public class Parameters {
             }
         }
         if (isMDOnly()) {
-            return Level.FINER; // MD Default // todo anpassen im code
+            return Level.FINER; // MD Default
         } else {
             return Level.INFO; // Editing Default
         }
@@ -266,7 +269,7 @@ public class Parameters {
         return solutionGap;
     }
 
-    public int getTimeOut() {
+    public long getTimeOut() {
         return timeOut;
     }
 

@@ -157,8 +157,7 @@ class RecSubProblem extends RootedTreeNode {
 	}
 	
 
-	// todo: anpassen!
-	/* 
+	/*
 	 * Computes the MD tree for this subproblem.  The root of the 
 	 * MD tree becomes the sole child of this subproblem.  
 	 * @return The root of the constructed MD tree.

@@ -52,274 +52,73 @@ import dicograph.utils.SortAndCompare;
 import dicograph.utils.VerySimpleFormatter;
 import ilog.concert.IloException;
 
+
+
 /**
  * Created by Fynn Leitow on 02.10.17.
  */
 public class Main {
 
-//    static void usage() {
-//        System.out.println("usage:   LPex1 <option>");
-//        System.out.println("options:       -r   build model row by row");
-//        System.out.println("options:       -c   build model column by column");
-//        System.out.println("options:       -n   build model nonzero by nonzero");
-//    }
+    final static String logFolder = "logs/";
+    final static String graphFolder = "graphs/";
 
     public static void main(String[] args) throws Exception{
 
-//        if ( args.length != 1 || args[0].charAt(0) != '-' ) {
-//            usage();
-//            return;
-//        }
+        Parameters command = new Parameters(args);
+        command.parse();
 
-        System.out.println("Working Directory = " +
-                System.getProperty("user.dir"));
+        if(!command.isValid())
+            return;
 
         // remove defaults
-        Logger log = Logger.getLogger( "TestLogger" );
+        Logger log = Logger.getLogger( "DiCographLog" );
         for (Handler iHandler : log.getParent().getHandlers()) {
             log.getParent().removeHandler(iHandler);
         }
-        // add and configure console output
-        Handler consoleHandler = new ConsoleHandler();
         VerySimpleFormatter myFormatter = new VerySimpleFormatter();
-        consoleHandler.setFormatter(myFormatter);
-        consoleHandler.setLevel( Level.INFO );
 
-        log.addHandler( consoleHandler );
-        log.setLevel( Level.INFO );
-        log.fine( "Alles ist fein!" );
+        if(command.isVerbose() || command.isTest()) {
+            // log to console output
+            Handler consoleHandler = new ConsoleHandler();
+            consoleHandler.setFormatter(myFormatter);
+            consoleHandler.setLevel(command.getLogLevel());
+            log.addHandler( consoleHandler );
 
+            if(command.isTest()){
+                String[] params = command.getTestParams();
+                int mTrials = Integer.parseInt(params[0]);
+                int nVertices = Integer.parseInt(params[1]);
+                int kDisturb = Integer.parseInt(params[2]);
+                StringBuilder allGraphs = new StringBuilder();
 
+                for (int i = 0; i < mTrials; i++) {
+                    if (!testRun(log, consoleHandler, command, nVertices, kDisturb, allGraphs)) {
+                        System.out.println("Error occured after " + i + " successful runs.");
+                        break;
+                    }
+                    System.out.println("Yay, " + i +" test runs went successful!");
+                }
 
+                log.info("All generated Graphs:");
+                log.info(allGraphs.toString().substring(0,allGraphs.length()-1));
+                return;
+            }
+        }
 
-        String fromPaper = "fromFactPermPaper.txt";
-//        SimpleDirectedGraph<Integer, DefaultEdge> paperGraph = JGraphAdjecencyImporter.importIntGraph(new File(fromPaper), false);
-//        // Reihenfolge stimmt aber.
-//        DirectedMD paperMD = new DirectedMD(paperGraph, log, true);
-//        paperMD.computeModularDecomposition();
-        //System.out.println(paperGraph);
+        String timeStamp = new SimpleDateFormat("MM-dd_HH:mm:ss:SSS").format(Calendar.getInstance().getTime());
+        // writes the log
+        File logFile = new File(logFolder + timeStamp +".log");
+        FileHandler fileHandler = new FileHandler(logFile.getPath());
+        fileHandler.setFormatter( myFormatter);
+        fileHandler.setLevel( command.getLogLevel());
+        log.addHandler(fileHandler);
 
-        //DOTExporter<Integer,DefaultEdge> exporter =new DOTExporter<>();
-        //exporter.exportGraph(paperGraph, new File(fromPaper+ ".dot"));
 
 
 
-//        for( int i = 8; i <= 25; i ++) {
-//            boolean ok = directedMDTesting(log, consoleHandler, i,  i/2 - 2,false, allPaths);
-//            if(!ok) {
-//                System.err.println("Error for n = " + i);
-//                break;
-//            }
-//        }
 
 
 
-
-        /*
-        //20/12/17: One Error: testGraphs/DMDvery/randDigraph_n_11_edits_4_11-30_15:34:03:245_original.txt -> after manual del in C++ okay!
-
-        List<String> all = Arrays.asList("testGraphs/DMDvery/randDigraph_n_8_edits_3_11-30_15:34:02:289_original.txt", "testGraphs/DMDvery/randDigraph_n_9_edits_4_11-30_15:34:02:948_original.txt", "testGraphs/DMDvery/randDigraph_n_10_edits_4_11-30_15:34:03:091_original.txt", "testGraphs/DMDvery/randDigraph_n_11_edits_4_11-30_15:34:03:245_original.txt", "testGraphs/DMDvery/randDigraph_n_12_edits_5_11-30_15:34:03:406_original.txt", "testGraphs/DMDvery/randDigraph_n_13_edits_5_11-30_15:34:03:486_original.txt", "testGraphs/DMDvery/randDigraph_n_14_edits_5_11-30_15:34:03:633_original.txt", "testGraphs/DMDvery/randDigraph_n_15_edits_6_11-30_15:34:03:740_original.txt", "testGraphs/DMDvery/randDigraph_n_16_edits_6_11-30_15:34:04:047_original.txt", "testGraphs/DMDvery/randDigraph_n_17_edits_6_11-30_15:34:04:173_original.txt", "testGraphs/DMDvery/randDigraph_n_18_edits_7_11-30_15:34:04:452_original.txt", "testGraphs/DMDvery/randDigraph_n_19_edits_7_11-30_15:34:04:930_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_7_11-30_15:34:05:320_original.txt", "testGraphs/DMDvery/randDigraph_n_21_edits_8_11-30_15:34:06:154_original.txt", "testGraphs/DMDvery/randDigraph_n_22_edits_8_11-30_15:34:06:683_original.txt", "testGraphs/DMDvery/randDigraph_n_23_edits_8_11-30_15:34:07:608_original.txt", "testGraphs/DMDvery/randDigraph_n_24_edits_9_11-30_15:34:13:773_original.txt", "testGraphs/DMDvery/randDigraph_n_25_edits_9_11-30_15:34:14:899_original.txt");
-        */
-
-
-        // Nullptr fixed with root-search in MDTree. Now all ok.
-        // "testGraphs/DMDvery/randDigraph_n_8_edits_3_11-30_15:48:34:482_original.txt",
-
-//        List<String> all = Arrays.asList( "testGraphs/DMDvery/randDigraph_n_9_edits_4_11-30_15:48:35:165_original.txt", "testGraphs/DMDvery/randDigraph_n_10_edits_4_11-30_15:48:35:378_original.txt", "testGraphs/DMDvery/randDigraph_n_11_edits_4_11-30_15:48:35:547_original.txt", "testGraphs/DMDvery/randDigraph_n_12_edits_5_11-30_15:48:35:683_original.txt", "testGraphs/DMDvery/randDigraph_n_13_edits_5_11-30_15:48:35:789_original.txt", "testGraphs/DMDvery/randDigraph_n_14_edits_5_11-30_15:48:36:003_original.txt", "testGraphs/DMDvery/randDigraph_n_15_edits_6_11-30_15:48:36:273_original.txt", "testGraphs/DMDvery/randDigraph_n_16_edits_6_11-30_15:48:36:435_original.txt", "testGraphs/DMDvery/randDigraph_n_17_edits_6_11-30_15:48:36:668_original.txt", "testGraphs/DMDvery/randDigraph_n_18_edits_7_11-30_15:48:36:972_original.txt", "testGraphs/DMDvery/randDigraph_n_19_edits_7_11-30_15:48:37:621_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_7_11-30_15:48:38:268_original.txt", "testGraphs/DMDvery/randDigraph_n_21_edits_8_11-30_15:48:38:673_original.txt", "testGraphs/DMDvery/randDigraph_n_22_edits_8_11-30_15:48:39:572_original.txt", "testGraphs/DMDvery/randDigraph_n_23_edits_8_11-30_15:48:40:975_original.txt", "testGraphs/DMDvery/randDigraph_n_24_edits_9_11-30_15:48:41:752_original.txt", "testGraphs/DMDvery/randDigraph_n_25_edits_9_11-30_15:48:41:911_original.txt");
-//
-//
-//        for(String s : all){
-//            try {
-//                MDtestFromFile(log, s, true);
-//            } catch (IllegalStateException e){
-//                e.printStackTrace();
-//            }
-//        }
-
-        String reTestPath = "testGraphs/DMDvery/";
-
-        String folderPath = "testGraphs/DMDtest/ERR/";
-        String folder = "testGraphs/";
-
-
-        // OK:
-        String smallNotAtournament = folder + "randDigraph_n_10_edits_5_11-17_14:11:11:882_original.txt";
-
-        // not a tournament: after deletion of weak, parent still order -> only with old detNodeType. Prime with new.
-        String smallTourErrgraph = folder + "randDigraph_n_7_edits_3_11-17_14:04:24:233_original.txt";
-
-        // For vertices: [9, 8, 7, 6, 2, 1, 0]... -> Ok, sind die Leaves an prim root -> todo: abfangen
-        String viceVera = "testGraphs/randDigraph_n_10_edits_5_11-17_14:13:25:176_original.txt"; // more than 1 eqiv class :) - Höh, passt. aso...
-
-
-        String n21err = folderPath +"randDigraph_n_21_edits_10_11-22_14:38:33:813_original.txt";
-        String n24err = folderPath + "randDigraph_n_24_edits_12_11-22_14:38:47:196_original.txt"; // EXTREM fette prim :/ aber ok
-        String n23err = folderPath + "randDigraph_n_23_edits_11_11-22_14:38:41:882_original.txt"; // several weak. Fat, but ok
-
-        //
-        // Konsistenter Fehler. No weak modules here. -> Ursache waren weggelassene leaves.
-        // here: [3,4] - ORDER and fully disconnected; [9,13] - SERIES and arcs to 6,...,14 ; [20,21,23] - PARALLEL and fully disconnected.
-        String weirdError = folder + "randDigraph_n_24_edits_8_11-14_18:05:20:306_original.txt"; // corresp matrix
-        // here: [11,12] - ORDER and full dc; [17,20] - SERIES and arcs to 14,...,21; [6,7,9] - PARALLEL and full dc.
-        // - all in one overlapC!
-        String test = "testy.txt"; // not matrix
-        //
-
-        // here: [12, 1, 0] is parallel module, but added as leaves of prime. -> ok:)
-        // no weak modules, but discarded a former node of incl tree due to prime LCA.
-        String n23err2 = folderPath + "randDigraph_n_23_edits_11_11-22_14:32:56:841_original.txt"; // todo
-
-        // here: [5,6] is parallel module and not recognized. They are children of a weak prime. -> ok :)
-        // [5,6] here were in a par mod together with 3 in T_s - also in a Par mod in T_d, but without 3! -> Overlap???
-        // unfortunately, they both get aggregated in one overlap component that will constitute the weak module.
-        String n22err= folderPath + "randDigraph_n_22_edits_11_11-22_14:32:52:354_original.txt";
-
-        // Hmm. Now, [3,4,5,23,24] is an undetected SERIES module. -> below a weak prime :/
-        // happened, when there was a WEAK series module :)
-        // after leaves-fix: also "22" is in this SERIES module, but it has wrong edge to 10.
-        // OK after adaptation for merged complete nodes for more than 1 eq class :)
-        String n25err = folderPath + "randDigraph_n_25_edits_12_11-22_14:38:53:932_original.txt";
-
-        // OK now!
-        String n_12_ordersplit = reTestPath + "randDigraph_n_12_edits_6_11-28_16:10:39:274_original.txt";
-
-        // LCA computation failed sometimes. Should be fine now.
-        String n10falsePrime = reTestPath + "rand_n_10_false_Prime.txt";
-
-        // here: weak order module was deleted, but it two of its children are still an order module. -> OK with new equivClass-Check!
-        String weakOrderWithStrongChildren = reTestPath + "randDigraph_n_22_edits_11_11-28_15:49:46:254_original.txt";
-
-
-
-
-        //
-        // ERR, aber fact perm ist korrekt:
-        //
-
-
-
-        // here: root order with weak prime -> deleted, root becomes prime -> 2 vertices of root should still be order.
-        String n13_orderWeakPrime = reTestPath + "randDigraph_n_13_edits_6_11-28_17:18:29:275_original.txt";
-
-        // 14,15 -> vorher direkt an root order.
-        String next = "testGraphs/DMDvery/randDigraph_n_20_edits_8_11-30_20:51:17:462_original.txt";
-
-        // root order, had weak prime
-        String more = "testGraphs/DMDvery/randDigraph_n_20_edits_8_11-30_20:56:07:983_original.txt";
-
-        // root order, became prime when weak prime removed...
-        String boring = "testGraphs/DMDvery/randDigraph_n_20_edits_8_11-30_21:01:33:401_original.txt";
-
-        // interessanter: 3 zusammen unter prim (14,1,13) - schon inclusion tree is prim. Nicht richtig geordnet! -> LCA fixed.
-        // jetzt normaler root order + weak prime- Fehler.
-        String n20_err = "testGraphs/DMDvery/randDigraph_n_20_edits_8_11-30_20:48:03:974_original.txt";
-
-
-
-        // LOWER weak order node with weak series child got removed -> the first two should stay order.
-        String moreInteresting = "testGraphs/DMDvery/randDigraph_n_20_edits_8_11-30_20:58:34:509_original.txt";
-
-        // FUBAR: root war bereits prim, alles darunter aufgeräumt. ORDER war module + 3,12 (direkt drunter).
-        // Entfernen der schwachen order & prime darunter hat's schwache ORDER auch kaputt gemacht. Andere weaks: ok so
-        // [15, 16, 8, 7, 19, 17, 18, 20, 6] -> module. (Reihenfolge stimmt
-        String fubar = "testGraphs/DMDvery/randDigraph_n_21_edits_8_12-01_18:23:35:714_original.txt";
-
-        // weak series plus one directly below former ORDER are still a module. (not root :))
-        String moreErrs = "testGraphs/DMDvery/randDigraph_n_21_edits_8_12-01_17:41:24:542_original.txt";
-
-
-
-        // F.L. 20.12.17: moved here
-        // weakRemoveErr:
-        String wmr_12_13 = "testGraphs/DMDvery/randDigraph_n_22_edits_9_12-13_22:41:30:790_original.txt";
-
-
-        // ERR in undirected MD for G_d: 6,8,9 (below prime) is module. was SPIDER
-        // With Tedder's MD: recognized correctly. Is PARALLEL.
-        String uMDErr = "testGraphs/DMDvery/randDigraph_n_21_edits_8_12-01_17:50:19:217_original.txt";
-
-        // another Spider error:
-        String spiderman = "testGraphs/DMDvery/randDigraph_n_21_edits_8_12-01_18:32:12:959_original.txt";
-
-
-        // ok after del in c++ (order)
-        String aHitler = "testGraphs/DMDvery/randDigraph_n_22_edits_9_12-13_22:45:16:888_original.txt";
-        //
-
-        // order root fucked up -> ok after ordering according to module type.
-        String anotherRoot = "testGraphs/DMDvery/randDigraph_n_21_edits_8_12-01_18:28:22:811_original.txt";
-
-
-
-
-
-        // I compared the computed permutation of these
-        // first test yields 12 errors, but the permutation itself should be ok.
-//        List<String> allOKToCheck = Arrays.asList(n_12_ordersplit, n25err, n22err, n23err2, weirdError, n21err, n23err, n24err, viceVera, smallNotAtournament, smallTourErrgraph, n10falsePrime,weakOrderWithStrongChildren);
-//
-//        // Truly okay.
-//        for( String s : allOKToCheck){
-//            try {
-//                MDtestFromFile(log,s,true);
-//            } catch (IllegalStateException e){
-//                e.printStackTrace();
-//            }
-//            log.info("For Graph: " + s);
-//        }
-
-//
-//        List<String> allWithOKFactPerm = Arrays.asList(wmr_12_13, uMDErr, spiderman, aHitler,n13_orderWeakPrime,next, more, boring, n20_err, anotherRoot, moreInteresting, fubar, moreErrs);
-//
-//        for( String s : allWithOKFactPerm){
-//            try {
-//                MDtestFromFile(log,s,true);
-//            } catch (Exception e){
-//                e.printStackTrace();
-//            }
-//            log.info("For Graph: " + s);
-//        }
-
-
-
-
-        //
-        // SEVERE:
-        //
-
-
-
-        // prime module and its direct vertex-children form a prime-module, too.
-        String nextWeek = "testGraphs/DMDvery/randDigraph_n_21_edits_8_12-05_15:55:20:659_original.txt";
-
-        // 20-12-17: Errors, NOT IN FACTPERM ORDER!!! Due to weak module...
-        // nextWeek - For vertices: [17, 12, 1, 15] only uniform adjacencies.
-
-
-
-
-
-
-
-//
-//        File importFile = new File("testy.txt");
-//        SimpleDirectedGraph<Integer, DefaultEdge> matrixGraph = SimpleMatrixImporter.importIntGraph( new File(weirdError));
-//        SimpleDirectedGraph<Integer, DefaultEdge> randGraph = JGraphAdjecencyImporter.importIntGraph(importFile);
-
-//        List<String> strings = Arrays.asList("testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:47:56:241_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:47:57:403_original" +
-//                ".txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:47:58:047_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:47:58:296_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:47:59:269_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:47:59:421_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:47:59:993_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:00:345_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:00:614_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:01:055_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:01:308_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:01:431_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:01:682_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:02:736_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:02:995_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:03:543_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:03:667_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:03:843_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:04:635_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:05:013_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:05:465_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:05:727_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:05:896_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:06:297_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:06:502_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:07:508_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:08:351_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:08:703_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:10:681_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:11:090_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:11:399_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:11:465_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:11:534_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:11:781_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:11:879_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:12:007_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:12:128_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:12:175_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:12:835_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:12:918_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:12:973_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:13:061_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:13:890_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:13:979_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:14:492_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:14:590_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:14:812_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:14:921_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:15:007_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:15:099_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:15:840_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:16:202_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:17:259_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:17:353_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:17:464_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:17:601_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:18:751_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:18:841_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:19:000_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:19:104_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:19:174_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:19:859_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:19:924_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:20:228_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:20:391_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:20:639_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:20:764_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:20:830_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:20:907_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:21:019_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:21:139_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:21:289_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:21:397_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:21:462_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:21:530_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:21:618_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:21:797_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:22:008_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:22:298_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:23:699_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:23:751_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:24:186_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:24:512_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:25:393_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:25:472_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:25:550_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:25:647_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:25:732_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:25:777_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:25:850_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:26:052_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:26:378_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:26:417_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:26:600_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:26:739_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:26:782_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:26:982_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:27:079_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:27:196_original.txt", "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:27:277_original.txt");
-//
-
-        String n20_1 = "testGraphs/DMDvery/randDigraph_n_20_edits_5_12-22_17:48:26:378_original.txt";
-
-        // Spiderman: nach 'ner stunde immer noch erst bei 3er-Teilmengen...
-
-        String n50_test = "testGraphs/smaller_with_cplex/randDigraph_n_50_edits_10_11-03_11:25:41:714.txt";
-        String n50_391ms = "testGraphs/smaller_with_cplex/randDigraph_n_50_edits_10_11-03_11:18:08:391.txt";
-        String n50_183ms = "testGraphs/smaller_with_cplex/randDigraph_n_50_edits_10_11-03_11:14:28:183.txt"; // needs 2 rounds, < orig edit! -> how about ILP?
-        //n13_orderWeakPrime -> too many :
-
-
-        //----------------------
 
         List<String> tests_100 = Arrays.asList("testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:09:488_original.txt",
                 "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:11:625_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:12:174_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:13:053_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:14:209_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:14:625_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:16:675_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:18:649_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:18:947_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:19:297_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:19:786_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:20:011_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:20:467_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:22:305_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:27:114_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:28:717_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:36:891_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:37:980_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:43:031_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:43:533_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:45:925_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:46:284_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:46:721_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:47:146_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:48:190_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:48:802_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:54:570_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:55:079_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:00:279_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:02:106_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:03:080_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:03:621_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:04:226_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:04:634_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:08:463_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:08:710_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:08:863_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:09:140_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:15:812_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:16:588_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:17:146_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:20:153_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:20:872_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:29:679_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:35:015_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:35:496_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:36:363_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:37:150_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:37:918_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:38:346_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:39:003_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:39:498_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:45:942_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:48:470_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:49:160_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:51:841_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:52:381_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:52:562_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:57:450_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:58:906_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:59:741_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:00:118_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:01:889_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:02:386_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:02:875_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:03:304_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:03:847_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:04:339_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:07:465_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:07:846_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:11:802_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:12:198_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:12:775_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:15:813_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:16:387_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:17:060_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:17:639_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:19:170_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:19:480_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:20:282_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:22:025_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:25:339_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:27:107_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:27:763_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:29:462_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:32:493_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:33:141_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:33:331_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:33:543_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:36:638_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:37:289_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:37:924_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:38:903_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:41:207_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:43:292_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:43:820_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:44:776_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:46:077_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:48:338_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:50:533_original.txt");
@@ -328,6 +127,7 @@ public class Main {
         //
         // SEVERE:
         //
+        String reTestPath = "testGraphs/DMDvery/";
         String again = "testGraphs/DMDvery/randDigraph_n_20_edits_5_01-06_22:06:53:840_original.txt";
         String not_among = reTestPath + "randDigraph_n_20_edits_5_01-06_22:02:00:398_original.txt";
         String warning_same = reTestPath + "randDigraph_n_20_edits_5_01-06_21:51:50:027_original.txt";
@@ -343,30 +143,28 @@ public class Main {
         String primesSmallEnough = "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:08:710_original.txt";
 
 
-        Parameters testParams = new Parameters(args);
-        testParams.parse();
-        editingTest(log, primesSmallEnough, false,testParams);
+        editingTest(log, primesSmallEnough,command);
 
 
 
 
-        Map<Integer,Integer> costToCount = new TreeMap<>();
-        for (int i = 0; i < tests_100.size() ; i++) {
-            String s = tests_100.get(i);
-            int cost = editingTest(log,s,false, testParams);
-            costToCount.putIfAbsent(cost,0);
-            costToCount.put(cost, costToCount.get(cost) + 1);
-            if(i == 20)
-                break;
-        }
-        System.out.println("Results: " + costToCount);
+//        Map<Integer,Integer> costToCount = new TreeMap<>();
+//        for (int i = 0; i < tests_100.size() ; i++) {
+//            String s = tests_100.get(i);
+//            int cost = editingTest(log,s,false, command);
+//            costToCount.putIfAbsent(cost,0);
+//            costToCount.put(cost, costToCount.get(cost) + 1);
+//            if(i == 20)
+//                break;
+//        }
+//        System.out.println("Results: " + costToCount);
 
 
 
 //        StringBuilder allPaths = new StringBuilder();
 //
 //        for (int i = 0; i < 100; i++) {
-//            if(!directedMDTesting(true,log,consoleHandler,40,8,true, allPaths)) {
+//            if(!testRun(true,log,consoleHandler,40,8,true, allPaths)) {
 //                System.out.println("Error occured after " + i + " successful runs.");
 //                break;
 //            }
@@ -388,7 +186,7 @@ public class Main {
 
     }
 
-    static int editingTest(Logger log, String graphPath, boolean alsoILP, Parameters p) throws Exception{
+    static int editingTest(Logger log, String graphPath, Parameters p) throws Exception{
         int cost = -1;
 
         SimpleDirectedGraph<Integer, DefaultEdge> importGraph = SimpleMatrixImporter.importIntGraph(new File(graphPath));
@@ -400,42 +198,32 @@ public class Main {
             cost = solutions.get(0).getCost();
         }
 
-
-//        MDEditor testEditor = new MDEditor(importGraph, currTree, log, EditType.Lazy, p);
-//        SimpleDirectedGraph<Integer, DefaultEdge> editGraph = testEditor.editIntoCograph();
-//
-//
-//        DirectedMD editModDecomp = new DirectedMD(editGraph, log, false);
-//        MDTree editTree = editModDecomp.computeModularDecomposition();
-//        boolean firstOkay = editTree.getPrimeModulesBottomUp().isEmpty();
-//        if(!firstOkay) {
-//            log.warning("Second round is necessary!");
-//            MDEditor edit2 = new MDEditor(editGraph, editTree, log,testEditor.getNewEdits(), EditType.Lazy, false); // nicht lazy?
-//            SimpleDirectedGraph<Integer, DefaultEdge> egraph2 = edit2.editIntoCograph();
-//            DirectedMD testMD = new DirectedMD(egraph2, log, false);
-//            MDTree res = testMD.computeModularDecomposition();
-//            log.info("Edited Tree:\n" + MDTree.beautify(res.toString()));
-//            if(res.getPrimeModulesBottomUp().isEmpty()){
-//                cost = edit2.getCost();
-//            }
-//        } else {
-//            log.warning("No edit found for: " + graphPath);
-//            cost = testEditor.getCost();
-//        }
-//
-//        if(alsoILP) {
-//            log.info("ILP:");
-//            MDEditor editILP = new MDEditor(importGraph, currTree, log, EditType.ILP);
-//            SimpleDirectedGraph<Integer, DefaultEdge> ilpEdit = editILP.editIntoCograph();
-//            DirectedMD ilpTest = new DirectedMD(ilpEdit, log, false);
-//            MDTree ilpRes = ilpTest.computeModularDecomposition();
-//            log.info("Edited Tree:\n" + MDTree.beautify(ilpRes.toString()));
-//        }
-
         return cost;
     }
 
-    static boolean directedMDTesting(boolean edit, Logger log, Handler baseHandler, int nVertices, int nDisturb, boolean solveILP, StringBuilder allPaths) throws Exception{
+    static void MDtestFromFile(Logger log, String importFilePath, boolean matrix) throws Exception {
+
+        File importFile = new File(importFilePath);
+        SimpleDirectedGraph<Integer, DefaultEdge> importGraph;
+        if(matrix) {
+            importGraph=SimpleMatrixImporter.importIntGraph(importFile);
+        } else {
+            importGraph = JGraphAdjecencyImporter.importIntGraph(importFile);
+        }
+        DOTExporter<Integer, DefaultEdge> exporter = new DOTExporter<>();
+        Writer writer = new StringWriter();
+        exporter.exportGraph(importGraph, writer);
+
+        log.info("Computing MD for graph:" + importFilePath);
+
+
+        DirectedMD testMD = new DirectedMD(importGraph, log, false);
+        MDTree res = testMD.computeModularDecomposition();
+        log.info(MDTree.beautify(res.toString()));
+
+    }
+
+    static boolean testRun( Logger log, Handler baseHandler, Parameters p, int nVertices, int nDisturb, StringBuilder allPaths) throws Exception{
 
         boolean ok = true;
         String timeStamp = new SimpleDateFormat("MM-dd_HH:mm:ss:SSS").format(Calendar.getInstance().getTime());
@@ -462,18 +250,17 @@ public class Main {
         log.info(String.format("Generated random Dicograph with %s vertices and %s random edge-edits.", nVertices, nDisturb));
         log.info("Exported Matrix to: " + filePath + "_original.txt");
 
-        if(edit){
+        if(!p.isMDOnly()){
             try {
-                int cost = editingTest(log,filePath + "_original.txt", false, new Parameters(new String[0]));
+                int cost = editingTest(log,filePath + "_original.txt", p);
                 ok = cost >= 0;
             } catch (Exception e){
                 ok = false;
                 log.severe(e.toString());
-                e.printStackTrace(System.out);
+                e.printStackTrace(System.err);
             }
 
         } else {
-
             log.info("Started modular decomposition");
             try {
                 DirectedMD testMD = new DirectedMD(g_d, log, true);
@@ -481,32 +268,17 @@ public class Main {
             } catch (IllegalStateException | AssertionError e) {
                 ok = false;
                 log.severe(e.toString());
+                e.printStackTrace(System.err);
             }
-
-
             log.info("Finished modular decomposition. Log written to:");
             log.info(filePath + ".log");
-
-            if (solveILP) {
-                // compute the solution via ILP
-                log.info("*** Starting ILP-Solver ***");
-                CplexDiCographEditingSolver mySolver = new CplexDiCographEditingSolver(g_d, new Parameters(new String[0]), log);
-                List<SimpleDirectedGraph<Integer, DefaultEdge>> solutions = mySolver.solve();
-                log.info("Saving solution for n = " + nVertices + " to:");
-                log.info(filePath + "_edited.txt");
-                File solFile = new File(filePath + "_edited.txt");
-                myExporter.exportGraph(solutions.get(0), solFile);
-            }
         }
-
-
 
         // clear this handler, I want separate logfiles.
         fileHandler.close();
         log.removeHandler(fileHandler);
 
         return ok;
-
     }
 
     static void md10test() throws Exception{
@@ -599,6 +371,7 @@ public class Main {
             return n*factorial(n-1);
     }
 
+    // do reproduce error in Tedder's Code
     static void reorder(Integer[] permutation, String filePath){
 
         File file = new File(filePath);
@@ -630,33 +403,10 @@ public class Main {
         }
     }
 
-    static void MDtestFromFile(Logger log, String importFilePath, boolean matrix) throws Exception {
 
-        File importFile = new File(importFilePath);
-        SimpleDirectedGraph<Integer, DefaultEdge> importGraph;
-        if(matrix) {
-            importGraph=SimpleMatrixImporter.importIntGraph(importFile);
-        } else {
-            importGraph = JGraphAdjecencyImporter.importIntGraph(importFile);
-        }
-        DOTExporter<Integer, DefaultEdge> exporter = new DOTExporter<>();
-        Writer writer = new StringWriter();
-        exporter.exportGraph(importGraph, writer);
-        //log.info(".dot for Graph:\n" + writer.toString());
-
-        log.info("Computing MD for graph:" + importFilePath);
-
-
-        DirectedMD testMD = new DirectedMD(importGraph, log, false);
-        MDTree res = testMD.computeModularDecomposition();
-        log.info(MDTree.beautify(res.toString()));
-
-    }
 
     static void compareMatrixAndRand(SimpleDirectedGraph<Integer, DefaultEdge> matrixGraph, SimpleDirectedGraph<Integer, DefaultEdge> randGraph) {
-        //AsUndirectedGraph<Integer,DefaultEdge> matrixUndirected = new AsUndirectedGraph<>(randGraph);
-        //AsUndirectedGraph<Integer,DefaultEdge> randUndirected = new AsUndirectedGraph<>(matrixGraph);
-        // same here as in MD
+        // Error in Tedder's MD appeared here..
         SimpleGraph <Integer,DefaultEdge> matrixUndirected = new SimpleGraph<>(DefaultEdge.class);
         matrixGraph.vertexSet().forEach(  matrixUndirected::addVertex );
         for (DefaultEdge edge : matrixGraph.edgeSet()) {
@@ -766,8 +516,6 @@ public class Main {
         }
     }
 
-
-
     void cographTesting(Logger log) throws Exception{
         // Cograph Testing
         SimpleGraph<Integer, DefaultEdge> g = new SimpleGraph<>(DefaultEdge.class);
@@ -874,7 +622,7 @@ public class Main {
 
     void randImportExportTest(Logger log) throws IOException, ExportException{
         GraphGenerator graphGenerator = new GraphGenerator(log);
-        SimpleDirectedGraph<String, DefaultEdge> testGraph = graphGenerator.generateRandomGnp(11,0.3);
+        SimpleDirectedGraph<Integer, DefaultEdge> testGraph = graphGenerator.generateRandomGnp(11,0.3);
         System.out.println(testGraph.toString());
 
         // test output
@@ -886,11 +634,11 @@ public class Main {
 
         //
 
-        SimpleMatrixExporter<String, DefaultEdge> myExporter = new SimpleMatrixExporter<>();
+        SimpleMatrixExporter<Integer, DefaultEdge> myExporter = new SimpleMatrixExporter<>();
         myExporter.exportGraph(testGraph, logFile);
 
         // try importing and exporting again:
-        SimpleDirectedGraph<String,DefaultEdge> testGraph2 = SimpleMatrixImporter.importStringGraph(logFile);
+        SimpleDirectedGraph<Integer,DefaultEdge> testGraph2 = SimpleMatrixImporter.importIntGraph(logFile);
         String exp2 = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
         File expfile = new File(exp2 + "_reimported" + ".txt");
         myExporter.exportGraph(testGraph2, expfile);

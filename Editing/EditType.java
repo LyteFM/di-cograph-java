@@ -11,15 +11,11 @@ public enum  EditType {
     ILPGlobal,
     None;
 
-
-//    boolean oneIsEnough(){
-//        return (this == Lazy || this == ILP || this == ILPGlobal);
-//    }
-
     boolean checkPrimesSize(){
         return (this == BruteForce || this == GreedyILP);
     }
 
+    boolean stopAtHard(boolean isFirst){ return isFirst && (this == BruteForce || this == GreedyILP);}
 
     boolean doLazyOnFirst(){
         return (this == Lazy || this == BruteForce || this == GreedyILP );

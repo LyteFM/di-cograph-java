@@ -565,7 +565,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                 if(!inNeighbors.isEmpty()) {
                     partitions.add(partitionsIndex, inNeighbors);
                     for (int vNo : inNeighbors) {
-                        vertexToPartition.put(vNo, inNeighbors); // todo: or still put?
+                        vertexToPartition.put(vNo, inNeighbors);
                     }
                     partitionsIndex++;
                 }
@@ -581,7 +581,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                 if(!outNeigbors.isEmpty()) {
                     partitions.add(partitionsIndex, outNeigbors);
                     for (int vNo : outNeigbors) {
-                        vertexToPartition.put(vNo, outNeigbors); // todo: or still update???
+                        vertexToPartition.put(vNo, outNeigbors);
                     }
                 }
             }
@@ -594,7 +594,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                 throw new IllegalStateException("Error: invalid element " + singleton + " of partitions: " + partitions + "\nvertexToPartition: " + vertexToPartition);
             } else {
                 int realVertexNo = singleton.stream().findFirst().get();
-                ret.add(new Pair<>(realVertexNo, vertexToOutdegree.get(realVertexNo))); // todo: habe ich hier bereits die ungültigen???
+                ret.add(new Pair<>(realVertexNo, vertexToOutdegree.get(realVertexNo)));
             }
         }
 

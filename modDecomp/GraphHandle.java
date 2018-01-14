@@ -14,7 +14,7 @@ import org.jgrapht.graph.*;
  */
 public class GraphHandle {
 
-	// new: Use SimpleGraph from JGraphT for the base Graph.
+	// F.L. new: Use SimpleGraph from JGraphT for the base Graph.
     public SimpleGraph <Integer, DefaultEdge> graph;
 
 
@@ -49,6 +49,7 @@ public class GraphHandle {
 	    vertices = buildFromFile(file);
 	}
 
+	// F.L.
 	public GraphHandle(SimpleGraph<Integer,DefaultEdge> graph){
 	    this.graph = graph;
     }
@@ -92,7 +93,7 @@ public class GraphHandle {
                 	vertices.put(vertexLabel,vertex);
                 }
 
-                // todo: New: use JGraphT
+                // F.L. New: use JGraphT
                 if(!graph.containsVertex(vertexNo)){
                     graph.addVertex(vertexNo);
                 }
@@ -111,7 +112,7 @@ public class GraphHandle {
                 		vertex.addNeighbour(unseenNeighbour);
                 	}
 
-                	// todo: use JGraphT
+                	// F.L.: use JGraphT
 					int neighbourNo = Integer.valueOf(neighbourLabels[i]);
                     if( !graph.containsVertex( neighbourNo)){
                 	    // if not present, create Vertex for neighbor
@@ -175,6 +176,7 @@ public class GraphHandle {
 		return vertices.values().toString();
 	}
 
+	// F.L.
 	public SimpleGraph<Integer, DefaultEdge> getGraph() {
 		return graph;
 	}

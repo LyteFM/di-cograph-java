@@ -142,7 +142,6 @@ public class SortAndCompare {
                     edgeTargets.set(pos);
                     //permVertexToEdge.put(pos, e);
                 }
-                // todo: use the real vertexNo or the position in permutation?
                 retSets[ positionInPermutation[vertex] ] = edgeTargets;
 
             } else {

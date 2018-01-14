@@ -86,12 +86,12 @@ public class PartitiveFamilyTree extends RootedTree {
         // remember: X is a module iff le(X) == lc(X) and re(X) == rc(X)
         // next step: use N_{+} and N_{-} to separate the children of a 0/1-complete node that is a module into R_X-classes
         // According to step 5, for the tournament I can select any representative of its children.
-        // todo: Problem - they have uniform relationship to other nodes ONLY IF the child is a strong node!!! Must make them Strong, if they aren't!!!
+        // Problem - they have uniform relationship to other nodes ONLY IF the child is a strong node!!! Must make them Strong, if they aren't!!!
         if(reorder) {
             // reorder only, don't delete/recover anything
             rootNode.reorderAllInnerNodes(data, sortedOutEgdes, sortedInEdges, orderedLeaves, positionInPermutation);
         } else {
-            // delete and recover.
+            // Alternative: delete and recover. (Not implemented, following the paper directly).
         }
 
         /*

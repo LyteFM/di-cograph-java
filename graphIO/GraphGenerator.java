@@ -34,22 +34,19 @@ public class GraphGenerator {
         logger = log;
     }
 
-
-
-
     /**
      * Randomly creates a simple directed graph with:
      * @param numberVertices the number of vertices
      * @param edgeProbability the probability of a directed edge (u,v) between any two vertices u,v
      * @return the random graph
      */
-    public SimpleDirectedGraph<String, DefaultEdge> generateRandomGnp(int numberVertices, double edgeProbability){
+    public SimpleDirectedGraph<Integer, DefaultEdge> generateRandomGnp(int numberVertices, double edgeProbability){
 
-        SimpleDirectedGraph<String, DefaultEdge> graph = new SimpleDirectedGraph<>(DefaultEdge.class);
+        SimpleDirectedGraph<Integer, DefaultEdge> graph = new SimpleDirectedGraph<>(DefaultEdge.class);
 
-        GnpRandomGraphGenerator<String, DefaultEdge> generator =
+        GnpRandomGraphGenerator<Integer, DefaultEdge> generator =
                 new GnpRandomGraphGenerator<>(numberVertices, edgeProbability, random, false);
-        generator.generateGraph(graph, new StringVertexFactory(),null);
+        generator.generateGraph(graph, new IntegerVertexFactory(),null);
 
         return graph;
     }
@@ -62,11 +59,11 @@ public class GraphGenerator {
      */
     public SimpleDirectedGraph generateRandomGnm(int numberVertices, int numberEdges){
 
-        SimpleDirectedGraph<String, DefaultEdge> graph = new SimpleDirectedGraph<>(DefaultEdge.class);
+        SimpleDirectedGraph<Integer, DefaultEdge> graph = new SimpleDirectedGraph<>(DefaultEdge.class);
 
-        GnmRandomGraphGenerator<String, DefaultEdge> generator =
+        GnmRandomGraphGenerator<Integer, DefaultEdge> generator =
                 new GnmRandomGraphGenerator<>(numberVertices, numberEdges, random, false, false);
-        generator.generateGraph(graph, new StringVertexFactory(), null);
+        generator.generateGraph(graph, new IntegerVertexFactory(), null);
 
         return graph;
     }

@@ -608,8 +608,8 @@ public class MDTreeNode extends RootedTreeNode {
 		}
 	}
 
-	// inits Graph, baseVnoToSubVno and returns the weights of each new vertex.
-	public double[] initWeightedSubgraph(PrimeSubgraph subGraph, SimpleDirectedGraph<Integer,DefaultEdge> base){
+	// F.L.: inits Graph, baseVnoToSubVno and returns the weights of each new vertex.
+	public double[] initWeigthsAndSubgraph(PrimeSubgraph subGraph, SimpleDirectedGraph<Integer,DefaultEdge> base){
 
 		HashMap<Integer,Integer> baseVNoTosubVNo = subGraph.getBaseNoTosubNo();
 

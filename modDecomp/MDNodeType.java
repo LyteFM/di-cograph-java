@@ -54,7 +54,7 @@ public enum MDNodeType {
 						boolean stillValid = false;
 						/*
 						//if(node.isRoot()) {
-							// handle special case todo: Or is this false???
+							// handle special case
 							HashSet<Integer> leaves = node.getDirectLeaves().stream().map( leaf -> {
 								//if(isDirected)
 								//	return ((PartitiveFamilyLeafNode) leaf).getVertex();
@@ -89,9 +89,9 @@ public enum MDNodeType {
 		return ret;
 	}
 
+	// F.L. 2017
 	// if it's none of these two cases, it should be prime. However, in order to detect "false primes",
 	// it's necessary to combine any two vertices and check again.
-
 	public static MDNodeType determineNodeType(Graph<Integer,DefaultEdge> subgraph, boolean directed){
 
 		Set<DefaultEdge> subEdgeSet = subgraph.edgeSet();
@@ -146,7 +146,5 @@ public enum MDNodeType {
 			}
 		}
 		return MDNodeType.PRIME;
-
 	}
-
 }
