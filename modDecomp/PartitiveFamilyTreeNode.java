@@ -81,17 +81,17 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
         if (type.isDegenerate() || type == MDNodeType.ORDER) {
             // According to Lem 20:
-            log.fine(() -> type + ": computing equivalence classes");
+            log.finer(() -> type + ": computing equivalence classes");
             computeEquivalenceClassesAndReorderChildren(log, outNeighbors, inNeighbors, orderedLeaves, positionInPermutation);
 
             // A module identified as order might be strong, but not have a transitive tournament
             // i.e. it's not a strong order, but a prime with an order module as child
             if (isModuleInG && type == MDNodeType.ORDER) {
                 // According to Lem 21:
-                log.fine(() -> type + ": computing fact perm of tournament " + inducedPartialSubgraph);
+                log.finer(() -> type + ": computing fact perm of tournament " + inducedPartialSubgraph);
                 List<Pair<Integer, Integer>> perfectFactPerm = perfFactPermFromTournament.apply(inducedPartialSubgraph);
                 // results are real vertices in a new order (first) and their outdegree (second).
-                log.fine(() -> type + ": reordering and splitting merged modules according to permutation: " + perfectFactPerm);
+                log.finer(() -> type + ": reordering and splitting merged modules according to permutation: " + perfectFactPerm);
                 // ok: if a merged module has been split, it's children are processed later
                 reorderAccordingToPerfFactPerm(perfectFactPerm, log);
             }
@@ -102,17 +102,17 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             // module's children. Simply delete module weak modules: ->  Replace with their children.
             // todo: if the parent node is doesn't have the same type (and esp.: is complete), that's not enough!!!
             // E.g. a complete root might need to  be checked again!
-            log.fine(() -> "Weak module to remove: " + this);
+            log.finer(() -> "Weak module to remove: " + this);
             PartitiveFamilyTreeNode parentNote = (PartitiveFamilyTreeNode) getParent();
             if(parentNote.getType() == MDNodeType.ORDER){
                 // todo: here is the difficult case: weak prime below strong order.
                 // process först
                 // Doesn't do anything - root is a module ofc.
                 // parentNote.computeEquivalenceClassesAndReorderChildren(log, outNeighbors, inNeighbors, orderedLeaves, positionInPermutation);
-                log.fine(() -> type + ": computing fact perm of tournament " + parentNote.inducedPartialSubgraph);
+                log.finer(() -> type + ": computing fact perm of tournament " + parentNote.inducedPartialSubgraph);
                 List<Pair<Integer, Integer>> perfectFactPerm = perfFactPermFromTournament.apply(parentNote.inducedPartialSubgraph);
                 // results are real vertices in a new order (first) and their outdegree (second).
-                log.fine(() -> type + ": reordering and splitting merged modules according to permutation: " + perfectFactPerm);
+                log.finer(() -> type + ": reordering and splitting merged modules according to permutation: " + perfectFactPerm);
                 // ok: if a merged module has been split, it's children are processed later
                 parentNote.reorderAccordingToPerfFactPerm(perfectFactPerm, log);
             }
@@ -120,7 +120,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             MDNodeType oldType = parentNode.getType();
             parentNode.determineNodeTypeForH(data); // also resets the induced subgraph
             if (parentNode.getType() != oldType){
-                log.fine(() -> "Its parent was changed from " + oldType + " to " + parentNode.getType());
+                log.finer(() -> "Its parent was changed from " + oldType + " to " + parentNode.getType());
             }
         }
 
@@ -151,15 +151,15 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
         if (type.isDegenerate() || type == MDNodeType.PRIME) {
             // According to Lem 20:
-            log.fine(() -> type + ": computing equivalence classes");
+            log.finer(() -> type + ": computing equivalence classes");
             computeEquivalenceClassesAndReorderChildren(log, outNeighbors, inNeighbors, orderedLeaves, positionInPermutation); // still also splits.
 
         } else if (type == MDNodeType.ORDER){
             // According to Lem 21:
-            log.fine(() -> type + ": computing fact perm of tournament " + inducedPartialSubgraph);
+            log.finer(() -> type + ": computing fact perm of tournament " + inducedPartialSubgraph);
             List<Pair<Integer, Integer>> perfectFactPerm = perfFactPermFromTournament.apply(inducedPartialSubgraph);
             // results are real vertices in a new order (first) and their outdegree (second).
-            log.fine(() -> type + ": reordering modules according to permutation: " + perfectFactPerm);
+            log.finer(() -> type + ": reordering modules according to permutation: " + perfectFactPerm);
             reorderAccordingToPerfFactPerm(perfectFactPerm, log);
         }
 
@@ -328,7 +328,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                             skipCount++;
                         }
                     }
-                    log.fine("Checked " + skipCount + " of " + currentChild.getNumChildren() + " vertices to find position " + position);
+                    log.finer("Checked " + skipCount + " of " + currentChild.getNumChildren() + " vertices to find position " + position);
                     if(!currentChild.isModuleInG){
                         weakNodePositions.add(position);
                     }
@@ -384,7 +384,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             int outDeg = element.getSecond();
             if(outScore !=outDeg){
                 // if it's not the expected score, you're out. need to verify if that's enough, though.
-                log.fine(() -> "Detected merged vertex: " + vertex + ", outDegree " + outDeg );
+                log.finer(() -> "Detected merged vertex: " + vertex + ", outDegree " + outDeg );
                 primeMemberIndexInPerm.put(i,vertex);
             }
 
@@ -439,7 +439,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             treeContext.moduleToTreenode.put(newNode.vertices,newNode);
 
             addChild(newNode);
-            log.fine(() -> "new child created: " + newNode.toString());
+            log.finer(() -> "new child created: " + newNode.toString());
         }
 
      */
@@ -486,7 +486,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                             skipCount++;
                         }
                     }
-                    log.fine("Checked " + skipCount + " of " + currentChild.getNumChildren() + " vertices to find position " + position);
+                    log.finer("Checked " + skipCount + " of " + currentChild.getNumChildren() + " vertices to find position " + position);
                 }
 
                 if(orderedNodes[position] != null){
@@ -500,8 +500,8 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
         ArrayList<PartitiveFamilyTreeNode> orderedChildren = new ArrayList<>(Arrays.asList(orderedNodes));
 
-        log.fine( () -> type + " Reordering children of " + toString());
-        log.fine( () -> type + " according to: " + orderedChildren.toString() );
+        log.finer( () -> type + " Reordering children of " + toString());
+        log.finer( () -> type + " according to: " + orderedChildren.toString() );
         reorderChildren(orderedChildren);
     }
 
@@ -670,12 +670,12 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                 Pair<BitSet, BitSet> key = new Pair<>(outgoingWithoutX, incomingWithoutX);
                 if (equivClassByBits.containsKey(key)) {
                     equivClassByBits.get(key).add(currentChild);
-                    log.fine(() -> type + " adding child with vertex " + anyVertex + " to eqClass " + key);
+                    log.finer(() -> type + " adding child with vertex " + anyVertex + " to eqClass " + key);
                 } else {
                     LinkedList<PartitiveFamilyTreeNode> eqClass = new LinkedList<>();
                     eqClass.addLast(currentChild);
                     equivClassByBits.put(key, eqClass);
-                    log.fine(() -> type + " creating new eqClass " + key + " for child with vertex " + anyVertex);
+                    log.finer(() -> type + " creating new eqClass " + key + " for child with vertex " + anyVertex);
                 }
 
                 currentChild = (PartitiveFamilyTreeNode) currentChild.getRightSibling();
@@ -692,7 +692,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
                 throw new IllegalStateException("Found several equiv classes in step 5 for a module in G: " + this);
             }
         } else {
-            log.fine( () -> type + " has only one equiv class." );
+            log.finer( () -> type + " has only one equiv class." );
             // , it's a module <- Not necessarily!!! Can be weak!
             //assert isModuleInG : "Error: should not be weak!\n" + this;
         }
@@ -716,8 +716,8 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             orderedChildren.addAll(weakChildren);
         }
 
-        log.fine( () -> type + " Reordering children of " + toString());
-        log.fine( () -> type + " according to: " + orderedChildren.toString() );
+        log.finer( () -> type + " Reordering children of " + toString());
+        log.finer( () -> type + " according to: " + orderedChildren.toString() );
         reorderChildren(orderedChildren);
 
 
@@ -793,9 +793,9 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
         if(lc_X == le_X && rc_X == re_X){
             isModuleInG = true;
-            log.fine( () -> "Module found - LC & LE: " + lc_X + ", RC & RE: " + rc_X + " for node: " + toString());
+            log.finer( () -> "Module found - LC & LE: " + lc_X + ", RC & RE: " + rc_X + " for node: " + toString());
         } else {
-            log.fine( () -> "Not a module - LC: " + lc_X + ", LE: " + le_X +  ", RC: " + rc_X + ", RE: " + re_X + " for node: " + toString());
+            log.finer( () -> "Not a module - LC: " + lc_X + ", LE: " + le_X +  ", RC: " + rc_X + ", RE: " + re_X + " for node: " + toString());
         }
 
         return new Pair<>(lc_X,rc_X);
@@ -883,7 +883,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
             }
         }
         if(!isALeaf()){
-            log.fine( () -> "1st occ of a v ∈ X: " + le_X + ", last: " + re_X + ", X = " + toString());
+            log.finer( () -> "1st occ of a v ∈ X: " + le_X + ", last: " + re_X + ", X = " + toString());
         }
 
         return new Pair<>(le_X, re_X);

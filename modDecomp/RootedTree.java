@@ -70,10 +70,6 @@ class RootedTree {
         return moduleToTreenode;
     }
 
-    public void setModuleToTreenode(HashMap<BitSet, RootedTreeNode> moduleToTreenode) {
-        this.moduleToTreenode = moduleToTreenode;
-    }
-
     // F.L. 13.11.17: moved here
     /**
      * Computes the lowest common ancestor for a set of RootedTreeNodes.
@@ -106,10 +102,10 @@ class RootedTree {
 
                 if(parent != null) {
                     if (parent.isRoot()) {
-                        log.fine(() -> "Reached root: " + currEntry.toString());
+                        log.finest(() -> "Reached root: " + currEntry.toString());
                         // No problem if just one went up to root.
                         if (alreadyReachedRoot) {
-                            log.fine("Root is LCA.");
+                            log.finest("Root is LCA.");
                             return parent;
                         }
                         alreadyReachedRoot = true;
@@ -119,7 +115,7 @@ class RootedTree {
 
                         // already present: close this list.
                         remainingNodes--;
-                        log.fine(() -> "Closing: " + currEntry.toString());
+                        log.finest(() -> "Closing: " + currEntry.toString());
 
                         nodesIter.remove();
                         // We're done if this was the last.
@@ -131,8 +127,8 @@ class RootedTree {
                             if (lastList.contains(parent)) {
                                 return parent;
                             } else {
-                                log.fine(() -> "Not found: return first inner node entry of last list:");
-                                log.fine(lastList::toString);
+                                log.finest(() -> "Not found: return first inner node entry of last list:");
+                                log.finest(lastList::toString);
                                 for (RootedTreeNode lastListNode : lastList) {
                                     if (!lastListNode.isALeaf()) {
                                         return lastListNode;
@@ -143,17 +139,17 @@ class RootedTree {
 
                     } else {
                         // add the parent
-                        log.fine(() -> "Adding: " + currEntry + ", parent: " + parent);
+                        log.finest(() -> "Adding: " + currEntry + ", parent: " + parent);
                         currEntry.getValue().addLast(parent);
                         allTraversedNodes.put(parent, currEntry.getKey());
                     }
                 }
                 else {
-                    log.fine(() -> "Ignoring root.");
+                    log.finest(() -> "Ignoring root.");
                 }
             }
-            log.fine(() -> "All nodes: " + allTraversedNodes);
-            log.fine(() -> "Next Iteration: " + inputNodeToAncestors);
+            log.finest(() -> "All nodes: " + allTraversedNodes);
+            log.finest(() -> "Next Iteration: " + inputNodeToAncestors);
 
         }
         // debug

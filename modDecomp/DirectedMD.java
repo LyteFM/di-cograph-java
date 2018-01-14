@@ -95,7 +95,7 @@ public class DirectedMD {
         String nextLine;
         int count = 0;
         while ((nextLine = bufferedReader.readLine()) != null) {
-            log.fine(nextLine);
+            log.finer(nextLine);
             count++;
             if (count == 7) {
                 for (String res : nextLine.split(" ")) {
@@ -103,13 +103,13 @@ public class DirectedMD {
                 }
             }
         }
-        log.fine("Dahlhaus algorithm finished");
+        log.finer("Dahlhaus algorithm finished");
         return ret;
     }
 
     public MDTree computeModularDecomposition() throws InterruptedException, IOException, ImportException {
 
-        log.fine("init md of graph: " + inputGraph.toString());
+        log.finer("init md of graph: " + inputGraph.toString());
 
 
         // Step 1: Find G_s, G_d and H
@@ -125,7 +125,7 @@ public class DirectedMD {
                 G_d.addEdge(source, target);
             }
         }
-        log.fine("  G_d of digraph: " + G_d);
+        log.finer("  G_d of digraph: " + G_d);
 
         // G_s: undirected graph s.t. {u,v} in E_s iff (u,v) in E or (v,u) in E todo: ändert nix :(
         G_s = new SimpleGraph<>(DefaultWeightedEdge.class);
@@ -138,7 +138,7 @@ public class DirectedMD {
             }
         }
 
-        log.fine("  G_s of digraph: " + G_s);
+        log.finer("  G_s of digraph: " + G_s);
 
 
         // H: symmetric 2-structure with
@@ -147,7 +147,7 @@ public class DirectedMD {
         //    E_H(u,v) = 2 if (u,v) or (v,u) simple arc (i.e. edge in G_s but not G_d)
 
         timeLog.logTime("Init of G_d and G_s");
-        log.fine("computing md for G_d:");
+        log.finer("computing md for G_d:");
 
         // Step 2: T(G_d) and T(G_s) with algorithm for undirected graphs
 
@@ -156,17 +156,17 @@ public class DirectedMD {
 //        if(treeForG_d.removeDummies()){
 //            log.warning("Removed dummy primes for G_d");
 //        }
-        log.fine("computing md for G_s:");
+        log.finer("computing md for G_s:");
 
         MDTree treeForG_s = new MDTree(G_s, null, debugMode, log);
 //        if(treeForG_s.removeDummies()){
 //            log.warning("Removed dummy primes for G_s");
 //        }
         timeLog.logTime("MD for G_d and G_s");
-        log.fine("md for G_d:\n" + MDTree.beautify(treeForG_d.toString()));
-        //log.fine("DOT for G_d:\n" + treeForG_d.exportAsDot());
-        log.fine("md for G_s:\n" + MDTree.beautify(treeForG_s.toString()));
-        //log.fine("DOT for G_s:\n" + treeForG_s.exportAsDot());
+        log.finer("md for G_d:\n" + MDTree.beautify(treeForG_d.toString()));
+        //log.finer("DOT for G_d:\n" + treeForG_d.exportAsDot());
+        log.finer("md for G_s:\n" + MDTree.beautify(treeForG_s.toString()));
+        //log.finer("DOT for G_s:\n" + treeForG_s.exportAsDot());
 
         // Step 3: Find T(H) = T(G_s) Λ T(G_d)
 
@@ -176,7 +176,7 @@ public class DirectedMD {
         // not yet the "true" node-type, just a reference to 0/1/2-completeness.
         treeForH.computeAllNodeTypes(this);
         timeLog.logTime("End of step 3 - Inclusion Tree");
-        log.fine("Inclusion Tree with computed types: " + MDTree.beautify(treeForH.toString()));
+        log.finer("Inclusion Tree with computed types: " + MDTree.beautify(treeForH.toString()));
 
 
         // Step 4: At each O-complete and 1-complete node X of T(H), order the children s.t.
@@ -200,8 +200,8 @@ public class DirectedMD {
             if(i != nVertices-1)
                 leafNumbers.append(", ");
         }
-        log.fine(() ->"Leaves ordered as factorizing permutation: " + leafNumbers);
-        log.fine("Reordered Tree: " + MDTree.beautify(treeForH.toString()));
+        log.finer(() ->"Leaves ordered as factorizing permutation: " + leafNumbers);
+        log.finer("Reordered Tree: " + MDTree.beautify(treeForH.toString()));
 
 
         // get the MD Tree from C++
@@ -215,7 +215,7 @@ public class DirectedMD {
 //            log.warning("Removed dummy primes/ weak orders!");
 //        }
         timeLog.logTime("MD Tree from FP");
-        log.fine("Final Tree: " + MDTree.beautify(finalTree.toString()));
+        log.finer("Final Tree: " + MDTree.beautify(finalTree.toString()));
 
 
         if (debugMode) {
@@ -319,7 +319,7 @@ public class DirectedMD {
 
 
         // 1.) use M.Rao's Dahlhaus algorithm to compute the overlap components (Bound: |M| <= 4m + 6n)
-        log.fine("Input for Dahlhaus algorith:\n" + overlapInput);
+        log.finer("Input for Dahlhaus algorith:\n" + overlapInput);
         File dahlhausFile = new File("dahlhaus.txt");
 
         // Try with ressources
@@ -375,7 +375,7 @@ public class DirectedMD {
         PartitiveFamilyTree overlapInclusionTree = new PartitiveFamilyTree();
         PartitiveFamilyLeafNode[] leafNodes = overlapInclusionTree.createInclusionTreeFromBitsets(overlapComponents.values(),log,nVertices);
         timeLog.logTime("Overlap inclusion tree");
-        log.fine(() -> MDTree.beautify(overlapInclusionTree.toString()));
+        log.finer(() -> MDTree.beautify(overlapInclusionTree.toString()));
         HashMap<BitSet, RootedTreeNode> bitsetToOverlapTreenNode = overlapInclusionTree.getModuleToTreenode();
 
 
@@ -394,12 +394,12 @@ public class DirectedMD {
         HashMap<RootedTreeNode, RootedTreeNode> elementOfBToP_b = new HashMap<>();
 
 
-        log.fine("Computing nodes with complete Parent for Tree T_s of G_s");
+        log.finer("Computing nodes with complete Parent for Tree T_s of G_s");
         HashMap<RootedTreeNode, BitSet> elementsOfA = computeNodesWithCompleteParent(bitsetToOverlapTreenNode,
                 true, leafNodes, elementOfAToP_a, strongModulesBoolT_s, of_Gs_T_s);
 
         // Reinitialize and Compute P_b
-        log.fine("Computing nodes with complete Parent for Tree T_g of G_d");
+        log.finer("Computing nodes with complete Parent for Tree T_g of G_d");
         HashMap<RootedTreeNode, BitSet> elementsOfB = computeNodesWithCompleteParent(bitsetToOverlapTreenNode,
                 false, leafNodes,elementOfBToP_b, strongModulesBoolT_d, of_Gd_T_g);
 
@@ -413,7 +413,7 @@ public class DirectedMD {
                 intersectionOfAandB.put(node, entry.getValue());
             }
         }
-        log.fine("Intersection of A* and B*: " + intersectionOfAandB.values());
+        log.finer("Intersection of A* and B*: " + intersectionOfAandB.values());
 
         // Now, the paper suggests computing P_a and P_b for each element X \in Ü.
         // However, this has already been done in the previous step. It is either:
@@ -439,17 +439,17 @@ public class DirectedMD {
                 // Pair is fine, hashCode isn't overridden.
                 Pair<RootedTreeNode, RootedTreeNode> sortKey = new Pair<>(aElement, bElement);
                 if (equivalenceClassesR_U.containsKey(sortKey)) {
-                    log.fine(() -> "Adding " + entry.getValue() + " to equivalence class " + sortKey);
+                    log.finer(() -> "Adding " + entry.getValue() + " to equivalence class " + sortKey);
                     equivalenceClassesR_U.get(sortKey).or(entry.getValue());
                 } else {
-                    log.fine(() -> "For " + entry.getValue() + ", create new equivalence class " + sortKey);
+                    log.finer(() -> "For " + entry.getValue() + ", create new equivalence class " + sortKey);
                     equivalenceClassesR_U.put(sortKey, (BitSet) entry.getValue().clone()); // need clone, else chaos
                 }
             }
 
         }
         timeLog.logTime("Equivalence Classes");
-        log.fine("Equivalence Classes: " + equivalenceClassesR_U.values());
+        log.finer("Equivalence Classes: " + equivalenceClassesR_U.values());
 
 
         // 6. ) the set \mathcal S(T_s, T_g) - which is the set Family of H's MD-Tree:
@@ -510,8 +510,8 @@ public class DirectedMD {
             // check if already a node of T_s or T_g -> done.
             MDTreeNode easyNode = (MDTreeNode) strongModules.get(bits);
             if (easyNode != null) {
-                log.fine(() -> logPrefix + "Added: " + setEntryOfSigma);
-                log.fine(() -> "   as it is node in MD Tree.");
+                log.finer(() -> logPrefix + "Added: " + setEntryOfSigma);
+                log.finer(() -> "   as it is node in MD Tree.");
                 elementsOfA.put(setEntryOfSigma.getValue(), bits);
                 // if not a prime, possibly also in equiv class:
                 if (easyNode.getType().isDegenerate()) {
@@ -571,7 +571,7 @@ public class DirectedMD {
 //                    // todo: I never get here, do I??
 //                    elementsOfA.put(setEntryOfSigma.getValue(), setEntryOfSigma.getKey());
 //                    elementOfAToP_a.put(setEntryOfSigma.getValue(), maximumMembers.stream().findFirst().get());
-//                    log.fine(logPrefix + "Added: " + setEntryOfSigma.toString() + " directly");
+//                    log.finer(logPrefix + "Added: " + setEntryOfSigma.toString() + " directly");
 //                    throw new IllegalStateException("Shouldn't happen.");
 //
 //                } else if (maximumMembers.size() == 0) {
@@ -594,11 +594,11 @@ public class DirectedMD {
 
                         elementsOfA.put(setEntryOfSigma.getValue(), setEntryOfSigma.getKey());
                         elementOfAToP_a.put(setEntryOfSigma.getValue(), lca);
-                        log.fine(() -> logPrefix + "Added: " + setEntryOfSigma);
-                        log.fine(() -> "   with complete LCA: " + lca);
+                        log.finer(() -> logPrefix + "Added: " + setEntryOfSigma);
+                        log.finer(() -> "   with complete LCA: " + lca);
                     } else {
-                        log.fine(() -> logPrefix + "Discarded: " + setEntryOfSigma);
-                        log.fine(() -> "   with prime LCA: " + lca);
+                        log.finer(() -> logPrefix + "Discarded: " + setEntryOfSigma);
+                        log.finer(() -> "   with prime LCA: " + lca);
                         // neither in P_a: "...and neither of these nodes is prime".
                     }
                 }

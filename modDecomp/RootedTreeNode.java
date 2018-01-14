@@ -113,7 +113,7 @@ public class RootedTreeNode {
 	}
 	
 	/* Returns the number of this node's children. */
-	protected int getNumChildren() {
+	public int getNumChildren() {
 		return numChildren;
 	}
 	

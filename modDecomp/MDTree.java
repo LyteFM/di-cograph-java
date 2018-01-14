@@ -186,7 +186,7 @@ public class MDTree extends RootedTree {
                     start = next.startsWith("MD Tree:");
             }
             String res = builder.toString();
-            log.fine("Passed .dot-file:\n" + res);
+            log.finer("Passed .dot-file:\n" + res);
             reader = new StringReader(res);
         }
 

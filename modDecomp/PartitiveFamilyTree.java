@@ -46,7 +46,7 @@ public class PartitiveFamilyTree extends RootedTree {
         for(PartitiveFamilyLeafNode leaf : orderedLeaves){
             permutationAsIntegers.add(leaf.getVertex());
         }
-        data.log.fine(() -> "Initial leaf order: " + permutationAsIntegers);
+        data.log.finer(() -> "Initial leaf order: " + permutationAsIntegers);
         // the position of every element in the permutation
         int[] positionInPermutation = new int[data.nVertices];
         for(int i = 0; i< permutationAsIntegers.size(); i++){
@@ -105,7 +105,7 @@ public class PartitiveFamilyTree extends RootedTree {
             for(PartitiveFamilyLeafNode leaf : ordered){
                 integers.add(leaf.getVertex());
             }
-            data.log.fine(() -> "Final leaf order: " + integers);
+            data.log.finer(() -> "Final leaf order: " + integers);
             // the position of every element in the permutation
             int[] posiperm = new int[data.nVertices];
             for(int i = 0; i< integers.size(); i++){
@@ -132,16 +132,16 @@ public class PartitiveFamilyTree extends RootedTree {
 //                }
 //            }
 
-            data.log.fine("Out-Edges:");
+            data.log.finer("Out-Edges:");
             for(int i = 0; i< outEgdes.length; i++){
                 BitSet edge = outEgdes[i];
-                data.log.fine(integers.get(i).toString() + ": " + edge);
+                data.log.finer(integers.get(i).toString() + ": " + edge);
             }
 
-            data.log.fine("In-Edges:");
+            data.log.finer("In-Edges:");
             for(int i = 0; i< inEdges.length; i++){
                 BitSet edge = inEdges[i];
-                data.log.fine(integers.get(i).toString() + ": " + edge);
+                data.log.finer(integers.get(i).toString() + ": " + edge);
             }
 
 
@@ -163,7 +163,7 @@ public class PartitiveFamilyTree extends RootedTree {
         // Step 0: eliminate doubles from input and add root, if not yet present.
         HashSet<BitSet> inputSetNoDoubles = new HashSet<>(inputSet);
         if (inputSetNoDoubles.size() != inputSet.size()) {
-            log.fine(() -> "Double entry in input for inclusion tree");
+            log.finer(() -> "Double entry in input for inclusion tree");
         }
         // add root, if not yet included
         BitSet rootSet = new BitSet(nVertices);
@@ -175,7 +175,7 @@ public class PartitiveFamilyTree extends RootedTree {
 
         // Sort the array by size, using bucket sort (w/o singletons)
         SortAndCompare.bucketSortBySize(inputNodeList,true);
-        log.fine(() -> "Input sorted by size: " + inputNodeList);
+        log.finer(() -> "Input sorted by size: " + inputNodeList);
 
 
         // Create a List for each v ∈ V of the members of F (i.e. the elements of σ) containing v in ascending order of their size:
@@ -244,14 +244,14 @@ public class PartitiveFamilyTree extends RootedTree {
                     if (parentTreeNode == null) {
                         parentTreeNode = new PartitiveFamilyTreeNode(parentModule,this);
                         bitsetToInclusionTreenNode.put(parentModule, parentTreeNode);
-                        log.fine("Vertex " + vertexNr + ": Created Parent " + parentModule);
+                        log.finer("Vertex " + vertexNr + ": Created Parent " + parentModule);
                     }
 
                     // add parent if current treenode has no parent
                     if (currTreenode.isRoot()) {
                         parentTreeNode.addChild(currTreenode); // no need to update bitset here, they are already set.
                         relationCount++;
-                        log.fine("Vertex " + vertexNr + ": Rel " + relationCount + ": child " + currModule + " to parent " + parentModule);
+                        log.finer("Vertex " + vertexNr + ": Rel " + relationCount + ": child " + currModule + " to parent " + parentModule);
                     }
                     // go one element back in list
                     vListIter.previous();
