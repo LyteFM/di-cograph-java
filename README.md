@@ -1,8 +1,8 @@
-###Directed Cograph Editing
+### Directed Cograph Editing
 Java command-line tool to edit a directed graph with n vertices, vertices named 0 to n-1, into a di-cograph.
 Supported input: .dot, .txt as matrix with 0/1 entries, .jtxt for JGraphT-toString() format.
 
-####Requirements:
+#### Requirements:
 - boost 1.55 or higher
 - cmake
 - gcc
@@ -10,7 +10,7 @@ Supported input: .dot, .txt as matrix with 0/1 entries, .jtxt for JGraphT-toStri
 - maven
 - Cplex v.12.7 (older versions might work, too)
 
-####Installation:
+#### Installation:
 1. Compile the necessary C++/C sources. Use $ make -j 4 with four cores.
 
 cd FP_to_DMD/build/
