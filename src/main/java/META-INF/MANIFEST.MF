@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+Class-Path: jgrapht-demo-1.0.1.jar cplex.jar jgrapht-core-1.0.1.jar jg
+ rapht-ext-1.0.1.jar
+Main-Class: dicograph.Main
+
