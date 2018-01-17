@@ -177,7 +177,7 @@ public class GraphGenerator {
             for(HashSet module : chosenModules){
                 msg.append("\"").append(module).append("\", ");
             }
-            logger.fine(msg.toString());
+            logger.finer(msg.toString());
             HashSet<Integer> mergedModule = union(graph, chosenModules, mdNodeType);
 
             // remove the old modules and add the new one
@@ -197,7 +197,7 @@ public class GraphGenerator {
             moduleCount = modules.size();
         }
 
-        logger.info("Generated graph: " + graph.toString());
+        logger.fine("Generated graph: " + graph.toString());
 
         if(getBitSets){
             return allmodules;

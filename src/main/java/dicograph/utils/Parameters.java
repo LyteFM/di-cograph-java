@@ -28,11 +28,11 @@ public class Parameters {
     private int hardThreshold = 0; // Exclude edges with a forbiddenSubgraph-score <= this threshold from the edge-edit-set.
     // prev: Force stop if forbiddenSub-Score <= this value during first run and use brute-force/branching/ILP in second run to complete.
     private double weightMultiplier = 1.0;
-    private int solutionGap = -1; // only one solution by default.
+    private int solutionGap = 0; // all best solutions by default.
 
 
     // When to start brute force:
-    private int bruteForceThreshold = 7;
+    private int bruteForceThreshold = 10;
     // when to stop brute force:
     private int bruteForceGap = 0;
     private int bruteForceLimit = 0;
@@ -59,7 +59,7 @@ public class Parameters {
         input.setArgName("infile");
         options.addOption(input);
 
-        Option output = new Option("o", true,"Output file: .dot, .txt (Matrix) or .jtxt (JGraph)");
+        Option output = new Option("o", true,"Output file: .dot or .txt (Matrix)");
         output.setArgName("outfile");
         options.addOption(output);
         // default: same as input, with timestamp.
@@ -86,7 +86,7 @@ public class Parameters {
         options.addOption("t",true, "Time limit of an ILP/Brute-Force-Computation in s. Default: 1h");
 
         options.addOption("reqgl","Require improvements on global score in 1st run/lazy");
-        options.addOption("bfth",true,"Step 2 when number of primes < brute-force-TH. Default: 7");
+        options.addOption("bfth",true,"Step 2 when number of primes < brute-force-TH. Default: 10");
         options.addOption("bfgap",true,"Exit module-bf when subset-size > best solution + bfgap. Default: 0; -1 exits after first.");
         options.addOption("bflimit",true,"Abort module-bf when subset-size > this. Default: size of the prime");
 
@@ -182,8 +182,8 @@ public class Parameters {
     }
 
     public String getInFileAbsPath(){
-        if(input.hasOption("infile")){
-            String path = input.getOptionValue("infile");
+        if(input.hasOption("i")){
+            String path = input.getOptionValue("i");
             if(path.startsWith("/"))
                 return path;
             else
@@ -194,8 +194,8 @@ public class Parameters {
     }
 
     public String getOutFileAbsPath(){
-        if(input.hasOption("outfile")){
-            String path = input.getOptionValue("outfile");
+        if(input.hasOption("o")){
+            String path = input.getOptionValue("o");
             if(path.startsWith("/"))
                 return path;
             else

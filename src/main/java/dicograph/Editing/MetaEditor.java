@@ -49,7 +49,7 @@ public class MetaEditor {
         List<Solution> bestSolutions = new LinkedList<>();
 
         // already cograph?
-        log.info("Input graph:\n" + inputGraph);
+        log.fine("Input graph:\n" + inputGraph);
         log.info("MD of input graph:\n" + MDTree.beautify(origTree.toString()));
         if(origTree.getPrimeModulesBottomUp().isEmpty()){
             log.info("Input graph is already a dicograph. Aborting.");
@@ -93,7 +93,7 @@ public class MetaEditor {
         for(Solution solution : bestSolutions){
             int cost = solution.getCost();
             log.info(() -> solution.getType() + ": Found solution with " + cost + " edits: " + solution.getEdits());
-            log.info(() ->"Edit-Graph: " + solution.getGraph());
+            log.fine(() ->"Edit-Graph: " + solution.getGraph());
             if(!done && solution.getCost() == best){
                 System.out.println("//Edits: " + solution.getEdits());
                 DOTExporter<Integer,DefaultEdge> exporter = new DOTExporter<>();

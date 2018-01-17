@@ -73,12 +73,12 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
         // Recognize all forbidden subgraphs and compute subgraph-scores for edits.
         HashMap<Edge,Integer> edgeToCount = new HashMap<>();
         Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> badSubs = ForbiddenSubgraph.verticesToForbidden(this, edgeToCount,false);
-        log.info("Length 3:\n" + badSubs.getFirst());
-        log.info("Length 4:\n" + badSubs.getSecond());
+        log.fine(()->"Length 3:\n" + badSubs.getFirst());
+        log.fine(()->"Length 4:\n" + badSubs.getSecond());
         // sort descending
         ArrayList<Map.Entry<Edge,Integer>> edgesToScore = new ArrayList<>(edgeToCount.entrySet());
         edgesToScore.sort( Comparator.comparingInt(e ->  -e.getValue()));
-        log.info("Edges by subgraph-score: " + edgesToScore.size() + "\n" + edgesToScore);
+        log.info(()->"Edges by subgraph-score: " + edgesToScore.size() + "\n" + edgesToScore);
 
 
 
@@ -115,7 +115,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
             int v_u_score = 0, both_local = 0;
             int prevScore = badSubs.getFirst().size() + badSubs.getSecond().size();
             int subCount = prevScore;
-            log.info("Total no of forbidden subs: " + subCount);
+            log.info(()->"Total no of forbidden subs: " + subCount);
             int cost = 0;
             cnt = -1; // to init intToEdge for other edit-sets (by global edit-score)
             double weight;
@@ -142,19 +142,19 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                     }
                 }
                 weight = subVertexToWeight[u] * subVertexToWeight[v];
-                log.info("Subgraph-Score: " + edge.getValue() + ", weight: " + weight);
+                log.fine("Subgraph-Score: " + edge.getValue() + ", weight: " + weight);
                 // determine the edit direction (Problem: what if both?)
 
                 // global score might be useful, too.
                 currEdgeList.clear();
                 global_u_v = computeEditScoreForEgde(u,v,weight,currEdgeList);
-                log.info("("+ u + ","  +v + ") global edit-score: " + global_u_v);
+                log.fine("("+ u + ","  +v + ") global edit-score: " + global_u_v);
                 currEdgeList.clear();
                 global_v_u = computeEditScoreForEgde(v,u,weight,currEdgeList);
-                log.info("("+ v + ","  +u + ") global edit-score: "+ global_v_u);
+                log.fine("("+ v + ","  +u + ") global edit-score: "+ global_v_u);
                 //currEdgeList.add(new WeightedPair<>(u,v,weight)); v,u already there
                 both_global = (int) Math.round(computeEditScoreForEgde(u,v,weight,currEdgeList) + weight * p.getWeightMultiplier());
-                log.info("both global: "+ both_global);
+                log.fine("both global: "+ both_global);
                 currEdgeList.clear();
 
                 boolean globallyFeasable = global_u_v < subCount ||
@@ -185,13 +185,13 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                     currEdgeList.addAll(allEdgesList);
 
                     u_v_score = computeEditScoreForEgde(u, v, weight, currEdgeList);
-                    log.info("(" + u + "," + v + ") local edit-score: " + u_v_score);
+                    log.fine("(" + u + "," + v + ") local edit-score: " + u_v_score);
 
                     if (u_v_score != 0) {
                         currEdgeList.clear();
                         currEdgeList.addAll(allEdgesList);
                         v_u_score = computeEditScoreForEgde(v, u, weight, currEdgeList);
-                        log.info("(" + v + "," + u + ") local edit-score: " + v_u_score);
+                        log.fine("(" + v + "," + u + ") local edit-score: " + v_u_score);
 
                         both_local = computeEditScoreForEgde(u, v, weight, currEdgeList);
                         if (v_u_score == 0 || both_local == 0) {
@@ -199,7 +199,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                         } else {
                             both_local = (int) Math.round(both_local + weight * p.getWeightMultiplier()); // if not a solution, consider weight.
                         }
-                        log.info("Both local: " + both_local);
+                        log.fine("Both local: " + both_local);
 
                     } else {
                         lastEdge = new WeightedPair<>(u, v, weight);
@@ -310,7 +310,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
         }
         // Cost-aware Brute Force
         else if(method == EditType.BruteForce){
-            TimerLog timer = new TimerLog(log, log.getLevel());
+            TimerLog timer = new TimerLog(log, log.getParent().getLevel());
             boolean timeOut = false;
             int maxCost;
             if(p.getBruteForceLimit() > 0){

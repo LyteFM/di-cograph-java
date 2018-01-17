@@ -87,7 +87,7 @@ public class MDEditor {
         }
 
 
-        log.info(()->"Original Tree: " + MDTree.beautify(inputTree.toString()));
+        log.fine(()->"Original Tree: " + MDTree.beautify(inputTree.toString()));
         TreeMap<Integer,LinkedList<MDTreeNode>> depthToPrimes = inputTree.getPrimeModulesBottomUp();
         assert !depthToPrimes.isEmpty();
 
@@ -101,7 +101,7 @@ public class MDEditor {
                     continue;
                 }
 
-                log.info(()->"Editing prime: " + primeNode);
+                log.info(()->"Editing prime: " + MDTree.beautify(primeNode.toString()));
 
                 currentEditResults = computeRealEditsForNode(primeNode);
                 if(currentEditResults.isEmpty()){
@@ -113,7 +113,7 @@ public class MDEditor {
                 // Combine every new edit with every previous edit
                 for(Map.Entry<Integer, List<List<Edge>>> editsForCost : currentEditResults.entrySet() ){
                     if(currentSolutions.isEmpty()){
-                        log.info("Adding to empty 'currentSolutions': " + editsForCost.getValue());
+                        log.fine("Adding to empty 'currentSolutions': " + editsForCost.getValue());
                         allNewSolutions.addAll(editsForCost.getValue()); // addAll only OK if just one.
 
                     } else {
@@ -192,9 +192,9 @@ public class MDEditor {
         TreeMap<Integer,List<List<Edge>>> allRealEdits = new TreeMap<>();
         PrimeSubgraph subGraph = new PrimeSubgraph(workGraph,primeNode,p);
 
-        log.info("Subgraph: " + subGraph.toString());
-        log.info("Base-Vertex to Sub-Vertex " + subGraph.getBaseNoTosubNo());
-        log.info(() -> "Computing all possible edit Sets for node " + primeNode);
+        log.fine(() ->"Subgraph: " + subGraph.toString());
+        log.fine(() ->"Base-Vertex to Sub-Vertex " + subGraph.getBaseNoTosubNo());
+        log.info(() -> "Computing possible edit Sets.");
         // negative cost - not yet successful (aborted in step 1 due to threshold/ processed all)
         // empty: nothing found in step 2
         TreeMap<Integer, List<List<WeightedPair<Integer, Integer>>>> allPossibleEdits = subGraph.computeEdits(log, type, firstRun);

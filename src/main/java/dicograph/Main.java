@@ -5,8 +5,13 @@ import org.jgrapht.alg.isomorphism.VF2GraphIsomorphismInspector;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.graph.SimpleGraph;
+import org.jgrapht.io.Attribute;
 import org.jgrapht.io.DOTExporter;
+import org.jgrapht.io.DOTImporter;
+import org.jgrapht.io.EdgeProvider;
 import org.jgrapht.io.ExportException;
+import org.jgrapht.io.ImportException;
+import org.jgrapht.io.VertexProvider;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -14,6 +19,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.file.Files;
@@ -40,6 +47,7 @@ import dicograph.Editing.CplexDiCographEditingSolver;
 import dicograph.Editing.MetaEditor;
 import dicograph.Editing.Solution;
 import dicograph.graphIO.GraphGenerator;
+import dicograph.graphIO.IntegerVertexFactory;
 import dicograph.graphIO.JGraphAdjecencyImporter;
 import dicograph.graphIO.SimpleMatrixExporter;
 import dicograph.graphIO.SimpleMatrixImporter;
@@ -59,13 +67,14 @@ import ilog.concert.IloException;
  */
 public class Main {
 
-    final static String logFolder = "logs/";
-    final static String graphFolder = "graphs/";
+    private final static String logFolder = "logs/";
+    private final static String graphFolder = "graphs/";
 
-    public static void main(String[] args) throws Exception{
+    public static void main(String[] args) throws Exception {
 
         Parameters command = new Parameters(args);
         command.parse();
+        String exportFormat = ".dot";
 
         if(!command.isValid())
             return;
@@ -91,9 +100,9 @@ public class Main {
                 int kDisturb = Integer.parseInt(params[2]);
                 StringBuilder allGraphs = new StringBuilder();
 
-                for (int i = 0; i < mTrials; i++) {
+                for (int i = 1; i <= mTrials; i++) {
                     if (!testRun(log, consoleHandler, command, nVertices, kDisturb, allGraphs)) {
-                        System.out.println("Error occured after " + i + " successful runs.");
+                        System.err.println("Error occured after " + i + " successful runs.");
                         break;
                     }
                     System.out.println("Yay, " + i +" test runs went successful!");
@@ -113,37 +122,204 @@ public class Main {
         fileHandler.setLevel( command.getLogLevel());
         log.addHandler(fileHandler);
 
+        // no test -> have an input file
+        String inFilePath = command.getInFileAbsPath();
+        if(inFilePath == null || inFilePath.isEmpty()){
+            System.err.println("No valid input file: " + inFilePath);
+            return;
+        }
+
+        File importFile = new File(inFilePath);
+        SimpleDirectedGraph<Integer, DefaultEdge> importGraph;
+        if(inFilePath.endsWith(".txt")) {
+            importGraph=SimpleMatrixImporter.importIntGraph(importFile);
+            exportFormat = ".txt";
+
+        } else if(inFilePath.endsWith(".jtxt")){
+            importGraph = JGraphAdjecencyImporter.importIntGraph(importFile);
+            // read the log if you want the graph
+
+        } else if(inFilePath.endsWith(".dot")){
+            exportFormat = ".dot";
+            try(InputStream inStream = Files.newInputStream(importFile.toPath())) {
+
+                BufferedReader inReader = new BufferedReader(new InputStreamReader(inStream));
+                importGraph = new SimpleDirectedGraph<>(DefaultEdge.class);
+                DOTImporter<Integer, DefaultEdge> importer = new DOTImporter<>(
+                        (label, attributes) -> Integer.parseInt(label),
+                        (from, to, label, attributes) -> importGraph.addEdge(from, to));
+                importer.importGraph(importGraph, inReader);
+
+            } catch (IOException e){
+                System.err.println("For file: " + importFile.toString() + "\n" + e.toString());
+                return;
+            }
+        } else {
+            System.err.println("No valid input file: " + inFilePath);
+            return;
+        }
+
+        if(command.isMDOnly()){
+            DirectedMD directedMD = new DirectedMD(importGraph, log, false);
+            MDTree res = directedMD.computeModularDecomposition();
+            log.info(()->MDTree.beautify(res.toString()));
+            System.out.println(res.exportAsDot());
+
+        } else {
+            MetaEditor editor = new MetaEditor(importGraph, command, log);
+            List<Solution> solutions = editor.computeSolutionsForMethods();
+            if(solutions.isEmpty()){
+                System.err.println("No solution found! Try different methods or adjust parameters.");
+
+            } else {
+                Solution sol = solutions.get(0);
+                String exportPath = command.getOutFileAbsPath();
+                if(exportPath.isEmpty()){
+                    exportPath = graphFolder + timeStamp + "_edit-cost_" + sol.getCost() + exportFormat;
+                } else {
+                    int index = exportPath.lastIndexOf(".");
+                    exportFormat = exportPath.substring(index);
+                }
+
+                File expFile = new File(exportPath);
+                if(exportFormat.equals(".txt")){
+                    SimpleMatrixExporter<Integer,DefaultEdge> myExporter = new SimpleMatrixExporter<>();
+                    myExporter.exportGraph(sol.getGraph(), expFile);
+
+                }  else if(exportFormat.equals(".dot")){
+                    DOTExporter<Integer,DefaultEdge> myExporter = new DOTExporter<>();
+                    PrintWriter writer = new PrintWriter(expFile);
+                    myExporter.exportGraph(sol.getGraph(), writer);
+                }
+            }
+        }
 
 
 
+    }
+
+    private static int editingTest(Logger log, String graphPath, Parameters p) throws Exception{
+        int cost = -1;
+
+        SimpleDirectedGraph<Integer, DefaultEdge> importGraph = SimpleMatrixImporter.importIntGraph(new File(graphPath));
+        log.info("For file: " + graphPath);
+
+        MetaEditor testMeta = new MetaEditor(importGraph, p, log);
+        List<Solution> solutions = testMeta.computeSolutionsForMethods();
+        if(!solutions.isEmpty()){
+            cost = solutions.get(0).getCost();
+        }
+
+        return cost;
+    }
+
+    private static boolean testRun( Logger log, Handler baseHandler, Parameters p, int nVertices, int nDisturb, StringBuilder allPaths)
+            throws IOException, ExportException, InterruptedException, ImportException{
+
+        boolean ok = true;
+        String timeStamp = new SimpleDateFormat("MM-dd_HH:mm:ss:SSS").format(Calendar.getInstance().getTime());
+        String fileName = "randDigraph_n_" + nVertices + "_edits_" + nDisturb + "_" + timeStamp;
+
+        // writes the log
+        File logFile = new File(logFolder + fileName +".log");
+        FileHandler fileHandler = new FileHandler(logFile.getPath());
+        fileHandler.setFormatter(baseHandler.getFormatter());
+        fileHandler.setLevel( baseHandler.getLevel() );
+        log.addHandler(fileHandler);
+
+        GraphGenerator gen = new GraphGenerator(log);
+        SimpleDirectedGraph<Integer, DefaultEdge> g_d = new SimpleDirectedGraph<>(DefaultEdge.class);
+        gen.generateRandomDirectedCograph(g_d, nVertices, true);
+        gen.disturbDicograph(g_d, nDisturb);
+
+        // export the graph for debug purposes
+        String matrixPath = graphFolder + fileName + "_original.txt";
+        allPaths.append("\"").append(matrixPath).append("\", ");
+        File expfile = new File(matrixPath);
+        SimpleMatrixExporter<Integer, DefaultEdge> myExporter = new SimpleMatrixExporter<>();
+        myExporter.exportGraph(g_d, expfile);
+        System.out.println(String.format("Generated random Dicograph with %s vertices and %s random edge-edits.", nVertices, nDisturb));
+        System.out.println("Exported Matrix to: " + matrixPath);
+
+        if(!p.isMDOnly()){
+            try {
+                int cost = editingTest(log,fileName + "_original.txt", p);
+                ok = cost >= 0;
+            } catch (Exception e){
+                ok = false;
+                log.severe(e.toString());
+                e.printStackTrace(System.err);
+            }
+            System.out.println("Finished Editing Test. Log written to:");
+
+        } else {
+            log.info("Started modular decomposition");
+            try {
+                DirectedMD testMD = new DirectedMD(g_d, log, false);
+                testMD.computeModularDecomposition();
+            } catch (IllegalStateException | AssertionError e) {
+                ok = false;
+                log.severe(e.toString());
+                e.printStackTrace(System.err);
+            }
+            System.out.println("Finished modular decomposition. Log written to:");
+        }
+        System.out.println(fileName + ".log");
+
+        // clear this handler, I want separate logfiles.
+        fileHandler.close();
+        log.removeHandler(fileHandler);
+
+        return ok;
+    }
+
+    private static void MDtestFromFile(Logger log, String importFilePath, boolean matrix) throws Exception {
+
+        File importFile = new File(importFilePath);
+        SimpleDirectedGraph<Integer, DefaultEdge> importGraph;
+        if(matrix) {
+            importGraph=SimpleMatrixImporter.importIntGraph(importFile);
+        } else {
+            importGraph = JGraphAdjecencyImporter.importIntGraph(importFile);
+        }
+        DOTExporter<Integer, DefaultEdge> exporter = new DOTExporter<>();
+        Writer writer = new StringWriter();
+        exporter.exportGraph(importGraph, writer);
+
+        log.info("Computing MD for graph:" + importFilePath);
 
 
+        DirectedMD testMD = new DirectedMD(importGraph, log, false);
+        MDTree res = testMD.computeModularDecomposition();
+        log.info(MDTree.beautify(res.toString()));
+
+    }
 
 
-        List<String> tests_100 = Arrays.asList("testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:09:488_original.txt",
-                "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:11:625_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:12:174_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:13:053_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:14:209_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:14:625_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:16:675_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:18:649_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:18:947_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:19:297_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:19:786_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:20:011_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:20:467_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:22:305_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:27:114_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:28:717_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:36:891_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:37:980_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:43:031_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:43:533_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:45:925_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:46:284_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:46:721_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:47:146_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:48:190_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:48:802_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:54:570_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:55:079_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:00:279_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:02:106_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:03:080_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:03:621_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:04:226_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:04:634_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:08:463_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:08:710_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:08:863_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:09:140_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:15:812_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:16:588_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:17:146_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:20:153_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:20:872_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:29:679_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:35:015_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:35:496_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:36:363_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:37:150_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:37:918_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:38:346_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:39:003_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:39:498_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:45:942_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:48:470_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:49:160_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:51:841_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:52:381_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:52:562_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:57:450_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:58:906_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:59:741_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:00:118_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:01:889_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:02:386_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:02:875_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:03:304_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:03:847_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:04:339_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:07:465_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:07:846_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:11:802_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:12:198_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:12:775_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:15:813_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:16:387_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:17:060_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:17:639_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:19:170_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:19:480_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:20:282_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:22:025_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:25:339_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:27:107_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:27:763_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:29:462_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:32:493_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:33:141_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:33:331_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:33:543_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:36:638_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:37:289_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:37:924_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:38:903_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:41:207_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:43:292_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:43:820_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:44:776_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:46:077_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:48:338_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:50:533_original.txt");
+//        List<String> tests_100 = Arrays.asList("testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:09:488_original.txt",
+//                "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:11:625_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:12:174_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:13:053_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:14:209_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:14:625_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:16:675_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:18:649_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:18:947_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:19:297_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:19:786_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:20:011_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:20:467_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:22:305_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:27:114_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:28:717_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:36:891_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:37:980_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:43:031_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:43:533_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:45:925_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:46:284_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:46:721_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:47:146_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:48:190_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:48:802_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:54:570_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:55:079_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:00:279_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:02:106_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:03:080_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:03:621_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:04:226_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:04:634_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:08:463_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:08:710_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:08:863_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:09:140_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:15:812_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:16:588_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:17:146_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:20:153_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:20:872_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:29:679_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:35:015_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:35:496_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:36:363_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:37:150_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:37:918_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:38:346_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:39:003_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:39:498_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:45:942_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:48:470_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:49:160_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:51:841_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:52:381_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:52:562_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:57:450_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:58:906_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:59:741_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:00:118_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:01:889_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:02:386_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:02:875_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:03:304_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:03:847_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:04:339_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:07:465_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:07:846_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:11:802_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:12:198_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:12:775_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:15:813_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:16:387_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:17:060_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:17:639_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:19:170_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:19:480_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:20:282_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:22:025_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:25:339_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:27:107_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:27:763_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:29:462_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:32:493_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:33:141_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:33:331_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:33:543_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:36:638_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:37:289_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:37:924_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:38:903_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:41:207_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:43:292_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:43:820_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:44:776_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:46:077_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:48:338_original.txt", "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:50:533_original.txt");
+//
+//
+//        //
+//        // SEVERE:
+//        //
+//        String reTestPath = "testGraphs/DMDvery/";
+//        String again = "testGraphs/DMDvery/randDigraph_n_20_edits_5_01-06_22:06:53:840_original.txt";
+//        String not_among = reTestPath + "randDigraph_n_20_edits_5_01-06_22:02:00:398_original.txt";
+//        String warning_same = reTestPath + "randDigraph_n_20_edits_5_01-06_21:51:50:027_original.txt";
+//        String midnight_err = reTestPath + "randDigraph_n_40_edits_8_01-07_00:07:40:018_original.txt";
+//        String bad_fucker = "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:28:717_original.txt";
+//        // last of tests_100: Gets optimum when doing both continues!
+//        String rekt_19 = "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:43:533_original.txt"; // finds cost 7 easily without threshold.
+//        // ILP gives: {7=[[(0,6), (1,2), (4,9), (9,3), (10,16), (11,2), (11,5)], [(0,15), (1,2), (4,9), (9,3), (10,16), (11,2), (11,5)], [(1,2), (4,9), (6,15), (9,3), (10,16), (11,2), (11,5)]]}
+//
+//        // For file: testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:28:717_original.txt <- assertion error
+//        String cost12 = "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:11:802_original.txt";
+//
+//        String primesSmallEnough = "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:08:710_original.txt";
 
 
-        //
-        // SEVERE:
-        //
-        String reTestPath = "testGraphs/DMDvery/";
-        String again = "testGraphs/DMDvery/randDigraph_n_20_edits_5_01-06_22:06:53:840_original.txt";
-        String not_among = reTestPath + "randDigraph_n_20_edits_5_01-06_22:02:00:398_original.txt";
-        String warning_same = reTestPath + "randDigraph_n_20_edits_5_01-06_21:51:50:027_original.txt";
-        String midnight_err = reTestPath + "randDigraph_n_40_edits_8_01-07_00:07:40:018_original.txt";
-        String bad_fucker = "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:28:717_original.txt";
-        // last of tests_100: Gets optimum when doing both continues!
-        String rekt_19 = "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:43:533_original.txt"; // finds cost 7 easily without threshold.
-        // ILP gives: {7=[[(0,6), (1,2), (4,9), (9,3), (10,16), (11,2), (11,5)], [(0,15), (1,2), (4,9), (9,3), (10,16), (11,2), (11,5)], [(1,2), (4,9), (6,15), (9,3), (10,16), (11,2), (11,5)]]}
-
-        // For file: testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:19:28:717_original.txt <- assertion error
-        String cost12 = "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:21:11:802_original.txt";
-
-        String primesSmallEnough = "testGraphs/DMDvery/randDigraph_n_40_edits_8_01-06_23:20:08:710_original.txt";
-
-
-        editingTest(log, primesSmallEnough,command);
+    //editingTest(log, primesSmallEnough,command);
 
 
 
@@ -175,111 +351,7 @@ public class Main {
 //        log.info(allPaths.toString().substring(0,allPaths.length()-1));
 
 
-
-        SecureRandom random = new SecureRandom();
-        random.setSeed(new byte[17]);
-
-        int sz = 10;
-
-
-
-
-    }
-
-    static int editingTest(Logger log, String graphPath, Parameters p) throws Exception{
-        int cost = -1;
-
-        SimpleDirectedGraph<Integer, DefaultEdge> importGraph = SimpleMatrixImporter.importIntGraph(new File(graphPath));
-        log.info("For file: " + graphPath);
-
-        MetaEditor testMeta = new MetaEditor(importGraph, p, log);
-        List<Solution> solutions = testMeta.computeSolutionsForMethods();
-        if(!solutions.isEmpty()){
-            cost = solutions.get(0).getCost();
-        }
-
-        return cost;
-    }
-
-    static void MDtestFromFile(Logger log, String importFilePath, boolean matrix) throws Exception {
-
-        File importFile = new File(importFilePath);
-        SimpleDirectedGraph<Integer, DefaultEdge> importGraph;
-        if(matrix) {
-            importGraph=SimpleMatrixImporter.importIntGraph(importFile);
-        } else {
-            importGraph = JGraphAdjecencyImporter.importIntGraph(importFile);
-        }
-        DOTExporter<Integer, DefaultEdge> exporter = new DOTExporter<>();
-        Writer writer = new StringWriter();
-        exporter.exportGraph(importGraph, writer);
-
-        log.info("Computing MD for graph:" + importFilePath);
-
-
-        DirectedMD testMD = new DirectedMD(importGraph, log, false);
-        MDTree res = testMD.computeModularDecomposition();
-        log.info(MDTree.beautify(res.toString()));
-
-    }
-
-    static boolean testRun( Logger log, Handler baseHandler, Parameters p, int nVertices, int nDisturb, StringBuilder allPaths) throws Exception{
-
-        boolean ok = true;
-        String timeStamp = new SimpleDateFormat("MM-dd_HH:mm:ss:SSS").format(Calendar.getInstance().getTime());
-        String filePath = graphFolder + "randDigraph_n_" + nVertices + "_edits_" + nDisturb + "_" + timeStamp;
-
-        // writes the log
-        File logFile = new File(filePath +".log");
-        FileHandler fileHandler = new FileHandler(logFile.getPath());
-        fileHandler.setFormatter(baseHandler.getFormatter());
-        fileHandler.setLevel( baseHandler.getLevel() );
-        log.addHandler(fileHandler);
-
-        GraphGenerator gen = new GraphGenerator(log);
-        SimpleDirectedGraph<Integer, DefaultEdge> g_d = new SimpleDirectedGraph<>(DefaultEdge.class);
-        gen.generateRandomDirectedCograph(g_d, nVertices, true);
-        gen.disturbDicograph(g_d, nDisturb);
-
-        // export the graph for debug purposes
-        String matrixPath = filePath + "_original.txt";
-        allPaths.append("\"").append(matrixPath).append("\", ");
-        File expfile = new File(matrixPath);
-        SimpleMatrixExporter<Integer, DefaultEdge> myExporter = new SimpleMatrixExporter<>();
-        myExporter.exportGraph(g_d, expfile);
-        log.info(String.format("Generated random Dicograph with %s vertices and %s random edge-edits.", nVertices, nDisturb));
-        log.info("Exported Matrix to: " + filePath + "_original.txt");
-
-        if(!p.isMDOnly()){
-            try {
-                int cost = editingTest(log,filePath + "_original.txt", p);
-                ok = cost >= 0;
-            } catch (Exception e){
-                ok = false;
-                log.severe(e.toString());
-                e.printStackTrace(System.err);
-            }
-
-        } else {
-            log.info("Started modular decomposition");
-            try {
-                DirectedMD testMD = new DirectedMD(g_d, log, true);
-                testMD.computeModularDecomposition();
-            } catch (IllegalStateException | AssertionError e) {
-                ok = false;
-                log.severe(e.toString());
-                e.printStackTrace(System.err);
-            }
-            log.info("Finished modular decomposition. Log written to:");
-            log.info(filePath + ".log");
-        }
-
-        // clear this handler, I want separate logfiles.
-        fileHandler.close();
-        log.removeHandler(fileHandler);
-
-        return ok;
-    }
+    /*
 
     static void md10test() throws Exception{
         String folder = "testGraphs/";
@@ -643,6 +715,8 @@ public class Main {
         File expfile = new File(exp2 + "_reimported" + ".txt");
         myExporter.exportGraph(testGraph2, expfile);
     }
+
+    */
     // This was to reproduce Tedder's MD-Err
 //        Integer[] start = new Integer[sz];
 //        for (int i = 0; i < sz; i++) {
