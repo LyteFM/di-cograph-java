@@ -227,7 +227,7 @@ public class Main {
 
         boolean ok = true;
         String timeStamp = new SimpleDateFormat("MM-dd_HH:mm:ss:SSS").format(Calendar.getInstance().getTime());
-        String filePath = "testGraphs/DMDvery/randDigraph_n_" + nVertices + "_edits_" + nDisturb + "_" + timeStamp;
+        String filePath = graphFolder + "randDigraph_n_" + nVertices + "_edits_" + nDisturb + "_" + timeStamp;
 
         // writes the log
         File logFile = new File(filePath +".log");

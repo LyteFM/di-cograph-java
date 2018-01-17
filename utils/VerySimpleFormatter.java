@@ -5,10 +5,7 @@ import java.io.StringWriter;
 import java.text.MessageFormat;
 import java.util.Date;
 import java.util.logging.Formatter;
-import java.util.logging.Level;
 import java.util.logging.LogRecord;
-
-import sun.util.logging.LoggingSupport;
 
 /**
  * Created by Fynn Leitow on 30.10.17. Code taken from:
