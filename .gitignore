@@ -7,3 +7,8 @@ lib/
 importFiles/
 .idea/
 leftovers/
+OverlapComponentProg/gen.o
+OverlapComponentProg/main
+OverlapComponentProg/main.o
+OverlapComponentProg/overlap.o
+OverlapComponentProg/test.o

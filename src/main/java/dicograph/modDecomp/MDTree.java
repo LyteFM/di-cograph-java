@@ -148,7 +148,7 @@ public class MDTree extends RootedTree {
             command.add("./MD/build/mod_dec");
             command.add(inputGraph.toString());
         } else {
-            command.add("./FP_to_DMD/factPermToMD");
+            command.add("./FP_to_DMD/build/mod_dec");
             command.add(inputGraph.toString());
             command.add(factPerm);
         }
