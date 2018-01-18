@@ -14,7 +14,7 @@ import java.util.TreeMap;
  */
 public class TedFormatExporter<V,E> implements GraphExporter<V,E> {
 
-    private TreeMap<String, V> nameToVertex;
+    private final TreeMap<String, V> nameToVertex;
     private Integer[] permutation;
 
     /**

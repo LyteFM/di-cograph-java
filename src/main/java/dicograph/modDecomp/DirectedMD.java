@@ -1,7 +1,5 @@
 package dicograph.modDecomp;
 
-import com.google.common.base.Stopwatch;
-
 import org.jgrapht.alg.util.Pair;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
@@ -19,7 +17,6 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
@@ -38,15 +35,15 @@ public class DirectedMD {
 
     final SimpleDirectedGraph<Integer, DefaultEdge> inputGraph;
     final Logger log;
-    final TimerLog timeLog;
+    private final TimerLog timeLog;
     final int nVertices;
-    SimpleGraph<Integer, DefaultEdge> G_s;
-    SimpleGraph<Integer, DefaultEdge> G_d;
+    private SimpleGraph<Integer, DefaultEdge> G_s;
+    private SimpleGraph<Integer, DefaultEdge> G_d;
 
-    final boolean debugMode; // false for max speed, true for nicely sorted vertices etc.
+    private final boolean debugMode; // false for max speed, true for nicely sorted vertices etc.
 
-    final MDTreeLeafNode[] leavesOfT_s;
-    final MDTreeLeafNode[] leavesOfT_g;
+    private final MDTreeLeafNode[] leavesOfT_s;
+    private final MDTreeLeafNode[] leavesOfT_g;
     List<PartitiveFamilyTreeNode> orderNodes; // they can be merged modules and in fact contain primes.
 
 
@@ -79,8 +76,8 @@ public class DirectedMD {
     // printgraph - 0
     // printcc    - 1
     // check      - 0
-    public static ArrayList<Integer> dahlhausProcessDelegator(String inputFile, Logger log)
-            throws InterruptedException, IOException {
+    private static ArrayList<Integer> dahlhausProcessDelegator(String inputFile, Logger log)
+            throws IOException {
         List<String> command = new ArrayList<>();
         command.add("./OverlapComponentProg/main"); // ./OverlapComponentProg/main
         command.add(inputFile);

@@ -91,8 +91,8 @@ enum ForbiddenSubgraph {
         return threshold;
     }
 
-    static ForbiddenSubgraph[] len_4 = {_p4, _n, _n_bar};
-    static ForbiddenSubgraph[] len_3 = {_p3, _a, _b, _c3, _d3};
+    static final ForbiddenSubgraph[] len_4 = {_p4, _n, _n_bar};
+    static final ForbiddenSubgraph[] len_3 = {_p3, _a, _b, _c3, _d3};
 
 
     public static Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> verticesToForbidden(
@@ -159,42 +159,42 @@ enum ForbiddenSubgraph {
                                                boolean[][] matrix, boolean[] subMatrix, boolean stop, int ... vertices){
         int sum, index;
         // check every subgraph:
-        for(int j = 0; j< subs.length; j++){
+        for (ForbiddenSubgraph sub : subs) {
 
             sum = 0;
             // matrix must have same lenght as subgraphs.
-            for(index=0; index < subMatrix.length; index++){
-                if(subMatrix[index]){
-                    sum += subs[j].get()[index];
+            for (index = 0; index < subMatrix.length; index++) {
+                if (subMatrix[index]) {
+                    sum += sub.get()[index];
                 }
             }
             // found one.
-            if(sum > subs[j].getThreshold()) {
+            if (sum > sub.getThreshold()) {
                 BitSet vertexSet = new BitSet();
                 // subs
-                for(int v : vertices){
+                for (int v : vertices) {
                     vertexSet.set(v);
                 }
-                subsMap.put(vertexSet, subs[j]);
-                if(stop){
+                subsMap.put(vertexSet, sub);
+                if (stop) {
                     return true;
                 }
 
                 // edge scores
-                for(int u : vertices){
-                    for (int v : vertices){
-                        if(u != v && v > u){
+                for (int u : vertices) {
+                    for (int v : vertices) {
+                        if (u != v && v > u) {
                             // we have an edge of the forbidden subgraph
-                           if(matrix[u][v]) {
-                               Edge e = new Edge(u, v);
-                               int cnt = edgeCount.getOrDefault(e, 0);
-                               edgeCount.put(e, ++cnt);
-                           } else {
-                               // non-edge that might change it into a legal subgraph
-                               Edge e = new Edge(u, v);
-                               int cnt = edgeCount.getOrDefault(e, 0);
-                               edgeCount.put(e, ++cnt);
-                           }
+                            if (matrix[u][v]) {
+                                Edge e = new Edge(u, v);
+                                int cnt = edgeCount.getOrDefault(e, 0);
+                                edgeCount.put(e, ++cnt);
+                            } else {
+                                // non-edge that might change it into a legal subgraph
+                                Edge e = new Edge(u, v);
+                                int cnt = edgeCount.getOrDefault(e, 0);
+                                edgeCount.put(e, ++cnt);
+                            }
                         }
                     }
                 }

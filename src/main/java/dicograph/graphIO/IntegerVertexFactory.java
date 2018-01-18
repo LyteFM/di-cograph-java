@@ -8,7 +8,7 @@ import org.jgrapht.VertexFactory;
  *
  * @author Assaf Lehr
  */
-public class IntegerVertexFactory
+class IntegerVertexFactory
         implements VertexFactory<Integer>
 {
     private int counter = 0;
@@ -18,7 +18,7 @@ public class IntegerVertexFactory
         this(0);
     }
 
-    public IntegerVertexFactory(int counter)
+    private IntegerVertexFactory(int counter)
     {
         this.counter = counter;
     }

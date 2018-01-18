@@ -3,7 +3,6 @@ package dicograph.graphIO;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.SimpleGraph;
 
-import java.util.BitSet;
 import java.util.Collection;
 
 /**
@@ -11,7 +10,7 @@ import java.util.Collection;
  */
 public class UndirectedInducedIntSubgraph<E> extends SimpleGraph<Integer,E> {
 
-    final SimpleGraph<Integer, E> base;
+    private final SimpleGraph<Integer, E> base;
 
     public UndirectedInducedIntSubgraph(Graph<Integer, E> baseGraph, Collection<Integer> vertices){
         super(baseGraph.getEdgeFactory());

@@ -1,67 +1,40 @@
 package dicograph;
 
 
-import org.jgrapht.alg.isomorphism.VF2GraphIsomorphismInspector;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
-import org.jgrapht.graph.SimpleGraph;
-import org.jgrapht.io.Attribute;
 import org.jgrapht.io.DOTExporter;
 import org.jgrapht.io.DOTImporter;
-import org.jgrapht.io.EdgeProvider;
 import org.jgrapht.io.ExportException;
 import org.jgrapht.io.ImportException;
-import org.jgrapht.io.VertexProvider;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.io.Reader;
-import java.io.StringWriter;
-import java.io.Writer;
 import java.nio.file.Files;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import dicograph.Editing.CplexDiCographEditingSolver;
 import dicograph.Editing.MetaEditor;
 import dicograph.Editing.Solution;
 import dicograph.graphIO.GraphGenerator;
 import dicograph.graphIO.IntegerComponentNameProvider;
-import dicograph.graphIO.IntegerVertexFactory;
 import dicograph.graphIO.JGraphAdjecencyImporter;
 import dicograph.graphIO.SimpleMatrixExporter;
 import dicograph.graphIO.SimpleMatrixImporter;
-import dicograph.graphIO.TedFormatExporter;
 import dicograph.modDecomp.DirectedMD;
-import dicograph.modDecomp.GraphHandle;
 import dicograph.modDecomp.MDTree;
 import dicograph.utils.Parameters;
-import dicograph.utils.SortAndCompare;
 import dicograph.utils.VerySimpleFormatter;
-import ilog.concert.IloException;
-
 
 
 /**

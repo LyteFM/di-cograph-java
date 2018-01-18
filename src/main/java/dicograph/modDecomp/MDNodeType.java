@@ -3,9 +3,7 @@ package dicograph.modDecomp;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
 
-import java.util.Arrays;
 import java.util.BitSet;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -92,7 +90,7 @@ public enum MDNodeType {
 	// F.L. 2017
 	// if it's none of these two cases, it should be prime. However, in order to detect "false primes",
 	// it's necessary to combine any two vertices and check again.
-	public static MDNodeType determineNodeType(Graph<Integer,DefaultEdge> subgraph, boolean directed){
+	private static MDNodeType determineNodeType(Graph<Integer, DefaultEdge> subgraph, boolean directed){
 
 		Set<DefaultEdge> subEdgeSet = subgraph.edgeSet();
 

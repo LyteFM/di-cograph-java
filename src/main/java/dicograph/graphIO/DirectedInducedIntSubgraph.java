@@ -14,7 +14,7 @@ import java.util.TreeSet;
 public class DirectedInducedIntSubgraph<E> extends SimpleDirectedGraph<Integer, E>
 {
 
-    final SimpleDirectedGraph<Integer, E> base;
+    private final SimpleDirectedGraph<Integer, E> base;
 
     private DirectedInducedIntSubgraph(Graph<Integer, E> baseGraph) {
         super(baseGraph.getEdgeFactory());

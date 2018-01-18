@@ -27,19 +27,19 @@ import ilog.concert.IloException;
 /**
  * Created by Fynn Leitow on 20.12.17.
  */
-public class MDEditor {
+class MDEditor {
 
-    final SimpleDirectedGraph<Integer,DefaultEdge> inputGraph;
-    final  int nVertices;
-    final Logger log;
-    final MDTree inputTree;
-    final List<Edge> oldInputEdits;
-    final EditType type;
-    final Parameters p;
+    private final SimpleDirectedGraph<Integer,DefaultEdge> inputGraph;
+    private final  int nVertices;
+    private final Logger log;
+    private final MDTree inputTree;
+    private final List<Edge> oldInputEdits;
+    private final EditType type;
+    private final Parameters p;
 
-    boolean firstRun;
+    private final boolean firstRun;
 
-    SimpleDirectedGraph<Integer, DefaultEdge> workGraph; // in theory, I can have several! One best enough, though.
+    private final SimpleDirectedGraph<Integer, DefaultEdge> workGraph; // in theory, I can have several! One best enough, though.
 
 
     // 1st run: just one. Easy.
@@ -297,7 +297,7 @@ public class MDEditor {
     }
 
     // remove edge if present, add if not.
-    static void editGraph(Graph<Integer,DefaultEdge> g, List<Edge> edgeList){
+    private static void editGraph(Graph<Integer, DefaultEdge> g, List<Edge> edgeList){
         for(Edge e : edgeList){
             if(g.containsEdge(e.getFirst(),e.getSecond())){
                 g.removeEdge(e.getFirst(),e.getSecond());

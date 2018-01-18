@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Hashtable;
 
-import org.jgrapht.*;
 import org.jgrapht.graph.*;
 
 /* 
@@ -101,30 +100,29 @@ public class GraphHandle {
                        
                 // Create vertices for each of its neighbours (if they haven't already
                 // been created) and add them as neigbhours of this vertex.
-                for (int i = 0; i < neighbourLabels.length; i++) {
+				for (String neighbourLabel : neighbourLabels) {
 
-                	if (vertices.containsKey(neighbourLabels[i])) {
-                		vertex.addNeighbour(vertices.get(neighbourLabels[i])); 
-                	}
-                	else {
-                		Vertex unseenNeighbour = new Vertex(neighbourLabels[i]);
-                		vertices.put(neighbourLabels[i],unseenNeighbour);
-                		vertex.addNeighbour(unseenNeighbour);
-                	}
+					if (vertices.containsKey(neighbourLabel)) {
+						vertex.addNeighbour(vertices.get(neighbourLabel));
+					} else {
+						Vertex unseenNeighbour = new Vertex(neighbourLabel);
+						vertices.put(neighbourLabel, unseenNeighbour);
+						vertex.addNeighbour(unseenNeighbour);
+					}
 
-                	// F.L.: use JGraphT
-					int neighbourNo = Integer.valueOf(neighbourLabels[i]);
-                    if( !graph.containsVertex( neighbourNo)){
-                	    // if not present, create Vertex for neighbor
-                        graph.addVertex(Integer.valueOf(neighbourLabels[i]));
-                    }
-                    if( !graph.containsEdge(vertexNo, neighbourNo)){
-                        // if not present, add Edge.
-                        graph.addEdge(vertexNo, neighbourNo);
-                    }
-                    //
+					// F.L.: use JGraphT
+					int neighbourNo = Integer.valueOf(neighbourLabel);
+					if (!graph.containsVertex(neighbourNo)) {
+						// if not present, create Vertex for neighbor
+						graph.addVertex(Integer.valueOf(neighbourLabel));
+					}
+					if (!graph.containsEdge(vertexNo, neighbourNo)) {
+						// if not present, add Edge.
+						graph.addEdge(vertexNo, neighbourNo);
+					}
+					//
 
-                } 
+				}
             }
         } 
         catch (IOException e) {

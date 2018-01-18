@@ -444,7 +444,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
         return badScore;
     }
 
-    public void edit(List<WeightedPair<Integer,Integer>> edgeList){
+    private void edit(List<WeightedPair<Integer, Integer>> edgeList){
 
         for(WeightedPair<Integer,Integer> e : edgeList){
             if(containsEdge(e.getFirst(),e.getSecond())){

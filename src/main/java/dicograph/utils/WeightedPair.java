@@ -6,7 +6,7 @@ import org.jgrapht.alg.util.Pair;
  * Created by Fynn Leitow on 22.12.17.
  */
 public class WeightedPair<A,B> extends Pair<A,B> {
-    protected double weight;
+    private double weight;
 
     public WeightedPair(A a, B b){
         super(a,b);

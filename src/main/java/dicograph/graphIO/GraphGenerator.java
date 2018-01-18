@@ -25,8 +25,8 @@ import static dicograph.modDecomp.MDNodeType.*;
  */
 public class GraphGenerator {
 
-    private SecureRandom random;
-    private Logger logger;
+    private final SecureRandom random;
+    private final Logger logger;
 
     public GraphGenerator(Logger log) {
         random = new SecureRandom();

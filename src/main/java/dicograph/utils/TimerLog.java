@@ -11,10 +11,10 @@ import java.util.logging.Logger;
  */
 public class TimerLog {
 
-    private Stopwatch totalTime;
-    private Stopwatch interimTime;
-    private Logger log;
-    private Level level;
+    private final Stopwatch totalTime;
+    private final Stopwatch interimTime;
+    private final Logger log;
+    private final Level level;
 
     public TimerLog(Logger logger, Level lv){
         totalTime = Stopwatch.createStarted();

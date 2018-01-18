@@ -15,7 +15,7 @@ public class SimpleMatrixExporter<V,E> implements GraphExporter<V,E>{
 
     public final static String columnDelimiter = "";
     public final static String lineDelimiter = "";
-    private TreeMap<String, V> nameToVertex;
+    private final TreeMap<String, V> nameToVertex;
 
     /**
      * Empty Constructor

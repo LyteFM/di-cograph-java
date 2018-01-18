@@ -31,12 +31,12 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
     private boolean isModuleInG;
     private MDNodeType type;
     private DirectedInducedIntSubgraph<DefaultEdge> inducedPartialSubgraph;
-    PartitiveFamilyTree treeContext; // reference to Tree Object
+    private PartitiveFamilyTree treeContext; // reference to Tree Object
 
 
 
     // only needed for leaf
-    protected PartitiveFamilyTreeNode(PartitiveFamilyTree tree){
+    PartitiveFamilyTreeNode(PartitiveFamilyTree tree){
         super();
         treeContext = tree;
         isModuleInG = false;
@@ -510,7 +510,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
      * Assertion if it is a tournament - already verified.
      * "The ordering of the vertices in σ is exactly the ordering induced by the order node, otherwise there would exist some cutter."
      */
-    private Function<SimpleDirectedGraph<Integer, DefaultEdge>, List<Pair<Integer,Integer>>> perfFactPermFromTournament = tournament -> {
+    private final Function<SimpleDirectedGraph<Integer, DefaultEdge>, List<Pair<Integer,Integer>>> perfFactPermFromTournament = tournament -> {
 
         int n = tournament.vertexSet().size();
         HashMap<Integer, Collection<Integer>> vertexToPartition = new HashMap<>(n*4/3);
@@ -743,7 +743,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
      * @param inNeighbors
      * @return
      */
-    protected Pair<Integer,Integer> computeLeftRightCutter(BitSet[] outNeighbors, BitSet[] inNeighbors, int[] positionInPermutation, Logger log){
+    Pair<Integer,Integer> computeLeftRightCutter(BitSet[] outNeighbors, BitSet[] inNeighbors, int[] positionInPermutation, Logger log){
 
         lc_X = outNeighbors.length;
         rc_X = 0;

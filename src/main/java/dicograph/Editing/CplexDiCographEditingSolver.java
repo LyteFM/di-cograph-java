@@ -26,24 +26,24 @@ import ilog.cplex.IloCplex;
  * http://pacosy.informatik.uni-leipzig.de/209-0-Downloads.html
  */
 
-public class CplexDiCographEditingSolver {
+class CplexDiCographEditingSolver {
 
     // input data. Also works, if has self-loops (will be ignored)
-    SimpleDirectedGraph<Integer, DefaultEdge> inputGraph;
-    TreeSet<Integer> sortedVertexSet;
+    private final SimpleDirectedGraph<Integer, DefaultEdge> inputGraph;
+    private final TreeSet<Integer> sortedVertexSet;
     // parameters
-    Parameters parameters;
+    private Parameters parameters;
 
     private List<SimpleDirectedGraph<Integer, DefaultEdge>> solutionGraphs;
     private List<Double> editingDistances;
 
     // CPLEX solver
-    IloCplex solver;
+    private IloCplex solver;
     // objective function
-    IloNumExpr objFn;
+    private IloNumExpr objFn;
 
     // number of vertices
-    private int vertexCount;
+    private final int vertexCount;
 
     // Adjacency Matrix
     private IloIntVar[][] E;

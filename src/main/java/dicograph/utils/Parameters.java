@@ -4,22 +4,19 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 import java.util.logging.Level;
 
-import javax.annotation.Nullable;
-
 
 /**
  * Created by Fynn Leitow on 09.01.18.
  */
 public class Parameters {
-    private String[] args;
-    private Options options;
+    private final String[] args;
+    private final Options options;
     private CommandLine input;
 
     // Editing-Parameters with Default values:

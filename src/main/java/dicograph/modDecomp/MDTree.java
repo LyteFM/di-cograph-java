@@ -107,12 +107,11 @@ public class MDTree extends RootedTree {
     }
 
     // F.L.
-    private static StringBuilder addOffset(StringBuilder builder, int times){
+    private static void addOffset(StringBuilder builder, int times){
         String offset = "  ";
         for(int i = 0; i< times; i++){
             builder.append(offset);
         }
-        return builder;
     }
 
 
@@ -206,7 +205,7 @@ public class MDTree extends RootedTree {
     }
 
     // F.L. 2017
-    private void readFromDot(Reader dotReader) throws IOException, ImportException {
+    private void readFromDot(Reader dotReader) throws ImportException {
 
         SimpleDirectedGraph< Integer ,DefaultEdge> treeGraph = new SimpleDirectedGraph<>(DefaultEdge.class);
         HashMap<Integer, MDTreeNode> noToTreenode = new HashMap<>();

@@ -26,11 +26,11 @@ import ilog.concert.IloException;
  */
 public class MetaEditor {
 
-    final Parameters p;
-    final SimpleDirectedGraph<Integer,DefaultEdge> inputGraph;
-    final Logger log;
-    final MDTree origTree;
-    final int nVertices;
+    private final Parameters p;
+    private final SimpleDirectedGraph<Integer,DefaultEdge> inputGraph;
+    private final Logger log;
+    private final MDTree origTree;
+    private final int nVertices;
 
 
     // Original Graph and all the parameters

@@ -10,9 +10,9 @@ import java.util.logging.Logger;
  */
 public class PartitiveFamilyLeafNode extends PartitiveFamilyTreeNode {
 
-    private int vertex;
+    private final int vertex;
 
-    protected PartitiveFamilyLeafNode(int vertexNo,PartitiveFamilyTree tree) {
+    PartitiveFamilyLeafNode(int vertexNo, PartitiveFamilyTree tree) {
         super(tree);
         vertex = vertexNo;
     }

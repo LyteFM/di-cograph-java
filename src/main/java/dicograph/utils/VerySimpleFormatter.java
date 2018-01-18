@@ -14,22 +14,17 @@ import java.util.logging.LogRecord;
 public class VerySimpleFormatter extends Formatter {
 
     private final static String format = "{0,date} {0,time}";
-    private Object args[] = new Object[1];
-    private Date dat = new Date();
+    private final Object[] args = new Object[1];
+    private final Date dat = new Date();
     private MessageFormat formatter;
-    // Line separator string.  This is the value of the line.separator
-    // property at the moment that the SimpleFormatter was created.
-    //private String lineSeparator = (String) java.security.AccessController.doPrivileged(
-    //        new sun.security.action.GetPropertyAction("line.separator"));
-    private String lineSeparator = "\n";
-    private boolean useClassname;
-    private boolean useDate;
+    private final boolean useClassname;
+    private final boolean useDate;
 
     public VerySimpleFormatter() {
         this(false, false);
     }
 
-    public VerySimpleFormatter(boolean useDate, boolean useClassname) {
+    private VerySimpleFormatter(boolean useDate, boolean useClassname) {
         super();
         this.useDate = useDate;
         this.useClassname = useClassname;
@@ -94,6 +89,7 @@ public class VerySimpleFormatter extends Formatter {
 
 
         sb.append(message);
+        String lineSeparator = "\n";
         sb.append(lineSeparator);
         if (record.getThrown() != null) {
             try {

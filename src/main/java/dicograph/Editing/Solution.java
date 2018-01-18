@@ -12,9 +12,9 @@ import dicograph.utils.Edge;
  */
 public class Solution {
 
-    private EditType type;
-    private SimpleDirectedGraph<Integer,DefaultEdge> graph;
-    private List<Edge> edits;
+    private final EditType type;
+    private final SimpleDirectedGraph<Integer,DefaultEdge> graph;
+    private final List<Edge> edits;
 
     Solution(SimpleDirectedGraph<Integer,DefaultEdge> _graph, List<Edge> _edges, EditType _type){
         graph = _graph;

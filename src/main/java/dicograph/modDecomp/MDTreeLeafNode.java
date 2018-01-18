@@ -3,7 +3,6 @@ package dicograph.modDecomp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
-import java.util.ListIterator;
 
 /*
  * A leaf node in a modular decomposition tree.

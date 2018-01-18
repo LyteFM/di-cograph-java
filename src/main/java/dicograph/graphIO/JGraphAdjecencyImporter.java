@@ -25,7 +25,7 @@ public class JGraphAdjecencyImporter {
      * @param file
      * @return
      */
-    public static SimpleDirectedGraph<Integer, DefaultEdge> importIntGraph(File file, boolean startAtOne) {
+    private static SimpleDirectedGraph<Integer, DefaultEdge> importIntGraph(File file, boolean startAtOne) {
 
         try(InputStream inStream = Files.newInputStream(file.toPath())) {
             BufferedReader in = new BufferedReader(new InputStreamReader(inStream));

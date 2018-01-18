@@ -8,14 +8,10 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
-
-import dicograph.graphIO.IntegerVertexFactory;
 
 /**
  * Created by Fynn Leitow on 17.10.17.
