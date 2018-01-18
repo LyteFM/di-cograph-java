@@ -50,6 +50,9 @@ import dicograph.utils.TimerLog;
  */
 public class DirectedMD {
 
+    private final static int overlapCodeBufferSize = 1000; // size of text buffer in the C code
+    private final static String overlapTransferFile = "OverlapComponentProg/doNotDelete.txt";
+
     final SimpleDirectedGraph<Integer, DefaultEdge> inputGraph;
     final Logger log;
     private final TimerLog timeLog;
@@ -93,11 +96,11 @@ public class DirectedMD {
     // printgraph - 0
     // printcc    - 1
     // check      - 0
-    private static ArrayList<Integer> dahlhausProcessDelegator(String inputFile, Logger log)
+    private static ArrayList<Integer> dahlhausProcessDelegator(Logger log)
             throws IOException {
         List<String> command = new ArrayList<>();
         command.add("./OverlapComponentProg/main"); // ./OverlapComponentProg/main
-        command.add(inputFile);
+        command.add(overlapTransferFile);
         ArrayList<Integer> ret = new ArrayList<>();
 
         ProcessBuilder processBuilder = new ProcessBuilder(command);
@@ -332,7 +335,7 @@ public class DirectedMD {
 
         // 1.) use M.Rao's Dahlhaus algorithm to compute the overlap components (Bound: |M| <= 4m + 6n)
         log.finer("Input for Dahlhaus algorith:\n" + overlapInput);
-        File dahlhausFile = new File("dahlhaus.txt");
+        File dahlhausFile = new File(overlapTransferFile);
 
         // Try with ressources
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(dahlhausFile))){
@@ -343,10 +346,10 @@ public class DirectedMD {
         }
 
         // I need to make sure that the program breaks if the char-Buffer would overflow // todo: edit C code to get rid of this.
-        if (nVertices > 324)
-            throw new IndexOutOfBoundsException("Error: adapt the size of the char buff[1000] in OverlapComponentProg/main.cc and recompile.");
+        if (nVertices > overlapCodeBufferSize / 3)
+            throw new IndexOutOfBoundsException("Error: adapt the size of the char buff[" + overlapCodeBufferSize +"] in OverlapComponentProg/main.cc and recompile.");
 
-        ArrayList<Integer> overlapComponentNumbers = dahlhausProcessDelegator("dahlhaus.txt", log);
+        ArrayList<Integer> overlapComponentNumbers = dahlhausProcessDelegator(log);
 
         // Moooment. Die Knoten im Overlap-Graph sind:
         // 1. Die Singleton-Subsets

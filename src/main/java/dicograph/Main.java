@@ -80,8 +80,9 @@ public class Main {
             // log to console output
             Handler consoleHandler = new ConsoleHandler();
             consoleHandler.setFormatter(myFormatter);
-            consoleHandler.setLevel(command.getLogLevel());
+            consoleHandler.setLevel( command.getLogLevel() );
             log.addHandler( consoleHandler );
+            log.getParent().setLevel( command.getLogLevel() );
 
             if(command.isTest()){
                 String[] params = command.getTestParams();
@@ -111,6 +112,8 @@ public class Main {
         fileHandler.setFormatter( myFormatter);
         fileHandler.setLevel( command.getLogLevel());
         log.addHandler(fileHandler);
+        log.getParent().setLevel( command.getLogLevel() );
+
 
         // no test -> have an input file
         String inFilePath = command.getInFileAbsPath();
@@ -198,7 +201,9 @@ public class Main {
         List<Solution> solutions = testMeta.computeSolutionsForMethods();
         if(!solutions.isEmpty()){
             cost = solutions.get(0).getCost();
-            exportSolution(solutions.get(0), ".txt", expPath + "_edit-cost_" + cost + ".txt");
+            String solName = expPath + "_edit-cost_" + cost + ".txt";
+            exportSolution(solutions.get(0), ".txt", solName);
+            System.out.println("Exported solution to: " + solName);
         }
 
         return cost;
