@@ -29,6 +29,8 @@ cd ../..
 cd OverlapComponentProg/
 make
 
+The maven-steps can be skipped if you directly use the DCEdit-1.0.jar and don't want to compile the java sources again.
+
 **Add CPlex-jar to your local maven repository (change the path) and compile.**
 
 mvn install:install-file -Dfile=/Users/praktikant/Applications/IBM/ILOG/CPLEX_Studio1271/cplex/lib/cplex.jar -DgroupId=ilog -DartifactId=cplex -Dversion=12.7 -Dpackaging=jar

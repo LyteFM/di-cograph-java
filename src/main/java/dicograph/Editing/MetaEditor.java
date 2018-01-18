@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.TreeMap;
 import java.util.logging.Logger;
 
+import dicograph.graphIO.IntegerComponentNameProvider;
 import dicograph.modDecomp.DirectedMD;
 import dicograph.modDecomp.MDTree;
 import dicograph.utils.Edge;
@@ -96,7 +97,7 @@ public class MetaEditor {
             log.fine(() ->"Edit-Graph: " + solution.getGraph());
             if(!done && solution.getCost() == best){
                 System.out.println("//Edits: " + solution.getEdits());
-                DOTExporter<Integer,DefaultEdge> exporter = new DOTExporter<>();
+                DOTExporter<Integer,DefaultEdge> exporter = new DOTExporter<>(new IntegerComponentNameProvider<>(), null, null);
                 exporter.exportGraph(solution.getGraph(), System.out);
                 done = true;
             }
