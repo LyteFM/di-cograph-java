@@ -51,8 +51,9 @@ import ilog.concert.IloException;
 
 public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
 
-    private final Parameters p;
+    private static final boolean useMD = false; // If used for large n (>200), MD will be more efficient. todo: time!
 
+    private final Parameters p;
     private final SimpleDirectedGraph<Integer, DefaultEdge> base;
     private final int nVertices;
 
@@ -348,7 +349,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                 boolean costStillValid = false;
 
                 int count = 0;
-                boolean success;
+                boolean success = false;
 
 
                 for (Set<Integer> edgeSubset : combinations) {
@@ -363,18 +364,18 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
 
                         costStillValid = true;
                         edit(currEdgeList);
-                        // subgraph checking for forbidden subgraphs is way more efficient...
-//                        if(useMD) {
-//                            DirectedMD subMD = new DirectedMD(this, log, false);
-//                            MDTree subTree = subMD.computeModularDecomposition();
-//                            if(subTree.getPrimeModulesBottomUp().isEmpty()){
-//                                success = true;
-//                                log.info("Tree: " + MDTree.beautify(subTree.toString()));
-//                            }
-//                        } else {
+                        // subgraph checking for forbidden subgraphs is way more efficient for not-too large n.
+                        if(useMD) {
+                            DirectedMD subMD = new DirectedMD(this, log, false);
+                            MDTree subTree = subMD.computeModularDecomposition();
+                            if(subTree.getPrimeModulesBottomUp().isEmpty()){
+                                success = true;
+                                log.info("Tree: " + MDTree.beautify(subTree.toString()));
+                            }
+                        } else {
                         Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> check = ForbiddenSubgraph.verticesToForbidden(this, new HashMap<>(),true);
                         success = check.getFirst().isEmpty() && check.getSecond().isEmpty();
-//                        }
+                        }
                         if(success){
                             log.info(() -> method + ": Successful subgraph edit found: " + currEdgeList);
                             costToEdges.putIfAbsent(cost, new LinkedList<>());

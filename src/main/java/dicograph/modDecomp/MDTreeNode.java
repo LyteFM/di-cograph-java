@@ -643,7 +643,7 @@ public class MDTreeNode extends RootedTreeNode {
 				vertexNo = ((MDTreeLeafNode) currChild).vertexNo;
 			else {
 				vertexNo = currChild.vertices.nextSetBit(0);
-				edgeWeight = currChild.vertices.cardinality();
+				edgeWeight = currChild.vertices.cardinality(); // module preserving: every vertex!!!
 			}
 			baseVNoTosubVNo.put(vertexNo,subIndex);
 			subGraph.addVertex(subIndex);

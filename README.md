@@ -1,6 +1,6 @@
 ## Directed Cograph Editing
 Java command-line tool to edit a directed graph with n vertices, vertices named 0 to n-1, into a di-cograph.
-Supported input: .dot, .txt as matrix with 0/1 entries, .jtxt for JGraphT-toString() format.
+Supported input: .dot, .txt as matrix with 0/1 entries, .jtxt for JGraphT-toString() format. For .dot and .jtxt, the vertices must be labeled from 0 to n-1.
 
 Copyright (C) 2018 Fynn Leitow
 
@@ -19,10 +19,14 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
 ### Requirements:
+Comilation of the C++ sources (necessary)
 - boost 1.55 or higher
 - cmake
 - gcc
-- jdk 1.8
+Running the .jar (necessary):
+- Java Runtime Environment 8
+Compilation of the Java sources (optional):
+- Java Development Kit 8
 - maven
 - Cplex v.12.7 (older versions might work, too)
 
@@ -30,7 +34,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 **Compile the necessary C++/C sources. Use $ make -j 4 with four cores.**
 
-mkdir FP_to_DMD/build MD/build logs graphs
+mkdir FP_to_DMD/build MD/build logs
 
 cd FP_to_DMD/build/
 
@@ -55,7 +59,7 @@ cd OverlapComponentProg/
 make
 
 
-The maven-steps can be skipped if you directly use the DCEdit-1.0.jar and don't want to compile the java sources again.
+The maven-steps can be skipped if you directly use the DCEdit-1.0.jar and don't want to compile the java sources.
 
 **Add CPlex-jar to your local maven repository (change the path) and compile.**
 
@@ -67,7 +71,7 @@ mv target/DCEdit-1.0.jar .
 
 (the 'target' folder can be deleted)
 
-**Run some examples. Specify the path to your Cplex-binaries-folder if using ILP-Solver.**
+**Run some examples. Specify the path to your Cplex-binaries-folder if using ILP**
 
 java -jar DCEdit-1.0.jar -test 5 50 10 -MD
 

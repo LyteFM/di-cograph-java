@@ -34,7 +34,7 @@ enum ForbiddenSubgraph {
 
     // forbidden subgraphs of length 3:
 
-    _p3(new int[]{
+    _d3(new int[]{
             1,-1,
             -1,    1,
             -1,-1    },
@@ -58,7 +58,7 @@ enum ForbiddenSubgraph {
             1,-1    },
             2),
 
-    _d3(new int[]{
+    _d3_bar(new int[]{
             1, 1,
             -1,    1,
             1,-1    },
@@ -108,7 +108,7 @@ enum ForbiddenSubgraph {
     }
 
     static final ForbiddenSubgraph[] len_4 = {_p4, _n, _n_bar};
-    static final ForbiddenSubgraph[] len_3 = {_p3, _a, _b, _c3, _d3};
+    static final ForbiddenSubgraph[] len_3 = {_d3, _a, _b, _c3, _d3_bar};
 
 
     public static Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> verticesToForbidden(

@@ -8,7 +8,8 @@ importFiles/
 .idea/
 leftovers/
 OverlapComponentProg/*.o
-graphs/
+graphs/*.txt
+graphs/*.dot
 logs/
 FP_to_DMD/build/
 MD/build/

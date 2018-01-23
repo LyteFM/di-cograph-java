@@ -247,7 +247,6 @@ public class Main {
                 e.printStackTrace(System.err);
             }
             System.out.println("Finished Editing Test. Log written to:");
-            // todo: also export edited!!!
 
         } else {
             log.info("Started modular decomposition");
