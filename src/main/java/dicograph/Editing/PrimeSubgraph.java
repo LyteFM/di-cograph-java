@@ -137,6 +137,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
             cnt = -1; // to init intToEdge for other edit-sets (by global edit-score)
             double weight;
             for (i = 0; i < edgesToScore.size(); i++) {
+                
                 Map.Entry<Edge,Integer> edge = edgesToScore.get(i);
 
                 if(method.stopAtHard(first) && edge.getValue() < p.getHardThreshold()){
@@ -337,6 +338,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
             }
 
             int smallestCost = maxCost;
+            int solCount = 0;
 
             for (int i = 1; i <= maxCost; i++) {
                 // e.g. i=5, smallest cost was 2, wanted all solutions up to cost 4
@@ -388,6 +390,10 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                                     return costToEdges; // take the firstRun one below maxCost
                                 }
                                 smallestCost = cost;
+                            }
+                            if(++solCount >= p.getMaxBFResults()){
+                                log.warning("Stopping Brute force after " + p.getMaxBFResults() + " found edits. Use -bflimit to include more.");
+                                return costToEdges;
                             }
                         }
 

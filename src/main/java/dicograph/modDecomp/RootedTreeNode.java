@@ -8,8 +8,10 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import dicograph.utils.SortAndCompare;
+import dicograph.utils.Triple;
 
 /**
  *   This source file is part of the program for computing the modular
@@ -507,4 +509,7 @@ public class RootedTreeNode {
 		return leaves;
 	}
 
+	public BitSet getVertices() {
+		return vertices;
+	}
 }

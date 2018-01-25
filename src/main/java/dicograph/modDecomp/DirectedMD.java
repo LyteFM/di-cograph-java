@@ -62,11 +62,6 @@ public class DirectedMD {
 
     private final boolean debugMode; // false for max speed, true for nicely sorted vertices etc.
 
-    private final MDTreeLeafNode[] leavesOfT_s;
-    private final MDTreeLeafNode[] leavesOfT_g;
-    List<PartitiveFamilyTreeNode> orderNodes; // they can be merged modules and in fact contain primes.
-
-
 
     public DirectedMD(SimpleDirectedGraph<Integer, DefaultEdge> input, Logger logger, boolean debugMode){
 
@@ -74,8 +69,6 @@ public class DirectedMD {
         log = logger;
         timeLog = new TimerLog(log, Level.FINER);
         nVertices = input.vertexSet().size();
-        leavesOfT_s = new MDTreeLeafNode[nVertices];
-        leavesOfT_g = new MDTreeLeafNode[nVertices];
         this.debugMode = debugMode;
 
         // Simply: vertices have the numbers from 0 to n-1. Verify that in debug mode.
@@ -224,8 +217,7 @@ public class DirectedMD {
 
         // get the MD Tree from C++
         MDTree finalTree = new MDTree(inputGraph, leafNumbers.toString(), true, log);
-        MDTreeLeafNode[] finalLeaves = new MDTreeLeafNode[nVertices];
-        finalTree.getStrongModulesBool(finalLeaves);
+        finalTree.getStrongModulesBool(nVertices);
 
 
         // Step 6 b): Deletion of weak modules and recovering of merged modules - should happen in C++
@@ -291,8 +283,8 @@ public class DirectedMD {
         // -> Create the String at the same time.
         // might be better than my current approach with BitSets of size n :)
 
-        HashMap<BitSet, RootedTreeNode> strongModulesBoolT_s = of_Gs_T_s.getStrongModulesBool(leavesOfT_s);
-        HashMap<BitSet, RootedTreeNode> strongModulesBoolT_d = of_Gd_T_g.getStrongModulesBool(leavesOfT_g);
+        HashMap<BitSet, RootedTreeNode> strongModulesBoolT_s = of_Gs_T_s.getStrongModulesBool(nVertices);
+        HashMap<BitSet, RootedTreeNode> strongModulesBoolT_d = of_Gd_T_g.getStrongModulesBool(nVertices);
 
 
         // debug option: verify if the modules are correct (kills linearity).
@@ -498,13 +490,11 @@ public class DirectedMD {
         HashMap<RootedTreeNode, BitSet> elementsOfA = new HashMap<>();
 
         // nodes of T_s:
-        MDTreeLeafNode[] mdTreeLeaves;
+        MDTreeLeafNode[] mdTreeLeaves = mdTree.getLeaves();
         String logPrefix;
         if (isT_s) {
-            mdTreeLeaves = leavesOfT_s;
             logPrefix = "G_s: ";
         } else {
-            mdTreeLeaves = leavesOfT_g;
             logPrefix = "G_d: ";
         }
 

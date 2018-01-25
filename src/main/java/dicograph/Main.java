@@ -17,8 +17,11 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.TreeMap;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
@@ -35,6 +38,7 @@ import dicograph.modDecomp.DirectedMD;
 import dicograph.modDecomp.MDTree;
 import dicograph.utils.Parameters;
 import dicograph.utils.VerySimpleFormatter;
+import ilog.concert.IloException;
 
 
 /**
@@ -91,8 +95,25 @@ public class Main {
                 int kDisturb = Integer.parseInt(params[2]);
                 StringBuilder allGraphs = new StringBuilder();
 
+                TreeMap<Integer, List<Integer>> ilpCostToLazyCorrects = new TreeMap<>();
+                TreeMap<Integer, List<Integer>> bestCostToLazyCost = new TreeMap<>();
+
+
                 for (int i = 1; i <= mTrials; i++) {
-                    if (!testRun(log, consoleHandler, command, nVertices, kDisturb, allGraphs)) {
+                    MetaEditor editor;
+                    try {
+                        editor = testRun(log, consoleHandler, command, nVertices, kDisturb, allGraphs);
+
+                        // map is fine....
+                        ilpCostToLazyCorrects.putIfAbsent(editor.getIlpCost(), new LinkedList<>()); // unlikely to be larger...
+                        ilpCostToLazyCorrects.get(editor.getIlpCost()).add( editor.getLazyCorrectRun() );
+
+                        bestCostToLazyCost.putIfAbsent(editor.getBestCost(), new LinkedList<>());
+                        bestCostToLazyCost.get( editor.getBestCost()).add( editor.getLazyCost());
+
+                    } catch ( Exception e){
+                        e.printStackTrace(System.err);
+                        log.severe(e.getMessage());
                         System.err.println("Error occured after " + i + " successful runs.");
                         break;
                     }
@@ -101,6 +122,9 @@ public class Main {
 
                 log.info("All generated Graphs:");
                 log.info(allGraphs.toString().substring(0,allGraphs.length()-1));
+                // want stacked bar graph
+                log.info("ILP to correct lazy: " + ilpCostToLazyCorrects);
+                log.info( "best cost to lazy: " + bestCostToLazyCost);
                 return;
             }
         }
@@ -194,25 +218,28 @@ public class Main {
         }
     }
 
-    private static int editingTest(Logger log, SimpleDirectedGraph<Integer,DefaultEdge> importGraph, String expPath, Parameters p) throws Exception{
+    private static MetaEditor editingTest(Logger log, SimpleDirectedGraph<Integer,DefaultEdge> importGraph, String expPath, MDTree cotree, Parameters p)
+            throws IOException, ImportException, InterruptedException, IloException, ExportException{
         int cost = -1;
+        int dist = -1;
 
         MetaEditor testMeta = new MetaEditor(importGraph, p, log);
+        testMeta.setCotreeTriples(cotree.getTriples(log));
         List<Solution> solutions = testMeta.computeSolutionsForMethods();
         if(!solutions.isEmpty()){
             cost = solutions.get(0).getCost();
-            String solName = expPath + "_edit-cost_" + cost + ".txt";
+            dist = solutions.get(0).getTreeDistance();
+            String solName = expPath + "_edit-cost_" + cost + "_TT-dist_" + dist + ".txt";
             exportSolution(solutions.get(0), ".txt", solName);
             System.out.println("Exported solution to: " + solName);
         }
 
-        return cost;
+        return testMeta;
     }
 
-    private static boolean testRun( Logger log, Handler baseHandler, Parameters p, int nVertices, int nDisturb, StringBuilder allPaths)
-            throws IOException, ExportException, InterruptedException, ImportException{
+    private static MetaEditor testRun( Logger log, Handler baseHandler, Parameters p, int nVertices, int nDisturb, StringBuilder allPaths)
+            throws ImportException, InterruptedException, IloException, ExportException, IOException{
 
-        boolean ok = true;
         String timeStamp = new SimpleDateFormat("MM-dd_HH:mm:ss:SSS").format(Calendar.getInstance().getTime());
         String fileName = "randDigraph_n_" + nVertices + "_edits_" + nDisturb + "_" + timeStamp;
 
@@ -226,6 +253,14 @@ public class Main {
         GraphGenerator gen = new GraphGenerator(log);
         SimpleDirectedGraph<Integer, DefaultEdge> g_d = new SimpleDirectedGraph<>(DefaultEdge.class);
         gen.generateRandomDirectedCograph(g_d, nVertices, true);
+
+        // for metric:
+        MDTree cotree = null;
+        if(!p.isMDOnly()) {
+            DirectedMD cotreeMD = new DirectedMD(g_d, log, false);
+            cotree = cotreeMD.computeModularDecomposition();
+        }
+
         gen.disturbDicograph(g_d, nDisturb);
 
         // export the graph for debug purposes
@@ -236,28 +271,26 @@ public class Main {
         myExporter.exportGraph(g_d, expfile);
         System.out.println(String.format("Generated random Dicograph with %s vertices and %s random edge-edits.", nVertices, nDisturb));
         System.out.println("Exported Matrix to: " + matrixPath);
+        MetaEditor ret = null;
 
         if(!p.isMDOnly()){
-            try {
-                int cost = editingTest(log,g_d,graphFolder + fileName, p);
-                ok = cost >= 0;
-            } catch (Exception e){
-                ok = false;
-                log.severe(e.toString());
-                e.printStackTrace(System.err);
-            }
+//            try {
+                ret = editingTest(log,g_d,graphFolder + fileName, cotree, p);
+//            } catch (Exception e){
+//                log.severe(e.toString());
+//                e.printStackTrace(System.err);
+//            }
             System.out.println("Finished Editing Test. Log written to:");
 
         } else {
             log.info("Started modular decomposition");
-            try {
+//            try {
                 DirectedMD testMD = new DirectedMD(g_d, log, false);
                 testMD.computeModularDecomposition();
-            } catch (IllegalStateException | AssertionError e) {
-                ok = false;
-                log.severe(e.toString());
-                e.printStackTrace(System.err);
-            }
+//            } catch (IllegalStateException | AssertionError e) {
+//                log.severe(e.toString());
+//                e.printStackTrace(System.err);
+//            }
             System.out.println("Finished modular decomposition. Log written to:");
         }
         System.out.println(fileName + ".log");
@@ -266,7 +299,14 @@ public class Main {
         fileHandler.close();
         log.removeHandler(fileHandler);
 
-        return ok;
+        return ret;
     }
+
+    // use gap to 100%, same height for all!
+    // for Matlab, need format:
+    // x = [7,8,9,10] or categorical( '7 = #7s, 8 = #8s,...' );
+    // y = [ 7_perc = 7_sum / 7* 7_count , 1 - 7_perc ; 8_avg, 8_gap; ...]
+    // bar(x,y,'stacked')
+
 
 }

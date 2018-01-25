@@ -8,8 +8,10 @@ import org.jgrapht.io.ImportException;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Logger;
 
@@ -18,6 +20,7 @@ import dicograph.modDecomp.DirectedMD;
 import dicograph.modDecomp.MDTree;
 import dicograph.utils.Edge;
 import dicograph.utils.Parameters;
+import dicograph.utils.Triple;
 import dicograph.utils.WeightedPair;
 import ilog.concert.IloException;
 
@@ -47,6 +50,12 @@ public class MetaEditor {
     private final Logger log;
     private final MDTree origTree;
     private final int nVertices;
+    private Set<Triple> cotreeTriples;
+    private int ilpCost;
+    private int lazyCost;
+    private int lazyCorrectRun;
+    private int bestTTDistance;
+    private int bestCost;
 
 
     // Original Graph and all the parameters
@@ -59,8 +68,12 @@ public class MetaEditor {
         log = logger;
         DirectedMD modDecomp = new DirectedMD(inputGraph, log, false);
         origTree = modDecomp.computeModularDecomposition();
+        lazyCorrectRun = 0;
+        bestTTDistance = Integer.MAX_VALUE;
+        bestCost = Integer.MAX_VALUE;
     }
 
+    // best tt distance will be first.
     public List<Solution> computeSolutionsForMethods() throws IOException, ImportException, IloException, InterruptedException, ExportException{
 
         List<Solution> bestSolutions = new LinkedList<>();
@@ -77,14 +90,21 @@ public class MetaEditor {
 
         // List of Maps: Cost -> One best Edit-Graph with Edit-Edges. No zeros here!
         List<TreeMap<Integer,List<Solution>>> allMethodsSolutions = new ArrayList<>(6);
+        Solution lazySolution = null;
+        List<Solution> bestILPSolns = null;
         if(p.isLazy()){
-            allMethodsSolutions.add( computeEditFor(EditType.Lazy) );
+            TreeMap<Integer, List<Solution>> sols =  computeEditFor(EditType.Lazy);
+            allMethodsSolutions.add( sols );
+            if(!sols.isEmpty())
+                lazySolution = sols.firstEntry().getValue().get(0);
         }
         if(p.isBruteForce()){
             allMethodsSolutions.add( computeEditFor(EditType.BruteForce) );
         }
         if(p.isIlpMD()){
-            allMethodsSolutions.add( computeEditFor(EditType.ILP) );
+            TreeMap<Integer, List<Solution>> sols = computeEditFor(EditType.ILP);
+            allMethodsSolutions.add( sols );
+            bestILPSolns = sols.firstEntry().getValue();
         }
         if(p.isGreedyPlusILP()){
             allMethodsSolutions.add( computeEditFor(EditType.GreedyILP));
@@ -94,15 +114,36 @@ public class MetaEditor {
         }
 
         // best solution(s) - with gap
-        int best = nVertices * nVertices;
+        Solution bestDistSolution = null;
         for(TreeMap<Integer, List<Solution>> solutionMap : allMethodsSolutions){
             int cost = solutionMap.firstKey();
-            if( cost <= best){
-                if( cost < best && best - cost > p.getSolutionGap()){
+            if( cost <= bestCost){
+                if( cost < bestCost && bestCost - cost > p.getSolutionGap()){
                     bestSolutions.clear();
                 }
-                best = cost;
+                bestCost = cost;
                 bestSolutions.addAll(solutionMap.firstEntry().getValue());
+            }
+            // triple metric - check all!
+            if(cotreeTriples != null){
+                for(List<Solution> solutions : solutionMap.values()) {
+                    for(Solution solution : solutions) {
+
+                        DirectedMD solMD = new DirectedMD(solution.getGraph(), log, false);
+                        Set<Triple> solTriples = solMD.computeModularDecomposition().getTriples(log);
+                        Set<Triple> coTriples = new HashSet<>(cotreeTriples);
+                        coTriples.removeAll(solTriples);
+                        solTriples.removeAll(cotreeTriples);
+                        int tt_distance = coTriples.size() + solTriples.size();
+                        solution.setTreeDistance(tt_distance);
+                        log.info("TT-distance " + tt_distance + " for solution: " + solution);
+
+                        if (tt_distance < bestTTDistance) {
+                            bestTTDistance = tt_distance;
+                            bestDistSolution = solution;
+                        }
+                    }
+                }
             }
         }
         // output one best solution as .dot:
@@ -111,13 +152,41 @@ public class MetaEditor {
             int cost = solution.getCost();
             log.info(() -> solution.getType() + ": Found solution with " + cost + " edits: " + solution.getEdits());
             log.fine(() ->"Edit-Graph: " + solution.getGraph());
-            if(!done && solution.getCost() == best){
+            if(!done && solution.getCost() == bestCost){
                 System.out.println("//Edits: " + solution.getEdits());
                 DOTExporter<Integer,DefaultEdge> exporter = new DOTExporter<>(new IntegerComponentNameProvider<>(), null, null);
                 exporter.exportGraph(solution.getGraph(), System.out);
                 done = true;
             }
+
         }
+        if(bestDistSolution != null){
+            log.info("Best TT-Distance: " + bestTTDistance + " for solution: " + bestDistSolution);
+            bestSolutions.remove(bestDistSolution);
+            bestSolutions.add(0,bestDistSolution);
+        }
+
+        // how good was lazy?
+        if(lazySolution != null && bestILPSolns != null){
+            ilpCost= bestILPSolns.get(0).getCost();
+            for(Solution sol : bestILPSolns){
+                int count = 0;
+                for( Edge edit : lazySolution.getEdits()) {
+                    if(sol.getEdits().contains(edit)){
+                        count++;
+                    } else {
+                        break;
+                    }
+                }
+                if(count > 0 && count > lazyCorrectRun){
+                    lazyCorrectRun = count;
+                }
+            }
+            lazyCost = lazySolution.getCost();
+            log.info("Lazy got the first " + lazyCorrectRun + " of " + ilpCost + " edits right.");
+            log.info("Lazy cost: " + lazyCost + "; ILP cost: " + ilpCost);
+        }
+
 
         return bestSolutions;
     }
@@ -168,5 +237,29 @@ public class MetaEditor {
         }
 
         return secondSolns;
+    }
+
+    public void setCotreeTriples(Set<Triple> cotreeTriples) {
+        this.cotreeTriples = cotreeTriples;
+    }
+
+    public int getIlpCost() {
+        return ilpCost;
+    }
+
+    public int getLazyCost() {
+        return lazyCost;
+    }
+
+    public int getLazyCorrectRun() {
+        return lazyCorrectRun;
+    }
+
+    public int getBestTTDistance() {
+        return bestTTDistance;
+    }
+
+    public int getBestCost() {
+        return bestCost;
     }
 }

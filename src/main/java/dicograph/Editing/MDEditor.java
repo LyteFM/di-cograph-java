@@ -177,7 +177,7 @@ class MDEditor {
             if ( p.getSolutionGap() < 0 && cost < lowestCost ||
                     p.getSolutionGap() >= 0 && cost <= lowestCost + p.getSolutionGap()){
 
-                if(cost > 0 || firstRun) {
+                if(cost > 0 || firstRun && type != EditType.ILP) {
                     if(cost > 0 && cost < lowestCost) {
                         solved = true;
                         lowestCost = cost;
@@ -194,7 +194,7 @@ class MDEditor {
         }
 
         if(solved)
-            log.info("Finals Solution(s): "+ finalSolutions.get(lowestCost));
+            log.info("Final Solution(s): "+ finalSolutions); // .get(lowestCost)
         else
             log.info("Not yet a solution.");
 
@@ -220,22 +220,33 @@ class MDEditor {
         //      - Problem: difficult if there are several new prime modules. Would need to combine them all...
         if(!allPossibleEdits.isEmpty()){
             log.info(()->"Computed Edits: " + allPossibleEdits);
+            int bestCost = nVertices * nVertices;
 
             // retrieve the original vertex-Nos and corresponding edits from the main graph
             for (Map.Entry<Integer, List<List<WeightedPair<Integer, Integer>>>> listOfEdits : allPossibleEdits.entrySet()) {
                 for (List<WeightedPair<Integer, Integer>> oneEdit : listOfEdits.getValue()) {
 
                     ArrayList<Edge> currentList = new ArrayList<>(oneEdit.size());
+
+                    // convert subgraph-edges to real edges. Add them first!!!
+                    currentList.addAll( subGraph.getRealEdges(oneEdit) );
+
                     // edits between modules (as real edges). Also, if unsuccessful!
                     currentList.addAll(subGraph.addModuleEdges(oneEdit, log));
 
-                    // convert subgraph-edges to real edges
-                    currentList.addAll( subGraph.getRealEdges(oneEdit) );
+
                     // remove doubles, check loops -> later. Here, just add all to map.
                     int cost = listOfEdits.getKey(); // negative means not successful!
-                    log.info(()->"Adding: cost " + cost + ", Real Edges: " + currentList);
-                    allRealEdits.putIfAbsent(cost, new LinkedList<>());
-                    allRealEdits.get( cost ).add(currentList);
+
+                    if(cost <= bestCost + p.getSolutionGap()) {
+                        if(cost < bestCost)
+                            bestCost = cost;
+                        log.info(() -> "Adding: cost " + cost + ", Real Edges: " + currentList);
+                        allRealEdits.putIfAbsent(cost, new LinkedList<>());
+                        allRealEdits.get(cost).add(currentList);
+                    } else {
+                        log.info(() -> "Discarding: cost " + cost + ", Real Edges: " + currentList);
+                    }
                 }
             }
 

@@ -1,19 +1,23 @@
 package dicograph.modDecomp;
 
 import org.jgrapht.Graph;
+import org.jgrapht.alg.util.Pair;
 import org.jgrapht.graph.DefaultEdge;
 
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import dicograph.graphIO.DirectedInducedIntSubgraph;
 import dicograph.graphIO.UndirectedInducedIntSubgraph;
+import dicograph.utils.Triple;
 
 /**
  *   This source file is part of the program for computing the modular
@@ -171,7 +175,7 @@ class RootedTree {
         // debug
         log.severe(() -> "Error: Unexpected Exit! All nodes: " + allTraversedNodes);
         log.severe(() -> "next Iteration: " + inputNodeToAncestors);
-        return null;
+        throw new IllegalStateException("NULL after LCA computation!");
     }
 
 
@@ -246,7 +250,6 @@ class RootedTree {
         output.append("}\n");
         return output.toString();
     }
-
 
 }
 

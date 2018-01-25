@@ -8,6 +8,8 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.util.logging.Level;
 
 /*
@@ -43,11 +45,14 @@ public class Parameters {
     private int solutionGap = 0; // all best solutions by default.
 
 
+
     // When to start brute force:
     private int bruteForceThreshold = 10;
     // when to stop brute force:
     private int bruteForceGap = 0;
     private int bruteForceLimit = 0;
+    private int maxBFResults = 50; // stops Brute force after finding this many edits
+
     // methods
     private boolean lazy = true;
 
@@ -101,6 +106,7 @@ public class Parameters {
         options.addOption("bfth",true,"Step 2 when number of primes < brute-force-TH. Default: 10");
         options.addOption("bfgap",true,"Exit module-bf when subset-size > best solution + bfgap. Default: 0; -1 exits after first.");
         options.addOption("bflimit",true,"Abort module-bf when subset-size > this. Default: size of the prime");
+        options.addOption("bfsize", true, "Abort module-bf when number of found solutions > this. Default: 50");
 
         options.addOption("noeskip", "Disables skipping edges in graph of the edit-edge-set");
         options.addOption("vskip", "Skips (u,v) if u,v in vertex set of edit-edge-set's graph");
@@ -156,6 +162,9 @@ public class Parameters {
             if(input.hasOption("wm")){
                 weightMultiplier = Double.parseDouble( input.getOptionValue("wm"));
             }
+            if(input.hasOption("bfsize")){
+                maxBFResults = Integer.parseInt( input.getOptionValue("bfsize"));
+            }
         }
     }
 
@@ -195,11 +204,12 @@ public class Parameters {
 
     public String getInFileAbsPath(){
         if(input.hasOption("i")){
+            String sep = FileSystems.getDefault().getSeparator();
             String path = input.getOptionValue("i");
-            if(path.startsWith("/"))
+            if(path.startsWith(sep) || path.contains(':' + sep)) // windows C:\path\file
                 return path;
             else
-                return System.getProperty("user.dir") + "/" + path;
+                return System.getProperty("user.dir") + sep + path;
         } else {
             throw new IllegalArgumentException("Error: Input file missing!");
         }
@@ -317,12 +327,7 @@ public class Parameters {
         return weightMultiplier;
     }
 
-
-
-
-
-
-
-
-
+    public int getMaxBFResults() {
+        return maxBFResults;
+    }
 }

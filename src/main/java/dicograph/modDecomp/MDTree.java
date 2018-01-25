@@ -17,11 +17,15 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Logger;
+
+import dicograph.utils.Triple;
 
 /**
  *   This source file is part of the program for computing the modular
@@ -47,6 +51,8 @@ import java.util.logging.Logger;
  * A modular decomposition tree of a simple, undirected graph.
  */
 public class MDTree extends RootedTree {
+
+    private MDTreeLeafNode[] leaves;
 		
 	/*
 	 * Creates the modular decomposition tree for the supplied graph.
@@ -83,9 +89,10 @@ public class MDTree extends RootedTree {
     }
 
     // F.L. 27.09.17:
-    public HashMap<BitSet, RootedTreeNode> getStrongModulesBool(MDTreeLeafNode[] leaves) {
+    public HashMap<BitSet, RootedTreeNode> getStrongModulesBool(int nLeaves) {
         HashMap<BitSet, RootedTreeNode> ret = new HashMap<>();
         MDTreeNode rootAsMd = (MDTreeNode) root;
+        leaves = new MDTreeLeafNode[nLeaves];
         rootAsMd.getStrongModulesBool(leaves, ret);
         moduleToTreenode = ret;
 
@@ -304,5 +311,35 @@ public class MDTree extends RootedTree {
         return ret;
     }
 
+    // F.L. 24.01.18:
+    public MDTreeLeafNode[] getLeaves() {
+        return leaves;
+    }
 
+    // F.L. 24.01.18: for triple metric
+    public Set<Triple> getTriples(Logger log){
+        Set<Triple> ret = new HashSet<>();
+        BitSet allVertices = root.getVertices();
+
+        allVertices.stream().forEach( x-> {
+            allVertices.stream().forEach( y -> {
+                allVertices.stream().forEach( z ->{
+                    if(x != y && y != z && x != z) {
+                        LinkedList<RootedTreeNode> x_y = new LinkedList<>();
+                        x_y.add(leaves[x]);
+                        x_y.add(leaves[y]);
+                        LinkedList<RootedTreeNode> x_y_z = new LinkedList<>(x_y);
+                        x_y_z.add(leaves[z]);
+                        RootedTreeNode lca_x_y = computeLCA(x_y, log);
+                        RootedTreeNode lca_x_y_z = computeLCA(x_y_z, log);
+                        if (!lca_x_y.equals(lca_x_y_z)) {
+                            ret.add(new Triple(x, y, z));
+                        }
+                    }
+                });
+            });
+        });
+
+        return ret;
+    }
 }
