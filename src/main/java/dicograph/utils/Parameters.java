@@ -44,7 +44,7 @@ public class Parameters {
     private double weightMultiplier = 1.0;
     private int solutionGap = 0; // all best solutions by default.
 
-
+    private int lazyreach = -1;
 
     // When to start brute force:
     private int bruteForceThreshold = 10;
@@ -111,6 +111,7 @@ public class Parameters {
         options.addOption("noeskip", "Disables skipping edges in graph of the edit-edge-set");
         options.addOption("vskip", "Skips (u,v) if u,v in vertex set of edit-edge-set's graph");
         options.addOption("sth", true,"Soft threshold: No edit found in 1st lazy run -> discards edges with subgraph-score <= this");
+        options.addOption("lzreach", true,"Number of next possible edits to be included during lazy run. Default: size of prime / 5.");
 
         Option weightm = new Option("wm",true,"Weight multiplier. Default: 1.0; Set lower if no solution, higher if too expensive");
         weightm.setArgName("double");
@@ -164,6 +165,9 @@ public class Parameters {
             }
             if(input.hasOption("bfsize")){
                 maxBFResults = Integer.parseInt( input.getOptionValue("bfsize"));
+            }
+            if(input.hasOption("lzreach")){
+                lazyreach = Integer.parseInt( input.getOptionValue("lzreach"));
             }
         }
     }
@@ -329,5 +333,9 @@ public class Parameters {
 
     public int getMaxBFResults() {
         return maxBFResults;
+    }
+
+    public int getLazyreach() {
+        return lazyreach;
     }
 }

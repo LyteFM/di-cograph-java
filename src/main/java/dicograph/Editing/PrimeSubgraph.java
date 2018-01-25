@@ -81,7 +81,11 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
         }
         log = logger;
         method = type;
-        lazyReach = nVertices / 6;
+        if(p.getLazyreach() > 0 ){
+            lazyReach = p.getLazyreach();
+        } else {
+            lazyReach = (int) Math.sqrt(nVertices) + 1;
+        }
     }
 
 
@@ -138,6 +142,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
             int index, u,v, global_u_v,global_v_u, both_global;
             int currScore = badSubs.getFirst().size() + badSubs.getSecond().size();
             int subCount = currScore;
+            log.info(()->"Lazy reach: " + lazyReach);
             log.info(()->"Total no of forbidden subs: " + subCount);
             cnt = -1; // to init intToEdge for other edit-sets (by global edit-score)
             double weight;
@@ -163,13 +168,13 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                 if(p.isUseGlobal() && !first){
 
                     currEdgeList.clear();
-                    global_u_v = computeEditScoreForEgde(u,v,weight,currEdgeList);
+                    global_u_v = computeEditScoreForEgde(u,v,weight,currEdgeList).getFirst();
                     log.fine("("+ u + ","  +v + ") global edit-score: " + global_u_v);
                     currEdgeList.clear();
-                    global_v_u = computeEditScoreForEgde(v,u,weight,currEdgeList);
+                    global_v_u = computeEditScoreForEgde(v,u,weight,currEdgeList).getFirst();
                     log.fine("("+ v + ","  +u + ") global edit-score: "+ global_v_u);
                     //currEdgeList.add(new WeightedPair<>(u,v,weight)); v,u already there
-                    both_global = (int) Math.round(computeEditScoreForEgde(u,v,weight,currEdgeList) + weight * p.getWeightMultiplier());
+                    both_global = (int) Math.round(computeEditScoreForEgde(u,v,weight,currEdgeList).getFirst() + weight * p.getWeightMultiplier());
                     log.fine("both global: "+ both_global);
                     currEdgeList.clear();
 
@@ -199,18 +204,84 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                     index++;
 
                 } else {
-                    // normal lazy run
+                    // normal lazy run with local edit scores.
                     TreeMap<Integer,List <Pair<Map.Entry<Edge,Integer>, Pair<WeightedEdge, WeightedEdge>> >> editsByLocalScore = new TreeMap<>();
-                    // do the shit. todo: currScore!
-                    Pair<Integer,Integer> firstAndEditIndex = computeBestLocalEdit(edgesToScore, index, currScore, editsByLocalScore, graphOfEditEdges, pathFinder, allEdgesList);
-                    int editIndex = firstAndEditIndex.getSecond();
+                    Pair<Integer,Boolean> v_u_res, u_v_res, both_local;
+                    currEdgeList.clear(); // just one or two edge(s)
+                    int firstIndex = -1;
+                    boolean solutionFound = false;
 
-                    // analysis.
-                    int bestScore;
+
+                    for (; index < edgesToScore.size(); index++) {
+
+                        edge = edgesToScore.get(index);
+                        u = edge.getKey().getFirst();
+                        v = edge.getKey().getSecond();
+                        weight = subVertexToWeight[u] * subVertexToWeight[v];
+
+                        // compute the graph of edited edits to exclude existing paths (any direction)
+                        if( graphOfEditEdges.containsVertex(u) && graphOfEditEdges.containsVertex(v) ){
+                            log.info("Both vertices for path " + u + ", " + v + " already exist!");
+                            if(p.isSkipExistingVertices()){
+                                continue;
+                            } else if(p.isSkipPaths() && pathFinder.pathExists(u,v)) {
+                                log.warning("Skipped: path already exists from " + u + " to " + v);
+                                continue;
+                            }
+                        }
+
+                        // compute local edit scores
+                        currEdgeList.clear();
+                        currEdgeList.addAll(allEdgesList);
+                        u_v_res = computeEditScoreForEgde(u, v, weight, currEdgeList);
+                        log.fine("(" + u + "," + v + ") local edit-score: " + u_v_res.getFirst());
+
+                        currEdgeList.clear();
+                        currEdgeList.addAll(allEdgesList);
+                        v_u_res = computeEditScoreForEgde(v, u, weight, currEdgeList);
+                        log.fine("(" + v + "," + u + ") local edit-score: " + v_u_res.getFirst());
+
+                        both_local = computeEditScoreForEgde(u, v, weight, currEdgeList);
+                        int both_score = (int) Math.round(both_local.getFirst() + weight * p.getWeightMultiplier());
+
+                        log.fine("Both local: " + both_local);
+                        if(!solutionFound) {
+                            solutionFound = u_v_res.getSecond() || v_u_res.getSecond() || both_local.getSecond();
+                        }
+
+                        if ((u_v_res.getFirst() < currScore || v_u_res.getFirst() < currScore || both_score < currScore || solutionFound)) {
+                            if(firstIndex < 0) {
+                                firstIndex = index;
+                            }
+                            testEditEdge(u,v,u_v_res.getFirst(),v_u_res.getFirst(),both_score, weight, edge,editsByLocalScore); // added here with score.
+                        } else {
+                            log.fine("Discarded: edge (" + u + "," + v + ") which doesn't improve the module");
+                        }
+
+                        // There could be several best solutions... Or  solutions better than editing both...
+                        if (solutionFound) {
+                            log.info("Subgraph edited into Cograph.");
+                            if( (u_v_res.getFirst() == 0 || v_u_res.getFirst() == 0) && weight < 1.5) {
+                                break;
+                            }
+                        }
+
+                        // todo: what if I reached the end??? -> set hth to 0 if still want to do this for 1s...
+                        // how do I make sure it does the same as before when hard is reached?
+                        // -> break after first found!
+                        if(editsByLocalScore.size() >= lazyReach || edge.getValue() <= p.getHardThreshold() && editsByLocalScore.size() > 0 )
+                            break;
+
+                    }
+
+                    // Analysis - choose the best!
                     if(editsByLocalScore.size() > 0){
+
                         LinkedList<WeightedEdge> addEdges = new LinkedList<>();
                         double bestWeight = 100000;
-                        bestScore = editsByLocalScore.firstKey();
+                        Map.Entry<Edge,Integer> bestEntry = null;
+                        int bestEditScore = editsByLocalScore.firstKey();
+                        int correspondingSubgraphScore = Integer.MAX_VALUE;
 
                         for( Pair<Map.Entry<Edge,Integer>, Pair<WeightedEdge, WeightedEdge>> best : editsByLocalScore.firstEntry().getValue()){
                             // take best cost, if several possible.
@@ -225,6 +296,8 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                                 w2 = two.getWeight();
                             }
                             if(w1 + w2 < bestWeight){
+                                bestEntry = best.getFirst();
+                                correspondingSubgraphScore = bestEntry.getValue();
                                 bestWeight = w1 + w2;
                                 addEdges.clear();
                                 if(one != null)
@@ -233,14 +306,25 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                                     addEdges.add(two);
                             }
                         }
-                        if(bestScore < currScore) {
-                            log.info("Added best edit(s): " + addEdges + " edit-score: " + bestScore + ", weight: " + addEdges.getFirst().getWeight());
+
+                        // if improvement or solution:
+                        if(bestEditScore < currScore || solutionFound) {
+                            log.info("Added best edit(s): " + addEdges + " edit-score: " + bestEditScore + ", weight: " + addEdges.getFirst().getWeight());
                             allEdgesList.addAll(addEdges);
-                            currScore = bestScore;
+                            currScore = bestEditScore;
+                            // if unsuccessful:
+                            if(correspondingSubgraphScore <= p.getSoftThreshold()){
+                                edgesToRemove.addAll(addEdges);
+                            }
 
+                            edit(allEdgesList);
+                            DirectedMD checkSizeMD = new DirectedMD(this, log, false);
+                            MDTree checkSizeTree = checkSizeMD.computeModularDecomposition();
+                            int primeSize = checkSizeTree.getMaxPrimeSize();
+                            log.info("Size of prime modules:" + primeSize);
+                            edit(allEdgesList); // edit back
 
-
-                            if(bestScore == 0){
+                            if(primeSize == 0){
                                 int editCost = 0;
                                 for(WeightedEdge w : allEdgesList){
                                     editCost += Math.round(w.getWeight());
@@ -249,13 +333,31 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                                 res.add(allEdgesList);
                                 costToEdges.put(editCost, res);
                                 return costToEdges;
+
+                            } else if (primeSize <= p.getBruteForceThreshold() && first && !p.isStopOnlyAtHardThreshold() && method.checkPrimesSize()) {
+                                // exit point for brute force/ greedy ILP
+                                log.info("Size of prime modules now below " + p.getBruteForceThreshold() + ". Ready for second run.");
+                                List<List<WeightedEdge>> res = new LinkedList<>();
+                                res.add(allEdgesList);
+                                int editCost = 0;
+                                for (WeightedEdge w : allEdgesList) {
+                                    editCost += Math.round(w.getWeight());
+                                }
+                                costToEdges.put(-editCost, res); // not yet a solution, but ok.
+                                return costToEdges;
                             }
+
                             // update graph
                             for(WeightedEdge added : addEdges){
                                 graphOfEditEdges.addVertex(added.getFirst());
                                 graphOfEditEdges.addVertex(added.getSecond());
                                 graphOfEditEdges.addEdge(added.getFirst(), added.getSecond());
                             }
+
+                            // remove chosen edit.
+                            editsByLocalScore.remove(editsByLocalScore.firstKey());
+                            edgesToScore.remove(bestEntry);
+                            index = firstIndex; // next round from here.
 
                         } else {
                             // no improvement? failure!
@@ -267,63 +369,6 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                         log.warning("Lazy: empty edit-map.");
                         break;
                     }
-
-
-
-                    // exit point for brute force/ greedy ILP
-                    if (first && !p.isStopOnlyAtHardThreshold() && method.checkPrimesSize()) {
-                        edit(allEdgesList);
-                        DirectedMD checkSizeMD = new DirectedMD(this, log, false);
-                        MDTree checkSizeTree = checkSizeMD.computeModularDecomposition();
-                        int primeSize = checkSizeTree.getMaxPrimeSize();
-                        log.info("Size of prime modules:" + primeSize);
-                        if (primeSize <= p.getBruteForceThreshold()) {
-                            log.info("Size of prime modules now below " + p.getBruteForceThreshold() + ". Ready for second run.");
-                            List<List<WeightedEdge>> res = new LinkedList<>();
-                            res.add(allEdgesList);
-                            int editCost = 0;
-                            for (WeightedEdge w : allEdgesList) {
-                                editCost += Math.round(w.getWeight());
-                            }
-                            costToEdges.put(-editCost, res); // not yet a solution, but ok.
-                            return costToEdges;
-                        } else {
-                            edit(allEdgesList); // edit back
-                        }
-                    }
-
-
-                    // remove chosen edit. if same: easy. else:
-                    editsByLocalScore.remove(editsByLocalScore.firstKey());
-                    edgesToScore.remove(editIndex);
-
-                    // todo: use a flag here.
-                    if(false) {
-                        edgesToScore = edgesToScore.subList(editIndex, edgesToScore.size() - 1);
-                        int next = 0;
-
-                        for (List<Pair<Map.Entry<Edge, Integer>, Pair<WeightedEdge, WeightedEdge>>> reAddEdges : editsByLocalScore.values()) {
-                            for (Pair<Map.Entry<Edge, Integer>, Pair<WeightedEdge, WeightedEdge>> reAddEdge : reAddEdges) {
-                                if (!edgesToScore.contains(reAddEdge.getFirst())) {
-                                    edgesToScore.add(next, reAddEdge.getFirst());
-                                    next++;
-                                }
-                            }
-                        }
-                        index = 0;
-
-                    } else {
-                        index = firstAndEditIndex.getFirst();
-                    }
-
-
-
-                    // if 1st run fails
-                    if (edge.getValue() <= p.getSoftThreshold())
-                        edgesToRemove.add(allEdgesList.get(allEdgesList.size() - 1));
-
-
-
                 }
             }
 
@@ -479,7 +524,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
          ConnectivityInspector<Integer,DefaultEdge> pathFinder,
          List<WeightedEdge> allEdgesList){
 
-        int v_u_score, u_v_score, both_local;
+        Pair<Integer,Boolean> v_u_res, u_v_res, both_local;
         double weight;
         List<WeightedEdge> currEdgeList = new LinkedList<>(); // just one or two edge(s)
         int bestIndex = -1;
@@ -507,32 +552,34 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                 }
             }
 
+            // todo: weight vs cograph edit...
             // compute local edit scores
             currEdgeList.clear();
             currEdgeList.addAll(allEdgesList);
-            u_v_score = computeEditScoreForEgde(u, v, weight, currEdgeList);
-            log.fine("(" + u + "," + v + ") local edit-score: " + u_v_score);
+            u_v_res = computeEditScoreForEgde(u, v, weight, currEdgeList);
+            log.fine("(" + u + "," + v + ") local edit-score: " + u_v_res.getFirst());
 
             currEdgeList.clear();
             currEdgeList.addAll(allEdgesList);
-            v_u_score = computeEditScoreForEgde(v, u, weight, currEdgeList);
-            log.fine("(" + v + "," + u + ") local edit-score: " + v_u_score);
+            v_u_res = computeEditScoreForEgde(v, u, weight, currEdgeList);
+            log.fine("(" + v + "," + u + ") local edit-score: " + v_u_res.getFirst());
 
             both_local = computeEditScoreForEgde(u, v, weight, currEdgeList);
-            if(both_local != 0){
-                both_local = (int) Math.round(both_local + weight * p.getWeightMultiplier()); // if not a solution, consider weight.
-            }
-            log.fine("Both local: " + both_local);
+            int both_score = (int) Math.round(both_local.getFirst() + weight * p.getWeightMultiplier());
 
-            if ((u_v_score < prevScore || v_u_score < prevScore || both_local < prevScore)) {
+            log.fine("Both local: " + both_local);
+            boolean solutionFound = u_v_res.getSecond() || v_u_res.getSecond() || both_local.getSecond();
+
+            if ((u_v_res.getFirst() < prevScore || v_u_res.getFirst() < prevScore || both_score < prevScore || solutionFound)) {
                 if(firstIndex < 0) {
                     firstIndex = index;
                 }
-                 score = testEditEdge(u,v,u_v_score,v_u_score,both_local, weight, edge,editsByLocalScore); // added here with score.
-                 if(score < bestScore) {
-                     bestIndex = index;
-                     bestScore = score;
-                 }
+                score = testEditEdge(u,v,u_v_res.getFirst(),v_u_res.getFirst(),both_score, weight, edge,editsByLocalScore); // added here with score.
+
+                if(score < bestScore) {
+                    bestIndex = index;
+                    bestScore = score;
+                }
 
             } else {
                 log.info("Discarded: edge (" + u + "," + v + ") which doesn't improve the module");
@@ -541,8 +588,9 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
             // There could be several best solutions... Or at least solutions better than editing both...
             if (score == 0) {
                 log.info("Subgraph edited into Cograph.");
-                if(u_v_score == 0 || v_u_score == 0)
+                if( (u_v_res.getFirst() == 0 || v_u_res.getFirst() == 0) && weight < 1.5) {
                     break; // else there might be sth better
+                }
             }
 
             // todo: what if I reached the end??? -> set hth to 0 if still want to do this for 1s...
@@ -556,7 +604,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
     }
 
 
-    // adds the chosen edge to the map during a lazy run
+    // adds the chosen edge to the map during a lazy run. takes the best of the three.
     private int testEditEdge(int u, int v, int u_v_score, int v_u_score, int both_local, double weight,
                              Map.Entry<Edge,Integer> entry,
                              TreeMap<Integer,List <Pair<Map.Entry<Edge,Integer>, Pair<WeightedEdge, WeightedEdge>> >> editsByLocalScore){
@@ -586,19 +634,21 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
     }
 
     // high score means bad edit.
-    private int computeEditScoreForEgde(int u, int v, double weight, List<WeightedEdge> currEdgeList){
+    private Pair<Integer,Boolean> computeEditScoreForEgde(int u, int v, double weight, List<WeightedEdge> currEdgeList){
         HashMap<Edge,Integer> edgeToCount = new HashMap<>();
         currEdgeList.add(new WeightedEdge(u,v,weight));
         edit(currEdgeList);
         Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> badSubs = ForbiddenSubgraph.verticesToForbidden(this, edgeToCount,false);
         edit(currEdgeList);
         int badScore = badSubs.getSecond().size() + badSubs.getFirst().size();
-        // take any solution here, nevermind.
-        if(badScore != 0 && weight > 1.5){
-            // I'm officially an idiot, score must INCREASE of course...
+        boolean solved = badScore == 0;
+        if(solved)
+            log.info("Prime edited to cograph with: " + currEdgeList);
+        // todo: really???
+        if( weight > 1.5){
             badScore =  (int) Math.round( badScore + (p.getWeightMultiplier() * weight));
         }
-        return badScore;
+        return new Pair<>(badScore,solved);
     }
 
     // ed(this, edges)
