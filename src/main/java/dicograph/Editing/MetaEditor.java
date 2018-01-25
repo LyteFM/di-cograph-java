@@ -21,7 +21,7 @@ import dicograph.modDecomp.MDTree;
 import dicograph.utils.Edge;
 import dicograph.utils.Parameters;
 import dicograph.utils.Triple;
-import dicograph.utils.WeightedPair;
+import dicograph.utils.WeightedEdge;
 import ilog.concert.IloException;
 
 /*
@@ -199,7 +199,7 @@ public class MetaEditor {
 
             int val = (int) Math.round(glSolver.getEditingDistances().get(i));
             List<Edge> edges = new ArrayList<>(glSolver.getSolutionEdgeEdits().get(i).size());
-            for(WeightedPair<Integer,Integer> e : glSolver.getSolutionEdgeEdits().get(i)){
+            for(WeightedEdge e : glSolver.getSolutionEdgeEdits().get(i)){
                 edges.add( new Edge(e.getFirst(), e.getSecond()));
             }
             ret.putIfAbsent(val,new LinkedList<>());

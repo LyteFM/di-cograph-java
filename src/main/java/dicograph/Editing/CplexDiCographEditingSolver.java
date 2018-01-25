@@ -13,7 +13,7 @@ import java.util.TreeSet;
 import java.util.logging.Logger;
 
 import dicograph.utils.Parameters;
-import dicograph.utils.WeightedPair;
+import dicograph.utils.WeightedEdge;
 import ilog.concert.IloException;
 import ilog.concert.IloIntVar;
 import ilog.concert.IloNumExpr;
@@ -66,7 +66,7 @@ class CplexDiCographEditingSolver {
     private IloIntVar[][] E;
 
     private final double[][] weightMatrix;
-    private List<List<WeightedPair<Integer, Integer>>> solutionEdgeEdits;
+    private List<List<WeightedEdge>> solutionEdgeEdits;
     private Logger log;
 
     /**
@@ -232,7 +232,7 @@ class CplexDiCographEditingSolver {
                 for(int vertex = 0; vertex < vertexCount; vertex++){
                     solutionGraph.addVertex(vertex);
                 }
-                List<WeightedPair<Integer, Integer>> edgeEdits = new LinkedList<>();
+                List<WeightedEdge> edgeEdits = new LinkedList<>();
 
                 solution.append("Adjacency Matrix:\n");
 
@@ -252,7 +252,7 @@ class CplexDiCographEditingSolver {
                             edgeEdit = inputGraph.containsEdge(vertex_x,vertex_y);
                         }
                         if(edgeEdit){
-                            WeightedPair<Integer,Integer> editEdge = new WeightedPair<>(vertex_x,vertex_y);
+                            WeightedEdge editEdge = new WeightedEdge(vertex_x,vertex_y);
                             if(weightMatrix != null){
                                 editEdge.setWeight(weightMatrix[vertex_x][vertex_y]);
                             }
@@ -277,7 +277,7 @@ class CplexDiCographEditingSolver {
         return editingDistances;
     }
 
-    public List<List<WeightedPair<Integer, Integer>>> getSolutionEdgeEdits() {
+    public List<List<WeightedEdge>> getSolutionEdgeEdits() {
         return solutionEdgeEdits;
     }
 

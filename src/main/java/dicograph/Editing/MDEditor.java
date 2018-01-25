@@ -21,7 +21,7 @@ import dicograph.modDecomp.MDTree;
 import dicograph.modDecomp.MDTreeNode;
 import dicograph.utils.Edge;
 import dicograph.utils.Parameters;
-import dicograph.utils.WeightedPair;
+import dicograph.utils.WeightedEdge;
 import ilog.concert.IloException;
 
 /*
@@ -206,14 +206,14 @@ class MDEditor {
             IloException{
 
         TreeMap<Integer,List<List<Edge>>> allRealEdits = new TreeMap<>();
-        PrimeSubgraph subGraph = new PrimeSubgraph(workGraph,primeNode,p);
+        PrimeSubgraph subGraph = new PrimeSubgraph(workGraph,primeNode,p, log, type);
 
         log.fine(() ->"Subgraph: " + subGraph.toString());
         log.fine(() ->"Base-Vertex to Sub-Vertex " + subGraph.getBaseNoTosubNo());
         log.info(() -> "Computing possible edit Sets.");
         // negative cost - not yet successful (aborted in step 1 due to threshold/ processed all)
         // empty: nothing found in step 2
-        TreeMap<Integer, List<List<WeightedPair<Integer, Integer>>>> allPossibleEdits = subGraph.computeEdits(log, type, firstRun);
+        TreeMap<Integer, List<List<WeightedEdge>>> allPossibleEdits = subGraph.computeEdits(firstRun);
 
         // - compute ALL feasable edits within bruteForceGap
         // - choose the BEST edit when taking the original graph into account
@@ -223,8 +223,8 @@ class MDEditor {
             int bestCost = nVertices * nVertices;
 
             // retrieve the original vertex-Nos and corresponding edits from the main graph
-            for (Map.Entry<Integer, List<List<WeightedPair<Integer, Integer>>>> listOfEdits : allPossibleEdits.entrySet()) {
-                for (List<WeightedPair<Integer, Integer>> oneEdit : listOfEdits.getValue()) {
+            for (Map.Entry<Integer, List<List<WeightedEdge>>> listOfEdits : allPossibleEdits.entrySet()) {
+                for (List<WeightedEdge> oneEdit : listOfEdits.getValue()) {
 
                     ArrayList<Edge> currentList = new ArrayList<>(oneEdit.size());
 

@@ -5,14 +5,14 @@ import org.jgrapht.alg.util.Pair;
 /**
  * Created by Fynn Leitow on 22.12.17.
  */
-public class WeightedPair<A,B> extends Pair<A,B> {
+public class WeightedEdge extends Pair<Integer,Integer> {
     private double weight;
 
-    public WeightedPair(A a, B b){
+    public WeightedEdge(int a, int b){
         super(a,b);
     }
 
-    public WeightedPair(A a, B b, double w){
+    public WeightedEdge(int a, int b, double w){
         this(a,b);
         weight = w;
     }
