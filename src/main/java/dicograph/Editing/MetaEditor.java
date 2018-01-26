@@ -139,7 +139,7 @@ public class MetaEditor {
 
                         DirectedMD solMD = new DirectedMD(solution.getGraph(), log, false);
                         MDTree solTree = solMD.computeModularDecomposition();
-                        log.info(MDTree.beautify(solTree.toString()));
+                        log.info("Tree of solution: " + MDTree.beautify(solTree.toString()));
                         Set<Triple> solTriples = solTree.getTriples(log);
                         Set<Triple> coTriples = new HashSet<>(cotreeTriples);
                         log.info(solTriples.toString());
@@ -186,9 +186,9 @@ public class MetaEditor {
                 int count = 0;
                 for( Edge edit : lazySolution.getEdits()) {
                     if(sol.getEdits().contains(edit)){
-                        count++;
                         sol.getEdits().remove(edit);
                         sol.getEdits().add(count,edit); // reorder for easier comparison.
+                        count++;
                     } else {
                         break;
                     }

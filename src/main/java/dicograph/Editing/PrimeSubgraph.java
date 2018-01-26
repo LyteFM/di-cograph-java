@@ -280,11 +280,11 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                             if(count >= lazyReach){
                                 log.info(()->msg + "Reached -lzreach = " + lazyReach);
                             } else {
-                                log.info(msg + "Subgraph-score " + edge.getValue() + " reached " ); // todo: get thresholds straight!
+                                log.info(msg + "Subgraph-score " + edge.getValue() + " reached -hth" );
                             }
                             break;
                         } else if( ++runs % 50 == 0 && editsByLocalScore.size() > 0 && timer.elapsedSeconds() > p.getTimeOut() ){
-                            log.info("Stopping after first found edit due to timeout: " + p.getTimeOut());
+                            log.warning("Stopping after first found edit due to timeout: " + p.getTimeOut());
                             break;
                         }
                     }
