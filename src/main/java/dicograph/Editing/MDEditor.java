@@ -209,7 +209,7 @@ class MDEditor {
         PrimeSubgraph subGraph = new PrimeSubgraph(workGraph,primeNode,p, log, type);
 
         log.fine(() ->"Subgraph: " + subGraph.toString());
-        log.fine(() ->"Base-Vertex to Sub-Vertex " + subGraph.getBaseNoTosubNo());
+        log.info(() ->"Base-Vertex to Sub-Vertex " + subGraph.getBaseNoTosubNo());
         log.info(() -> "Computing possible edit Sets.");
         // negative cost - not yet successful (aborted in step 1 due to threshold/ processed all)
         // empty: nothing found in step 2

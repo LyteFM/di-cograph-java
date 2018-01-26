@@ -138,12 +138,15 @@ public class MetaEditor {
                     for(Solution solution : solutions) {
 
                         DirectedMD solMD = new DirectedMD(solution.getGraph(), log, false);
-                        Set<Triple> solTriples = solMD.computeModularDecomposition().getTriples(log);
+                        MDTree solTree = solMD.computeModularDecomposition();
+                        log.info(MDTree.beautify(solTree.toString()));
+                        Set<Triple> solTriples = solTree.getTriples(log);
                         Set<Triple> coTriples = new HashSet<>(cotreeTriples);
+                        log.info(solTriples.toString());
                         coTriples.removeAll(solTriples);
                         solTriples.removeAll(cotreeTriples);
                         int tt_dist = coTriples.size() + solTriples.size();
-                        double tt_distance_normed = tt_dist / divisor;
+                        double tt_distance_normed = (1.0 *tt_dist) / divisor;
                         solution.setTreeDistance(tt_distance_normed);
                         log.info("TT-distance: " + tt_dist + ", Normalized: " + df.format(tt_distance_normed) + " for solution: " + solution);
 
@@ -184,6 +187,8 @@ public class MetaEditor {
                 for( Edge edit : lazySolution.getEdits()) {
                     if(sol.getEdits().contains(edit)){
                         count++;
+                        sol.getEdits().remove(edit);
+                        sol.getEdits().add(count,edit); // reorder for easier comparison.
                     } else {
                         break;
                     }
