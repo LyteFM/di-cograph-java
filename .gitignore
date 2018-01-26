@@ -13,3 +13,4 @@ graphs/*.dot
 logs/
 FP_to_DMD/build/
 MD/build/
+OverlapComponentProg/*.txt
