@@ -16,6 +16,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.file.Files;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -221,7 +222,7 @@ public class Main {
     private static MetaEditor editingTest(Logger log, SimpleDirectedGraph<Integer,DefaultEdge> importGraph, String expPath, MDTree cotree, Parameters p)
             throws IOException, ImportException, InterruptedException, IloException, ExportException{
         int cost = -1;
-        int dist = -1;
+        double dist = -1;
 
         MetaEditor testMeta = new MetaEditor(importGraph, p, log);
         testMeta.setCotreeTriples(cotree.getTriples(log));
@@ -229,7 +230,7 @@ public class Main {
         if(!solutions.isEmpty()){
             cost = solutions.get(0).getCost();
             dist = solutions.get(0).getTreeDistance();
-            String solName = expPath + "_edit-cost_" + cost + "_TT-dist_" + dist + ".txt";
+            String solName = expPath + "_edit-cost_" + cost + "_TT-dist_" + new DecimalFormat("0.000000").format(dist) + ".txt";
             exportSolution(solutions.get(0), ".txt", solName);
             System.out.println("Exported solution to: " + solName);
         }
@@ -252,7 +253,7 @@ public class Main {
 
         GraphGenerator gen = new GraphGenerator(log);
         SimpleDirectedGraph<Integer, DefaultEdge> g_d = new SimpleDirectedGraph<>(DefaultEdge.class);
-        gen.generateRandomDirectedCograph(g_d, nVertices, true);
+        gen.generateRandomDirectedCograph(g_d, nVertices,p.getCographProbabilities());
 
         // for metric:
         MDTree cotree = null;

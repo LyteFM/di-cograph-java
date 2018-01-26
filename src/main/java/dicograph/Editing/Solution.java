@@ -31,13 +31,13 @@ public class Solution {
     private final EditType type;
     private final SimpleDirectedGraph<Integer,DefaultEdge> graph;
     private final List<Edge> edits;
-    private int treeDistance;
+    private double treeDistance;
 
     Solution(SimpleDirectedGraph<Integer,DefaultEdge> _graph, List<Edge> _edges, EditType _type){
         graph = _graph;
         edits = _edges;
         type = _type;
-        treeDistance = Integer.MAX_VALUE;
+        treeDistance = Double.MAX_VALUE;
     }
 
     public EditType getType() {
@@ -56,11 +56,11 @@ public class Solution {
         return edits.size();
     }
 
-    public int getTreeDistance() {
+    public double getTreeDistance() {
         return treeDistance;
     }
 
-    public void setTreeDistance(int treeDistance) {
+    public void setTreeDistance(double treeDistance) {
         this.treeDistance = treeDistance;
     }
 

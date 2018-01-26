@@ -43,6 +43,8 @@ public class GraphGenerator {
 
     private final SecureRandom random;
     private final Logger logger;
+    private double SE  = 0.333333333;
+    private double PA = 0.663333333;
 
     public GraphGenerator(Logger log) {
         random = new SecureRandom();
@@ -93,7 +95,13 @@ public class GraphGenerator {
         // - everything else is ok!
     }
 
-    public Set<BitSet> generateRandomDirectedCograph(SimpleDirectedGraph<Integer, DefaultEdge> graph, int nVertices, boolean getBitSets){
+    public Set<BitSet> generateRandomDirectedCograph(SimpleDirectedGraph<Integer, DefaultEdge> graph, int nVertices, String[] cographsPr){
+
+        if(cographsPr != null){
+            SE = Double.parseDouble(cographsPr[0]);
+            PA = SE + Double.parseDouble(cographsPr[1]);
+        }
+
         return generateCograph(graph, nVertices,true, true);
     }
 
@@ -118,11 +126,7 @@ public class GraphGenerator {
 
 
         // Directed Graphs have one additional MDType.
-        int typeMultiplier;
-        if(isDirected)
-            typeMultiplier = 3;
-        else
-            typeMultiplier =2;
+
 
         // Pick any number k modules G_i to perform parallel, series or order composition
 
@@ -136,8 +140,8 @@ public class GraphGenerator {
 
             // generates k: number of modules to join
             // nicer distribution: small modules must be more likely. Larger modules still appear through
-            // mergind same type of modules.
-            // former: random.nextDouble()
+            // merging same type of modules.
+
             double rand = Math.abs(random.nextGaussian())/6;
             Double nToCombine = rand * (moduleCount - 1); // <9 + rounding -> intValue: <= 8
             int k = nToCombine.intValue() + 2;
@@ -147,14 +151,22 @@ public class GraphGenerator {
             // range of k must be from 2 to moduleCount!
 
             // generates MDNodeType
-            Double mdType = random.nextDouble() * typeMultiplier;
             MDNodeType mdNodeType;
-            if(mdType<1){
-                mdNodeType = PARALLEL;
-            } else if (mdType < 2){
-                mdNodeType = SERIES;
+            Double mdType = random.nextDouble();
+            if(!isDirected) {
+                if (mdType < 0.5) {
+                    mdNodeType = PARALLEL;
+                } else{
+                    mdNodeType = SERIES;
+                }
             } else {
-                mdNodeType = ORDER;
+                if (mdType < SE){
+                    mdNodeType = SERIES;
+                } else if(mdType < PA){
+                    mdNodeType = PARALLEL;
+                } else{
+                    mdNodeType = ORDER;
+                }
             }
 
             // k <= 10 -> {0,1,...,k-1}.

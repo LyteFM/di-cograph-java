@@ -68,9 +68,14 @@ public class Parameters {
         options.addOption("v","if not, console outputs only the editgraph or MDTree as .dot");
 
         Option test = new Option("test", true, "m test runs run on random cographs with n vertices disturbed by k edits.");
-        test.setArgName("m n k"); // todo
+        test.setArgName("m n k");
         test.setArgs(3);
         options.addOption(test);
+
+        Option cographs = new Option("cograph",true,"For test: Cographs do SE, PA and ORD (=1-SE-PA) joins with the given probability (Default: 1/3 each)");
+        cographs.setArgName("SE PA");
+        cographs.setArgs(2);
+        options.addOption(cographs);
 
         Option input = new Option("i",true,"Input file: .dot, .txt (Matrix) or .jtxt (JGraph)");
         input.setArgName("infile");
@@ -108,10 +113,10 @@ public class Parameters {
         options.addOption("bflimit",true,"Abort module-bf when subset-size > this. Default: size of the prime");
         options.addOption("bfsize", true, "Abort module-bf when number of found solutions > this. Default: 50");
 
-        options.addOption("noeskip", "Disables skipping edges in graph of the edit-edge-set");
+        options.addOption("pskip", "Skipping (u,v) if u,v path in graph of the edit-edge-set");
         options.addOption("vskip", "Skips (u,v) if u,v in vertex set of edit-edge-set's graph");
         options.addOption("sth", true,"Soft threshold: No edit found in 1st lazy run -> discards edges with subgraph-score <= this");
-        options.addOption("lzreach", true,"Number of next possible edits to be included during lazy run. Default: size of prime / 5.");
+        options.addOption("lzreach", true,"Number of next possible edits to be included during lazy run. Default: sqrt(no. of prime's children) + 2.");
 
         Option weightm = new Option("wm",true,"Weight multiplier. Default: 1.0; Set lower if no solution, higher if too expensive");
         weightm.setArgName("double");
@@ -204,6 +209,10 @@ public class Parameters {
 
     public String[] getTestParams(){
         return input.getOptionValues("test");
+    }
+
+    public String[] getCographProbabilities(){
+        return input.getOptionValues("cograph");
     }
 
     public String getInFileAbsPath(){
@@ -316,7 +325,7 @@ public class Parameters {
     }
 
     public boolean isSkipPaths() {
-        return !input.hasOption("noeskip"); // default: true
+        return input.hasOption("pskip"); // default: false
     }
 
     public boolean isSkipExistingVertices() {

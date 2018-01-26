@@ -7,6 +7,7 @@ import org.jgrapht.io.ExportException;
 import org.jgrapht.io.ImportException;
 
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -23,6 +24,9 @@ import dicograph.utils.Parameters;
 import dicograph.utils.Triple;
 import dicograph.utils.WeightedEdge;
 import ilog.concert.IloException;
+
+import static com.google.common.math.IntMath.binomial;
+import static com.google.common.math.IntMath.factorial;
 
 /*
  *   This source file is part of the program for editing directed graphs
@@ -45,6 +49,8 @@ import ilog.concert.IloException;
 
 public class MetaEditor {
 
+    private final DecimalFormat df = new DecimalFormat("0.000000");
+
     private final Parameters p;
     private final SimpleDirectedGraph<Integer,DefaultEdge> inputGraph;
     private final Logger log;
@@ -54,7 +60,7 @@ public class MetaEditor {
     private int ilpCost;
     private int lazyCost;
     private int lazyCorrectRun;
-    private int bestTTDistance;
+    private double bestTTDistance;
     private int bestCost;
 
 
@@ -69,7 +75,7 @@ public class MetaEditor {
         DirectedMD modDecomp = new DirectedMD(inputGraph, log, false);
         origTree = modDecomp.computeModularDecomposition();
         lazyCorrectRun = 0;
-        bestTTDistance = Integer.MAX_VALUE;
+        bestTTDistance = Double.MAX_VALUE;
         bestCost = Integer.MAX_VALUE;
     }
 
@@ -126,6 +132,8 @@ public class MetaEditor {
             }
             // triple metric - check all!
             if(cotreeTriples != null){
+                int divisor =  2*binomial(nVertices,3); // 2* (n \choose 3) possible triples
+
                 for(List<Solution> solutions : solutionMap.values()) {
                     for(Solution solution : solutions) {
 
@@ -134,12 +142,13 @@ public class MetaEditor {
                         Set<Triple> coTriples = new HashSet<>(cotreeTriples);
                         coTriples.removeAll(solTriples);
                         solTriples.removeAll(cotreeTriples);
-                        int tt_distance = coTriples.size() + solTriples.size();
-                        solution.setTreeDistance(tt_distance);
-                        log.info("TT-distance " + tt_distance + " for solution: " + solution);
+                        int tt_dist = coTriples.size() + solTriples.size();
+                        double tt_distance_normed = tt_dist / divisor;
+                        solution.setTreeDistance(tt_distance_normed);
+                        log.info("TT-distance: " + tt_dist + ", Normalized: " + df.format(tt_distance_normed) + " for solution: " + solution);
 
-                        if (tt_distance < bestTTDistance) {
-                            bestTTDistance = tt_distance;
+                        if (tt_distance_normed < bestTTDistance) {
+                            bestTTDistance = tt_distance_normed;
                             bestDistSolution = solution;
                         }
                     }
@@ -152,16 +161,17 @@ public class MetaEditor {
             int cost = solution.getCost();
             log.info(() -> solution.getType() + ": Found solution with " + cost + " edits: " + solution.getEdits());
             log.fine(() ->"Edit-Graph: " + solution.getGraph());
-            if(!done && solution.getCost() == bestCost){
-                System.out.println("//Edits: " + solution.getEdits());
-                DOTExporter<Integer,DefaultEdge> exporter = new DOTExporter<>(new IntegerComponentNameProvider<>(), null, null);
-                exporter.exportGraph(solution.getGraph(), System.out);
-                done = true;
-            }
+//            todo: activate!!!
+//            if(!done && solution.getCost() == bestCost){
+//                System.out.println("//Edits: " + solution.getEdits());
+//                DOTExporter<Integer,DefaultEdge> exporter = new DOTExporter<>(new IntegerComponentNameProvider<>(), null, null);
+//                exporter.exportGraph(solution.getGraph(), System.out);
+//                done = true;
+//            }
 
         }
         if(bestDistSolution != null){
-            log.info("Best TT-Distance: " + bestTTDistance + " for solution: " + bestDistSolution);
+            log.info("Best TT-Distance: " + df.format(bestTTDistance) + " for solution: " + bestDistSolution);
             bestSolutions.remove(bestDistSolution);
             bestSolutions.add(0,bestDistSolution);
         }
@@ -255,7 +265,7 @@ public class MetaEditor {
         return lazyCorrectRun;
     }
 
-    public int getBestTTDistance() {
+    public double getBestTTDistance() {
         return bestTTDistance;
     }
 
