@@ -40,7 +40,7 @@ cd FP_to_DMD/build/
 
 cmake ..
 
-make
+make -j 4
 
 cd ../..
 
@@ -49,21 +49,21 @@ cd MD/build/
 
 cmake ..
 
-make
+make -j 4
 
 cd ../..
 
 
 cd OverlapComponentProg/
 
-make
+make -j 4
 
 
 The maven-steps can be skipped if you directly use the DCEdit-1.0.jar and don't want to compile the java sources.
 
 **Add CPlex-jar to your local maven repository (change the path) and compile.**
 
-mvn install:install-file -Dfile=/Users/praktikant/Applications/IBM/ILOG/CPLEX_Studio1271/cplex/lib/cplex.jar -DgroupId=ilog -DartifactId=cplex -Dversion=12.7 -Dpackaging=jar
+mvn install:install-file -Dfile=/opt/ibm/ILOG/CPLEX_Studio1271/cplex/lib/cplex.jar -DgroupId=ilog -DartifactId=cplex -Dversion=12.7 -Dpackaging=jar
 
 mvn package
 
@@ -75,4 +75,4 @@ mv target/DCEdit-1.0.jar .
 
 java -jar DCEdit-1.0.jar -test 5 50 10 -MD
 
-java -Djava.library.path=/Users/praktikant/Applications/IBM/ILOG/CPLEX_Studio1271/cplex/bin/x86-64_osx -jar DCEdit-1.0.jar -test 5 50 10 -gilp -gforce -v
+java -Djava.library.path=/opt/ibm/ILOG/CPLEX_Studio1271/cplex/bin/x86-64_linux -jar DCEdit-1.0.jar -test 5 50 10 -gilp -gforce -v
