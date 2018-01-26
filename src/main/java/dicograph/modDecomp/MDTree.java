@@ -328,10 +328,14 @@ public class MDTree extends RootedTree {
                         LinkedList<RootedTreeNode> x_y = new LinkedList<>();
                         x_y.add(leaves[x]);
                         x_y.add(leaves[y]);
+                        RootedTreeNode lca_x_y = computeLCA(x_y, log);
+
                         LinkedList<RootedTreeNode> x_y_z = new LinkedList<>(x_y);
                         x_y_z.add(leaves[z]);
-                        RootedTreeNode lca_x_y = computeLCA(x_y, log);
+                        x_y_z.add(lca_x_y);
                         RootedTreeNode lca_x_y_z = computeLCA(x_y_z, log);
+
+                        // Fuck. Different LCA results for same lca...
                         if (!lca_x_y.equals(lca_x_y_z)) {
                             ret.add(new Triple(x, y, z));
                         }

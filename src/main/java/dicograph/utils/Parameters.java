@@ -38,7 +38,7 @@ public class Parameters {
 
     // Editing-Parameters with Default values:
     private long timeOut = 3600;
-    private int softThreshold = 3; // If no succesful edit found, discard edits with forbiddenSub-score <= this value - atm for my bad tests.
+    private int softThreshold = 0; // If no succesful edit found, discard edits with forbiddenSub-score <= this value - atm for my bad tests.
     private int hardThreshold = 0; // Exclude edges with a forbiddenSubgraph-score <= this threshold from the edge-edit-set.
     // prev: Force stop if forbiddenSub-Score <= this value during first run and use brute-force/branching/ILP in second run to complete.
     private double weightMultiplier = 1.0;
@@ -91,7 +91,7 @@ public class Parameters {
         options.addOption(log);
 
         // methods:
-        options.addOption("glazy", "Use lazy greedy method");
+        options.addOption("lazy", "Use lazy greedy method");
         options.addOption("gforce","Use Brute Force in Step 2. Exit step 1 when bf- or hard thr reached");
         options.addOption("gilp", "Use ILP in step 2. Exit step 1 when bf- or hard thr reached");
         options.addOption("ilp", "Use MD and ILP");
@@ -99,7 +99,7 @@ public class Parameters {
 
 
         // method type parameters:
-        options.addOption("hth", true,"Methods: Step 2 when subgraph-score < this hard-trh. Default: stop at Brute-Force-TH instead.");
+        options.addOption("hth", true,"Methods: Step 2 when subgraph-score < this hard-trh. Default: stop at Brute-Force-TH instead. For lazy: Don't apply lzreach when...");
         options.addOption("glscore","Methods: Runs Step 2 only on edges with high global edge-score");
 
 
@@ -107,7 +107,6 @@ public class Parameters {
         options.addOption("gap",true,"Accept solutions with: cost <= best cost + gap. Default: 0; -1 exits after first");
         options.addOption("t",true, "Time limit of an ILP/Brute-Force-Computation in s. Default: 1h");
 
-        options.addOption("reqgl","Require improvements on global score in 1st run/lazy");
         options.addOption("bfth",true,"Step 2 when number of primes < brute-force-TH. Default: 10");
         options.addOption("bfgap",true,"Exit module-bf when subset-size > best solution + bfgap. Default: 0; -1 exits after first.");
         options.addOption("bflimit",true,"Abort module-bf when subset-size > this. Default: size of the prime");
@@ -142,7 +141,7 @@ public class Parameters {
         if (!isMDOnly()){
             // set params
             if(isBruteForce() || isGreedyPlusILP()|| isIlpMD() || isIlpOnly()){
-                lazy = input.hasOption("glazy");
+                lazy = input.hasOption("lazy");
             }
             if(input.hasOption("gap")){
                 solutionGap = Integer.parseInt( input.getOptionValue("gap"));
@@ -183,8 +182,10 @@ public class Parameters {
         String header = "Global flags: -i, -o, -log, -v, -md, -test\n" +
                 "General editing flags: -t -gap\n" +
                 "Editing methods (If several, chooses best solution):  \n" +
-                "  -glazy, -gforce, -gilp; -ilp, -ilpglobal\n" +
-                "Behaviour of greedy methods:\n" +
+                "  -lazy, -gforce, -gilp; -ilp, -ilpglobal\n" +
+                "Parameters for lazy greedy method:\n" +
+                " -lzreach -hth -sth\n" +
+                "Behaviour of 2-step greedy methods:\n" +
                 " -hth (step 1), - glscore (step 2)\n\n";
 
         String footer = "\nRefer to thesis for details."; // todo: page/diagram!!!
@@ -306,10 +307,6 @@ public class Parameters {
 
     public long getTimeOut() {
         return timeOut;
-    }
-
-    public boolean isRequireGlobal(){
-        return input.hasOption("reqgl"); // default: false
     }
 
     public int getBruteForceThreshold() {
