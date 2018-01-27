@@ -177,7 +177,7 @@ public class MetaEditor {
                         solution.setTreeDistance(tt_distance_normed);
                         log.info("TT-distance: " + tt_dist + ", Normalized: " + df.format(tt_distance_normed) + " for solution: " + solution);
                         if(solution.getType() == EditType.Lazy)
-                            lazyTTDistance = tt_dist;
+                            lazyTTDistance = tt_distance_normed;
 
                         if (tt_distance_normed < bestTTDistance) {
                             bestTTDistance = tt_distance_normed;

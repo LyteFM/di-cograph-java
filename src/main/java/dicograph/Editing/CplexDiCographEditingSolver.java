@@ -59,6 +59,7 @@ class CplexDiCographEditingSolver {
     // objective function
     private IloNumExpr objFn;
 
+    private long bestObjectiveValue;
     // number of vertices
     private final int vertexCount;
 
@@ -283,5 +284,9 @@ class CplexDiCographEditingSolver {
 
     public List<SimpleDirectedGraph<Integer, DefaultEdge>> getSolutionGraphs() {
         return solutionGraphs;
+    }
+
+    public long getBestObjectiveValue() {
+        return bestObjectiveValue;
     }
 }

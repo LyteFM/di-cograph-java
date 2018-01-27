@@ -434,17 +434,37 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
             CplexDiCographEditingSolver primeSolver = new CplexDiCographEditingSolver(
                     this, p, weightMatrix, log);
             primeSolver.solve();
+            int bestVal = (int) primeSolver.getBestObjectiveValue();
             for (int i = 0; i < primeSolver.getEditingDistances().size(); i++) {
                 int val = (int) Math.round(primeSolver.getEditingDistances().get(i));
                 costToEdges.putIfAbsent(val,new LinkedList<>());
                 costToEdges.get(val).add(primeSolver.getSolutionEdgeEdits().get(i));
+
+                // I assume, for greedy, that all the best edits have a subgraph-score of at least one:
+                for(WeightedEdge wedge : primeSolver.getSolutionEdgeEdits().get(i)){
+                    int u,v;
+                    if(wedge.getFirst() < wedge.getSecond()){
+                        u = wedge.getFirst();
+                        v = wedge.getSecond();
+                    } else {
+                        u = wedge.getSecond();
+                        v = wedge.getFirst();
+                    }
+                    if(bestVal == val && !edgeToCount.containsKey(new Edge(u,v)))
+                        log.warning("Optimal edge " + wedge + "has subgraph-score 0!");
+                }
             }
 
-            log.info("MD Tree for CPlex subgraph solution:");
-            edit(primeSolver.getSolutionEdgeEdits().get(0));
-            DirectedMD subMD = new DirectedMD(this, log, false);
-            MDTree subTree = subMD.computeModularDecomposition();
-            log.info(MDTree.beautify(subTree.toString()));
+
+            if(!primeSolver.getSolutionEdgeEdits().isEmpty()) {
+                log.info("MD Tree for CPlex subgraph solution:");
+                edit(primeSolver.getSolutionEdgeEdits().get(0));
+                DirectedMD subMD = new DirectedMD(this, log, false);
+                MDTree subTree = subMD.computeModularDecomposition();
+                log.info(MDTree.beautify(subTree.toString()));
+            } else {
+                log.severe("CPlex solver stopped without solution!");
+            }
 
             return costToEdges;
         }

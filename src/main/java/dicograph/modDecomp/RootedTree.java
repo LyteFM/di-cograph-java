@@ -171,6 +171,8 @@ class RootedTree {
             return getLCA(nodes.get(0),nodes.get(1));
         else{
             RootedTreeNode lca = getLCA(nodes.get(0),nodes.get(1));
+            if(lca.equals(root))
+                return root;
             nodes.remove(0);
             nodes.remove(0);
             nodes.add(lca);

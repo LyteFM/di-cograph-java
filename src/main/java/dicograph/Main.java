@@ -242,15 +242,22 @@ public class Main {
 
     private static MetaEditor editingTest(Logger log, SimpleDirectedGraph<Integer,DefaultEdge> importGraph, String expPath, MDTree cotree, Parameters p)
             throws IOException, ImportException, InterruptedException, IloException, ExportException{
-        int cost = -1;
-        double dist = -1;
+        int cost;
+        double dist;
 
         MetaEditor testMeta = new MetaEditor(importGraph, p, log);
         testMeta.setCotreeTriples(cotree.getTriples());
         List<Solution> solutions = testMeta.computeSolutionsForMethods();
         if(!solutions.isEmpty()){
-            cost = solutions.get(0).getCost();
-            dist = solutions.get(0).getTreeDistance();
+
+            if(p.isLazy() && p.isIlpMD()){
+                cost = testMeta.getLazyCost();
+                dist = testMeta.getLazyCorrectRun();
+            } else {
+                cost = solutions.get(0).getCost();
+                dist = solutions.get(0).getTreeDistance(); // might _not_ be the best!
+            }
+
             String solName = expPath + "_edit-cost_" + cost + "_TT-dist_" + new DecimalFormat("0.000000").format(dist) + ".txt";
             exportSolution(solutions.get(0), ".txt", solName);
             System.out.println("Exported solution to: " + solName);
