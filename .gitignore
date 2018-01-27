@@ -15,3 +15,6 @@ logs/
 FP_to_DMD/build/
 MD/build/
 OverlapComponentProg/doNotDelete.txt
+.idea.zip
+DCEdit.iml
+DiCographEditing.iml

@@ -136,10 +136,14 @@ class MDEditor {
                         for (List<Edge> newEdit : editsForCost.getValue()) {
                             for (List<Edge> previousEdit : currentSolutions) {
 
-                                List<Edge> newEditCopy = new LinkedList<>(newEdit);
+                                List<Edge> combined = new LinkedList<>(previousEdit);
+                                combined.addAll(newEdit);
+
+                                //List<Edge> newEditCopy = new LinkedList<>(newEdit);
                                 //assert editIsValid(oldInputEdits, previousEdit, newEdit) : "Illegal situation - edit of one prime included in edit of other!!!";
-                                newEditCopy.addAll(previousEdit);
-                                allNewSolutions.add(newEditCopy);
+                                //newEditCopy.addAll(previousEdit);
+
+                                allNewSolutions.add(combined);
                             }
                         }
                     }
@@ -198,7 +202,7 @@ class MDEditor {
         else
             log.info("Not yet a solution.");
 
-        return finalSolutions;
+        return finalSolutions; // empty if nothing found.
     }
 
     // Positive, empty or negative.

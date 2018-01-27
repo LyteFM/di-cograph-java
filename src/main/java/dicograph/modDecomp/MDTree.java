@@ -66,7 +66,7 @@ public class MDTree extends RootedTree {
 	public MDTree(SimpleGraph<Integer,DefaultEdge> jGraph) {
 		super();
 		setRoot( buildMDTree(jGraph) );
-		root.setParent(null); // F.L.: Still has the recSubProblem, that kills by LCA-computations.
+		root.setParent(null); // F.L.: 2017: Still had the recSubProblem, that killed LCA-computations.
 	}
 
 	protected MDTree(){
@@ -317,14 +317,14 @@ public class MDTree extends RootedTree {
     }
 
     // F.L. 24.01.18: for triple metric
-    public Set<Triple> getTriples(Logger log){
+    public Set<Triple> getTriples(){
         Set<Triple> ret = new HashSet<>();
         BitSet allVertices = root.getVertices();
 
         allVertices.stream().forEach( x-> {
             allVertices.stream().forEach( y -> {
                 allVertices.stream().forEach( z ->{
-                    if(x != y && y != z && x != z) {
+                    if(x < y && y != z && x != z) { // x<y ok, would be same triple.
 
                         LinkedList<RootedTreeNode> list = new LinkedList<>();
                         list.add(leaves[x]);
@@ -334,30 +334,8 @@ public class MDTree extends RootedTree {
                         list.add(leaves[z]);
                         RootedTreeNode secondLCA = getLCA(list);
 
-                        boolean newMethod = !firstLCA.equals(secondLCA);
-
-
-
-                        LinkedList<RootedTreeNode> x_y = new LinkedList<>();
-                        x_y.add(leaves[x]);
-                        x_y.add(leaves[y]);
-                        RootedTreeNode lca_x_y = computeLCA(x_y, log);
-
-                        LinkedList<RootedTreeNode> x_y_z = new LinkedList<>(x_y);
-                        x_y_z.add(leaves[z]);
-                        RootedTreeNode lca_x_y_z = computeLCA(x_y_z, log);
-
-
-                        boolean oldMethod = !lca_x_y.equals(lca_x_y_z);
-                        // Fuck. Different LCA results for same lca...
-                        if (newMethod) {
+                        if (!firstLCA.equals(secondLCA)) {
                             ret.add(new Triple(x, y, z));
-                            if(!oldMethod){
-                                System.out.println("Error: new true, old false for " + x + "," + y + "|" + z);
-
-                            }
-                        } else if (oldMethod){
-                            System.out.println("Error: old true, new false for " + x + "," + y + "|" + z);
                         }
                     }
                 });

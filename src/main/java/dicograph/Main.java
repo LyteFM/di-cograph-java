@@ -98,19 +98,39 @@ public class Main {
 
                 TreeMap<Integer, List<Integer>> ilpCostToLazyCorrects = new TreeMap<>();
                 TreeMap<Integer, List<Integer>> bestCostToLazyCost = new TreeMap<>();
+                List<Double> tripleDistances = new ArrayList<>(mTrials);
 
-
+                int lazyNotOptimal = 0;
+                int lazyFailures = 0;
                 for (int i = 1; i <= mTrials; i++) {
                     MetaEditor editor;
                     try {
                         editor = testRun(log, consoleHandler, command, nVertices, kDisturb, allGraphs);
 
-                        // map is fine....
-                        ilpCostToLazyCorrects.putIfAbsent(editor.getIlpCost(), new LinkedList<>()); // unlikely to be larger...
-                        ilpCostToLazyCorrects.get(editor.getIlpCost()).add( editor.getLazyCorrectRun() );
+                        // todo: what if lazy fails???
+                        // get the results for statistics
+                        if(!command.isMDOnly() && command.isLazy() && command.isIlpMD()) {
 
-                        bestCostToLazyCost.putIfAbsent(editor.getBestCost(), new LinkedList<>());
-                        bestCostToLazyCost.get( editor.getBestCost()).add( editor.getLazyCost());
+                            int best = editor.getBestCost();
+                            int lazy = editor.getLazyCost();
+
+                            // only if not optimal:
+                            if(lazy > best) {
+                                lazyNotOptimal++;
+                                ilpCostToLazyCorrects.putIfAbsent(best, new LinkedList<>());
+                                ilpCostToLazyCorrects.get(best).add(editor.getLazyCorrectRun());
+                            }
+
+                            if(editor.getLazySolution() != null) {
+                                bestCostToLazyCost.putIfAbsent(editor.getBestCost(), new LinkedList<>());
+                                bestCostToLazyCost.get(editor.getBestCost()).add(editor.getLazyCost());
+
+                                // Trees:
+                                tripleDistances.add(editor.getLazyTTDistance());
+                            } else {
+                                lazyFailures++;
+                            }
+                        }
 
                     } catch ( Exception e){
                         e.printStackTrace(System.err);
@@ -123,9 +143,10 @@ public class Main {
 
                 log.info("All generated Graphs:");
                 log.info(allGraphs.toString().substring(0,allGraphs.length()-1));
-                // want stacked bar graph
-                log.info("ILP to correct lazy: " + ilpCostToLazyCorrects);
-                log.info( "best cost to lazy: " + bestCostToLazyCost);
+                log.info("ILP to correct lazy (when not optimal): " + ilpCostToLazyCorrects);
+                log.info( "Best cost to lazy: " + bestCostToLazyCost);
+                log.info("Tree distances: " + tripleDistances);
+                log.info("Lazy failed " + lazyFailures + " times, worse than ILP " + lazyNotOptimal + " times.");
                 return;
             }
         }
@@ -225,7 +246,7 @@ public class Main {
         double dist = -1;
 
         MetaEditor testMeta = new MetaEditor(importGraph, p, log);
-        testMeta.setCotreeTriples(cotree.getTriples(log));
+        testMeta.setCotreeTriples(cotree.getTriples());
         List<Solution> solutions = testMeta.computeSolutionsForMethods();
         if(!solutions.isEmpty()){
             cost = solutions.get(0).getCost();
@@ -276,23 +297,13 @@ public class Main {
         MetaEditor ret = null;
 
         if(!p.isMDOnly()){
-//            try {
-                ret = editingTest(log,g_d,graphFolder + fileName, cotree, p);
-//            } catch (Exception e){
-//                log.severe(e.toString());
-//                e.printStackTrace(System.err);
-//            }
+            ret = editingTest(log,g_d,graphFolder + fileName, cotree, p);
             System.out.println("Finished Editing Test. Log written to:");
 
         } else {
             log.info("Started modular decomposition");
-//            try {
-                DirectedMD testMD = new DirectedMD(g_d, log, false);
-                testMD.computeModularDecomposition();
-//            } catch (IllegalStateException | AssertionError e) {
-//                log.severe(e.toString());
-//                e.printStackTrace(System.err);
-//            }
+            DirectedMD testMD = new DirectedMD(g_d, log, false);
+            testMD.computeModularDecomposition();
             System.out.println("Finished modular decomposition. Log written to:");
         }
         System.out.println(fileName + ".log");

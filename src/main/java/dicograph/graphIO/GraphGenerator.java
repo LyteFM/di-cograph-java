@@ -43,8 +43,8 @@ public class GraphGenerator {
 
     private final SecureRandom random;
     private final Logger logger;
-    private double SE  = 0.333333333;
-    private double PA = 0.663333333;
+    private double pSE = 0.333333333;
+    private double pPA = 0.666666666;
 
     public GraphGenerator(Logger log) {
         random = new SecureRandom();
@@ -98,8 +98,8 @@ public class GraphGenerator {
     public Set<BitSet> generateRandomDirectedCograph(SimpleDirectedGraph<Integer, DefaultEdge> graph, int nVertices, String[] cographsPr){
 
         if(cographsPr != null){
-            SE = Double.parseDouble(cographsPr[0]);
-            PA = SE + Double.parseDouble(cographsPr[1]);
+            pSE = Double.parseDouble(cographsPr[0]);
+            pPA = pSE + Double.parseDouble(cographsPr[1]);
         }
 
         return generateCograph(graph, nVertices,true, true);
@@ -138,17 +138,12 @@ public class GraphGenerator {
         int moduleCount = nVertices; // 10
         while (moduleCount > 1) {
 
-            // generates k: number of modules to join
-            // nicer distribution: small modules must be more likely. Larger modules still appear through
-            // merging same type of modules.
-
-            double rand = Math.abs(random.nextGaussian())/6;
-            Double nToCombine = rand * (moduleCount - 1); // <9 + rounding -> intValue: <= 8
-            int k = nToCombine.intValue() + 2;
-            // fix rounding error
+            // generates k: number of modules to join, 2 <= k <= 5
+            // Small modules most likely. Larger modules still appear through merging same type.
+            int k = ((int) Math.abs(random.nextGaussian())) + 2;
+            // range of k must be from 2 to moduleCount!
             if(k > moduleCount)
                 k = moduleCount;
-            // range of k must be from 2 to moduleCount!
 
             // generates MDNodeType
             MDNodeType mdNodeType;
@@ -160,9 +155,9 @@ public class GraphGenerator {
                     mdNodeType = SERIES;
                 }
             } else {
-                if (mdType < SE){
+                if (mdType < pSE){
                     mdNodeType = SERIES;
-                } else if(mdType < PA){
+                } else if(mdType < pPA){
                     mdNodeType = PARALLEL;
                 } else{
                     mdNodeType = ORDER;

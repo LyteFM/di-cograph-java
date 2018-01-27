@@ -20,6 +20,7 @@ import java.util.logging.Logger;
 import dicograph.graphIO.DirectedInducedIntSubgraph;
 import dicograph.graphIO.UndirectedInducedIntSubgraph;
 import dicograph.utils.Triple;
+import sun.plugin.dom.exception.InvalidStateException;
 
 /**
  *   This source file is part of the program for computing the modular
@@ -58,8 +59,7 @@ class RootedTree {
 	protected RootedTree() {
 		root = null;
 	}
-	
-	
+
 	/* 
 	 * Creates a rooted tree with the given root.
 	 * @param r The root of the newly created tree.
@@ -91,97 +91,6 @@ class RootedTree {
     public HashMap<BitSet, RootedTreeNode> getModuleToTreenode() {
         return moduleToTreenode;
     }
-
-    // F.L. 13.11.17: moved here
-    /**
-     * Computes the lowest common ancestor for a set of RootedTreeNodes.
-     *
-     * @param lowerNodesCollection the treenodes
-     * @param log                  the logger
-     * @return the LCA. null indicates an error.
-     */
-    public static RootedTreeNode computeLCA(Collection<RootedTreeNode> lowerNodesCollection, Logger log) {
-
-        boolean alreadyReachedRoot = false;
-        HashMap<RootedTreeNode, LinkedList<RootedTreeNode>> inputNodeToAncestors = new HashMap<>(lowerNodesCollection.size() * 4 / 3);
-        HashMap<RootedTreeNode, RootedTreeNode> allTraversedNodes = new HashMap<>();
-
-        for (RootedTreeNode lowerNode : lowerNodesCollection) {
-            LinkedList<RootedTreeNode> ancestryList = new LinkedList<>();
-            ancestryList.add(lowerNode);
-            inputNodeToAncestors.put(lowerNode, ancestryList);
-        }
-        int remainingNodes = lowerNodesCollection.size();
-
-        // Traverse the Tree bottom-up
-
-        while (remainingNodes > 1) {
-            Iterator<Map.Entry<RootedTreeNode, LinkedList<RootedTreeNode>>> nodesIter = inputNodeToAncestors.entrySet().iterator();
-            while (nodesIter.hasNext()) {
-                Map.Entry<RootedTreeNode, LinkedList<RootedTreeNode>> currEntry = nodesIter.next();
-                RootedTreeNode parent = currEntry.getValue().peekLast().getParent();
-
-
-                if(parent != null) {
-                    if (parent.isRoot()) {
-                        log.finest(() -> "Reached root: " + currEntry.toString());
-                        // No problem if just one went up to root.
-                        if (alreadyReachedRoot) {
-                            log.finest("Root is LCA.");
-                            return parent;
-                        }
-                        alreadyReachedRoot = true;
-                    }
-
-                    if (allTraversedNodes.containsKey(parent)) {
-
-                        // already present: close this list.
-                        remainingNodes--;
-                        log.finest(() -> "Closing: " + currEntry.toString());
-
-                        nodesIter.remove();
-                        // We're done if this was the last.
-                        if (remainingNodes == 1) {
-                            if (inputNodeToAncestors.size() != 1) {
-                                throw new IllegalStateException("Multiple ancestry lists: " + inputNodeToAncestors);
-                            }
-                            LinkedList<RootedTreeNode> lastList = inputNodeToAncestors.values().stream().findFirst().get();
-                            if (lastList.contains(parent)) {
-                                return parent;
-                            } else {
-                                log.finest(() -> "Not found: return first inner node entry of last list:");
-                                log.finest(lastList::toString);
-                                for (RootedTreeNode lastListNode : lastList) {
-                                    if (!lastListNode.isALeaf()) {
-                                        return lastListNode;
-                                    }
-                                }
-                            }
-                        }
-
-                    } else {
-                        // add the parent
-                        log.finest(() -> "Adding: " + currEntry + ", parent: " + parent);
-                        currEntry.getValue().addLast(parent);
-                        allTraversedNodes.put(parent, currEntry.getKey());
-                    }
-                }
-                else {
-                    log.finest(() -> "Ignoring root.");
-                }
-            }
-            log.finest(() -> "All nodes: " + allTraversedNodes);
-            log.finest(() -> "Next Iteration: " + inputNodeToAncestors);
-
-        }
-        // debug
-        log.severe(() -> "Error: Unexpected Exit! All nodes: " + allTraversedNodes);
-        log.severe(() -> "next Iteration: " + inputNodeToAncestors);
-        throw new IllegalStateException("NULL after LCA computation!");
-    }
-
-
-
 
     /** F.L. 16.10.17:
      * Returns a String representation of the strong members of the tree's set family, i.e. the inner nodes.
@@ -253,6 +162,7 @@ class RootedTree {
         return output.toString();
     }
 
+    // F.L. 27.01.18: KISS! Incoming list will be changed.
     public RootedTreeNode getLCA(List<RootedTreeNode> nodes){
 
         if(nodes.size() == 1)
@@ -266,21 +176,23 @@ class RootedTree {
             nodes.add(lca);
             return getLCA( nodes );
         }
-
     }
 
+    // F.L. 27.01.18: KISS!
     private RootedTreeNode getLCA(RootedTreeNode x, RootedTreeNode y){
+        // trivial cases
         if(x.equals(root) || y.equals(root))
             return root;
         if(x.equals(y))
             return x;
+
         LinkedList<RootedTreeNode> xList = new LinkedList<>();
         RootedTreeNode current = x;
         while (current != null){
             xList.add(0,current);
             current = current.getParent(); // until root
             if(y.equals(current))
-                return y;
+                return y; // y is ancestor of x
         }
 
         LinkedList<RootedTreeNode> yList = new LinkedList<>();
@@ -289,13 +201,14 @@ class RootedTree {
             yList.add(0,current);
             current = current.getParent();
             if(x.equals(current))
-                return x;
+                return x; // x is ancestor of y
         }
 
+        // run list top-down to find lca
         RootedTreeNode previous = root;
         while (true){
             if(xList.isEmpty() || yList.isEmpty())
-                System.out.println("Help!");
+                throw new InvalidStateException("Empty lists in LCA search!");
             RootedTreeNode nextX = xList.pop();
             RootedTreeNode nextY = yList.pop();
             if(!nextX.equals(nextY))
