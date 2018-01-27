@@ -260,6 +260,7 @@ public class Main {
         if(!p.isMDOnly()) {
             DirectedMD cotreeMD = new DirectedMD(g_d, log, false);
             cotree = cotreeMD.computeModularDecomposition();
+            log.info("Generated Cotree: " + MDTree.beautify(cotree.toString()));
         }
 
         gen.disturbDicograph(g_d, nDisturb);

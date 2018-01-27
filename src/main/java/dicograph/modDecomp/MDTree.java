@@ -325,6 +325,19 @@ public class MDTree extends RootedTree {
             allVertices.stream().forEach( y -> {
                 allVertices.stream().forEach( z ->{
                     if(x != y && y != z && x != z) {
+
+                        LinkedList<RootedTreeNode> list = new LinkedList<>();
+                        list.add(leaves[x]);
+                        list.add(leaves[y]);
+                        RootedTreeNode firstLCA = getLCA(list);
+
+                        list.add(leaves[z]);
+                        RootedTreeNode secondLCA = getLCA(list);
+
+                        boolean newMethod = !firstLCA.equals(secondLCA);
+
+
+
                         LinkedList<RootedTreeNode> x_y = new LinkedList<>();
                         x_y.add(leaves[x]);
                         x_y.add(leaves[y]);
@@ -332,12 +345,19 @@ public class MDTree extends RootedTree {
 
                         LinkedList<RootedTreeNode> x_y_z = new LinkedList<>(x_y);
                         x_y_z.add(leaves[z]);
-                        x_y_z.add(lca_x_y);
                         RootedTreeNode lca_x_y_z = computeLCA(x_y_z, log);
 
+
+                        boolean oldMethod = !lca_x_y.equals(lca_x_y_z);
                         // Fuck. Different LCA results for same lca...
-                        if (!lca_x_y.equals(lca_x_y_z)) {
+                        if (newMethod) {
                             ret.add(new Triple(x, y, z));
+                            if(!oldMethod){
+                                System.out.println("Error: new true, old false for " + x + "," + y + "|" + z);
+
+                            }
+                        } else if (oldMethod){
+                            System.out.println("Error: old true, new false for " + x + "," + y + "|" + z);
                         }
                     }
                 });

@@ -11,8 +11,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 import java.util.logging.Logger;
 
 import dicograph.graphIO.DirectedInducedIntSubgraph;
@@ -249,6 +251,58 @@ class RootedTree {
         root.exportAsDot(output,counter);
         output.append("}\n");
         return output.toString();
+    }
+
+    public RootedTreeNode getLCA(List<RootedTreeNode> nodes){
+
+        if(nodes.size() == 1)
+            return nodes.get(0);
+        else if(nodes.size() == 2)
+            return getLCA(nodes.get(0),nodes.get(1));
+        else{
+            RootedTreeNode lca = getLCA(nodes.get(0),nodes.get(1));
+            nodes.remove(0);
+            nodes.remove(0);
+            nodes.add(lca);
+            return getLCA( nodes );
+        }
+
+    }
+
+    private RootedTreeNode getLCA(RootedTreeNode x, RootedTreeNode y){
+        if(x.equals(root) || y.equals(root))
+            return root;
+        if(x.equals(y))
+            return x;
+        LinkedList<RootedTreeNode> xList = new LinkedList<>();
+        RootedTreeNode current = x;
+        while (current != null){
+            xList.add(0,current);
+            current = current.getParent(); // until root
+            if(y.equals(current))
+                return y;
+        }
+
+        LinkedList<RootedTreeNode> yList = new LinkedList<>();
+        current = y;
+        while (current != null){
+            yList.add(0,current);
+            current = current.getParent();
+            if(x.equals(current))
+                return x;
+        }
+
+        RootedTreeNode previous = root;
+        while (true){
+            if(xList.isEmpty() || yList.isEmpty())
+                System.out.println("Help!");
+            RootedTreeNode nextX = xList.pop();
+            RootedTreeNode nextY = yList.pop();
+            if(!nextX.equals(nextY))
+                return previous;
+            else
+                previous = nextX;
+        }
     }
 
 }

@@ -583,7 +583,14 @@ public class DirectedMD {
                     if(maximumMembers.size() == nVertices){
                         lca = (MDTreeNode) mdTree.root;
                     } else {
-                        lca = (MDTreeNode) RootedTree.computeLCA(maximumMembers, log);
+                        log.info("Maximum members: " + maximumMembers);
+                        RootedTreeNode oldLCA = RootedTree.computeLCA(maximumMembers, log);
+                        RootedTreeNode newLCA = mdTree.getLCA(new ArrayList<>(maximumMembers));
+                        if(!oldLCA.equals(newLCA)) {
+                            log.severe("Error in LCA computation! old: " + oldLCA);
+                            log.severe("New: " + newLCA);
+                        }
+                        lca = (MDTreeNode) newLCA;
                     }
                     if (lca == null || lca.hasNoChildren()) {
                         throw new IllegalStateException("LCA: " + lca + " invalid!\nFor: " + setEntryOfSigma);
