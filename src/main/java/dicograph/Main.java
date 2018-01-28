@@ -159,6 +159,8 @@ public class Main {
                 log.info("Tree distances: " + tripleDistances);
                 log.info("Lazy failed " + lazyFailures + " times, worse than ILP " + lazyNotOptimal + " times.");
                 log.info("Subgraph stats: " + subgraphCounts);
+                System.out.print("\u0007");
+                System.out.flush();
                 return;
             }
         }
