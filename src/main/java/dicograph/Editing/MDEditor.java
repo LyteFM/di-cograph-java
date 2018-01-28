@@ -6,7 +6,9 @@ import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.io.ImportException;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -108,7 +110,8 @@ class MDEditor {
 
         log.fine(()->"Original Tree: " + MDTree.beautify(inputTree.toString()));
         TreeMap<Integer,LinkedList<MDTreeNode>> depthToPrimes = inputTree.getPrimeModulesBottomUp();
-        assert !depthToPrimes.isEmpty();
+
+        log.info(type + " started: " +new SimpleDateFormat("HH:mm:ss:SSS").format(Calendar.getInstance().getTime()));
 
         for(Map.Entry<Integer,LinkedList<MDTreeNode>> entry : depthToPrimes.descendingMap().entrySet()){
             log.info(()->"Editing primes on lvl " + entry.getKey());
@@ -201,9 +204,11 @@ class MDEditor {
         }
 
         if(solved)
-            log.info("Final Solution(s): "+ finalSolutions); // .get(lowestCost)
+            log.info(()->"Final Solution(s): "+ finalSolutions); // .get(lowestCost)
         else
-            log.info("Not yet a solution.");
+            log.info(()->"Not yet a solution.");
+        log.info(()->type + " ended: " +new SimpleDateFormat("HH:mm:ss:SSS").format(Calendar.getInstance().getTime()));
+
 
         return finalSolutions; // empty if nothing found.
     }

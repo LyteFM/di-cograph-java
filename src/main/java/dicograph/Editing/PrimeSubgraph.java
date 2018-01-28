@@ -286,8 +286,8 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                                 log.info(msg + "Subgraph-score " + edge.getValue() + " reached -hth" );
                             }
                             break;
-                        } else if( ++runs % 50 == 0 && editsByLocalScore.size() > 0 && timer.elapsedSeconds() > p.getTimeOut() ){
-                            log.warning("Stopping after first found edit due to timeout: " + p.getTimeOut());
+                        } else if(editsByLocalScore.size() > 2 && timer.elapsedSeconds() > p.getTimeOut() ){
+                            log.warning("Stopping after first three found edit due to timeout: " + p.getTimeOut());
                             break;
                         }
                     }
@@ -412,7 +412,6 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
 
                             } else {
                                 // remove chosen edit, continue from first found index.
-                                editsByLocalScore.remove(editsByLocalScore.firstKey());
                                 edgesToScore.remove(bestEntry);
                                 index = firstIndex;
                             }
