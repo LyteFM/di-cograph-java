@@ -20,14 +20,17 @@ import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.Logger;
 
+import dicograph.Editing.ForbiddenSubgraph;
 import dicograph.Editing.MetaEditor;
 import dicograph.Editing.Solution;
 import dicograph.graphIO.GraphGenerator;
@@ -100,6 +103,8 @@ public class Main {
                 TreeMap<Integer, List<Integer>> bestCostToLazyCost = new TreeMap<>();
                 List<Double> tripleDistances = new ArrayList<>(mTrials);
 
+                Map<ForbiddenSubgraph,Integer> subgraphCounts =new LinkedHashMap<>();
+
                 int lazyNotOptimal = 0;
                 int lazyFailures = 0;
                 for (int i = 1; i <= mTrials; i++) {
@@ -130,6 +135,12 @@ public class Main {
                             } else {
                                 lazyFailures++;
                             }
+
+                            // stats
+                            for(Map.Entry<ForbiddenSubgraph,Integer> fsubEntry : editor.getSubgraphCounts().entrySet()){
+                                int newCount = subgraphCounts.getOrDefault(fsubEntry.getKey(),0) + fsubEntry.getValue();
+                                subgraphCounts.put(fsubEntry.getKey(), newCount);
+                            }
                         }
 
                     } catch ( Exception e){
@@ -147,6 +158,7 @@ public class Main {
                 log.info( "Best cost to lazy: " + bestCostToLazyCost);
                 log.info("Tree distances: " + tripleDistances);
                 log.info("Lazy failed " + lazyFailures + " times, worse than ILP " + lazyNotOptimal + " times.");
+                log.info("Subgraph stats: " + subgraphCounts);
                 return;
             }
         }

@@ -76,12 +76,12 @@ class CplexDiCographEditingSolver {
      * @param parameters the parameter array:
      * @throws IloException
      */
-    public CplexDiCographEditingSolver(SimpleDirectedGraph<Integer, DefaultEdge> inputGraph, Parameters parameters, Logger log) throws IloException {
+    CplexDiCographEditingSolver(SimpleDirectedGraph<Integer, DefaultEdge> inputGraph, Parameters parameters, Logger log) throws IloException {
         this(inputGraph,parameters,null,log);
     }
 
 
-    public CplexDiCographEditingSolver(SimpleDirectedGraph<Integer, DefaultEdge> inputGraph, Parameters params, double[][] weights, Logger logger) throws IloException {
+    CplexDiCographEditingSolver(SimpleDirectedGraph<Integer, DefaultEdge> inputGraph, Parameters params, double[][] weights, Logger logger) throws IloException {
         this.inputGraph = inputGraph;
         // want the vertex set of the graph in sorted order for easier display and to uniquely define the matrix
         sortedVertexSet = new TreeSet<>(inputGraph.vertexSet()); // todo: not necessary!
@@ -220,13 +220,15 @@ class CplexDiCographEditingSolver {
     private String getSolution() throws  IloException {
         int noSolutions = solver.getSolnPoolNsolns();
         StringBuilder solution = new StringBuilder();
-        double bestObjectiveValue = solver.getBestObjValue();
+        bestObjectiveValue = Math.round(solver.getBestObjValue());
 
         log.fine("Solution status = " + solver.getStatus());
         log.fine("CographEditDistance: " + bestObjectiveValue);
 
+
+
         for (int solutionId=0; solutionId<noSolutions; solutionId++){
-            if (solver.getObjValue(solutionId)<=bestObjectiveValue+3){
+            if (Math.round(solver.getObjValue(solutionId)) <=bestObjectiveValue + parameters.getSolutionGap() + 1){
 
                 // initialize JGraph with same vertex-Set:
                 SimpleDirectedGraph<Integer, DefaultEdge> solutionGraph = new SimpleDirectedGraph<>(DefaultEdge.class);

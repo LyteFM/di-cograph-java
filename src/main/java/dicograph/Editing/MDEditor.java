@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +57,7 @@ class MDEditor {
     private final boolean firstRun;
 
     private final SimpleDirectedGraph<Integer, DefaultEdge> workGraph; // in theory, I can have several! One best enough, though.
+    private final Map<ForbiddenSubgraph,Integer> subgraphStats;
 
 
     // 1st run: just one. Easy.
@@ -80,6 +82,7 @@ class MDEditor {
         inputTree = tree;
         oldInputEdits = oldEdits;
         firstRun = oldEdits == null;
+        subgraphStats = new LinkedHashMap<>();
     }
 
     public MDEditor(SimpleDirectedGraph<Integer,DefaultEdge> input, MDTree tree, Logger logger,EditType ed, Parameters params){
@@ -215,9 +218,15 @@ class MDEditor {
         log.fine(() ->"Subgraph: " + subGraph.toString());
         log.info(() ->"Base-Vertex to Sub-Vertex " + subGraph.getBaseNoTosubNo());
         log.info(() -> "Computing possible edit Sets.");
+        // counts in order: D_3, A, B, C_3, \bar{D_3}, P_4, N, \bar{N}.
+        Map<ForbiddenSubgraph,Integer> subgraphCounts = new LinkedHashMap<>();
+        for(ForbiddenSubgraph sg : ForbiddenSubgraph.len_3)
+            subgraphCounts.put(sg,0);
+        for(ForbiddenSubgraph sg : ForbiddenSubgraph.len_4)
+            subgraphCounts.put(sg,0);
         // negative cost - not yet successful (aborted in step 1 due to threshold/ processed all)
         // empty: nothing found in step 2
-        TreeMap<Integer, List<List<WeightedEdge>>> allPossibleEdits = subGraph.computeEdits(firstRun);
+        TreeMap<Integer, List<List<WeightedEdge>>> allPossibleEdits = subGraph.computeEdits(firstRun, subgraphCounts);
 
         // - compute ALL feasable edits within bruteForceGap
         // - choose the BEST edit when taking the original graph into account
@@ -255,6 +264,12 @@ class MDEditor {
             }
 
         }
+        // update stats
+        for(Map.Entry<ForbiddenSubgraph,Integer> fsubEntry : subgraphCounts.entrySet()){
+            int newCount = subgraphStats.getOrDefault(fsubEntry.getKey(),0) + fsubEntry.getValue();
+            subgraphStats.put(fsubEntry.getKey(), newCount);
+        }
+
         // else: no solution for this prime.
         return allRealEdits;
     }
@@ -336,5 +351,9 @@ class MDEditor {
                 g.addEdge(e.getFirst(), e.getSecond());
             }
         }
+    }
+
+    public Map<ForbiddenSubgraph, Integer> getSubgraphStats() {
+        return subgraphStats;
     }
 }

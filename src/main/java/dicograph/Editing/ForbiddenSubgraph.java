@@ -30,7 +30,7 @@ import dicograph.utils.Edge;
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-enum ForbiddenSubgraph {
+public enum ForbiddenSubgraph {
 
     // forbidden subgraphs of length 3:
 
@@ -112,10 +112,11 @@ enum ForbiddenSubgraph {
 
 
     public static Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> verticesToForbidden(
-            SimpleDirectedGraph<Integer,DefaultEdge> g, HashMap<Edge,Integer> edgeToCount, boolean stopIfFound){
+            SimpleDirectedGraph<Integer,DefaultEdge> g, HashMap<Edge,Integer> edgeToCount, boolean stopIfFound, Map<ForbiddenSubgraph,Integer> subgraphCounts){
 
         HashMap<BitSet,ForbiddenSubgraph> len3 = new HashMap<>();
         HashMap<BitSet,ForbiddenSubgraph> len4 = new HashMap<>();
+
 
         int n = g.vertexSet().size();
         boolean[][] E = new boolean[n][n];
@@ -142,7 +143,7 @@ enum ForbiddenSubgraph {
                             };
 
                             // subgraphs of length 3:
-                            if(findForbiddenSubgraphs(ForbiddenSubgraph.len_3,len3, edgeToCount, E, vars_3, stopIfFound, w,x,y) && stopIfFound) {
+                            if(findForbiddenSubgraphs(ForbiddenSubgraph.len_3,len3, edgeToCount, subgraphCounts, E, vars_3, stopIfFound, w,x,y) && stopIfFound) {
                                 return new Pair<>(len3, len4);
                             }
 
@@ -157,7 +158,7 @@ enum ForbiddenSubgraph {
                                             E[y][w], E[y][x],          E[y][z],
                                             E[z][w], E[z][x], E[z][y]
                                     };
-                                    if(findForbiddenSubgraphs(ForbiddenSubgraph.len_4,len4, edgeToCount, E, vars_4, stopIfFound, w,x,y,z) && stopIfFound){
+                                    if(findForbiddenSubgraphs(ForbiddenSubgraph.len_4,len4, edgeToCount, subgraphCounts, E, vars_4, stopIfFound, w,x,y,z) && stopIfFound){
                                         return new Pair<>(len3, len4);
                                     }
                                 }
@@ -172,7 +173,7 @@ enum ForbiddenSubgraph {
     }
 
     private static boolean findForbiddenSubgraphs(ForbiddenSubgraph[] subs, Map<BitSet,ForbiddenSubgraph> subsMap, Map<Edge,Integer> edgeCount,
-                                               boolean[][] matrix, boolean[] subMatrix, boolean stop, int ... vertices){
+                   Map<ForbiddenSubgraph,Integer> subgraphCounts, boolean[][] matrix, boolean[] subMatrix, boolean stop, int ... vertices){
         int sum, index;
         // check every subgraph:
         for (ForbiddenSubgraph sub : subs) {
@@ -194,6 +195,9 @@ enum ForbiddenSubgraph {
                 subsMap.put(vertexSet, sub);
                 if (stop) {
                     return true;
+                }
+                if(subgraphCounts != null){
+                    subgraphCounts.put(sub,subgraphCounts.get(sub)+1);
                 }
 
                 // edge scores

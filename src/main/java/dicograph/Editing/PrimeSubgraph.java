@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +52,8 @@ import ilog.concert.IloException;
 
 public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
 
-    private static final boolean useMD = false; // If used for large n (>200), MD will be more efficient.
+    private static final boolean useMD = false; // If used for large n (>200), MD might be more efficient than subgraph computation.
+    private static final boolean fastRun = true; // More speed, but a now optimal edit between but not among the possible edits of the previous step will be skipped.
 
     private final Parameters p;
     private final SimpleDirectedGraph<Integer, DefaultEdge> base;
@@ -91,7 +93,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
 
     // an entry in the map means: if present -> remove, if not -> add.
     // Key > 0 => success! Key < 0 => not yet done, but ok after round 1; Key = 0 ->  empty => fail after step 2.
-    public TreeMap<Integer, List<List<WeightedEdge>>> computeEdits(boolean first)
+    public TreeMap<Integer, List<List<WeightedEdge>>> computeEdits(boolean first, Map<ForbiddenSubgraph,Integer> subgraphCounts)
     throws InterruptedException, IOException, ImportException, IloException{
         TreeMap<Integer, List<List<WeightedEdge>>> costToEdges = new TreeMap<>(); // results
 
@@ -100,9 +102,10 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
 
         // Recognize all forbidden subgraphs and compute subgraph-scores for edits.
         HashMap<Edge,Integer> edgeToCount = new HashMap<>();
-        Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> badSubs = ForbiddenSubgraph.verticesToForbidden(this, edgeToCount,false);
+        Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> badSubs = ForbiddenSubgraph.verticesToForbidden(this, edgeToCount,false, subgraphCounts);
         log.fine(()->"Length 3:\n" + badSubs.getFirst());
         log.fine(()->"Length 4:\n" + badSubs.getSecond());
+        log.info(()->"Occurences for each Subgraph: " + subgraphCounts);
         // sort descending
         List<Map.Entry<Edge,Integer>> edgesToScore = new ArrayList<>(edgeToCount.entrySet());
         edgesToScore.sort( Comparator.comparingInt(e ->  -e.getValue()));
@@ -386,10 +389,33 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                                 graphOfEditEdges.addEdge(added.getFirst(), added.getSecond());
                             }
 
-                            // remove chosen edit.
-                            editsByLocalScore.remove(editsByLocalScore.firstKey());
-                            edgesToScore.remove(bestEntry);
-                            index = firstIndex; // next round from here.
+                            if(fastRun){
+                                // keep the other possible entries, but continue on last index.
+                                int lastIndex = 0;
+                                LinkedList<Map.Entry<Edge,Integer>> copyEntries = new LinkedList<>();
+                                for(List <Pair<Map.Entry<Edge,Integer>, Pair<WeightedEdge, WeightedEdge>> > possEdits  : editsByLocalScore.values()){
+                                    for (int i = 0; i < possEdits.size(); i++) {
+                                        Map.Entry<Edge,Integer> entry = possEdits.get(i).getFirst();
+                                        if(!entry.equals(bestEntry)) {
+                                            int currIndex = edgesToScore.indexOf(entry);
+                                            copyEntries.add(entry);
+                                            if(currIndex > lastIndex)
+                                                lastIndex = currIndex;
+                                        } else{
+                                            edgesToScore.remove(entry);
+                                        }
+                                    }
+                                }
+                                edgesToScore = edgesToScore.subList(lastIndex+1,edgesToScore.size());
+                                edgesToScore.addAll(0,copyEntries);
+                                index = 0;
+
+                            } else {
+                                // remove chosen edit, continue from first found index.
+                                editsByLocalScore.remove(editsByLocalScore.firstKey());
+                                edgesToScore.remove(bestEntry);
+                                index = firstIndex;
+                            }
 
                         } else {
                             // no improvement? failure!
@@ -407,7 +433,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
             // either continue with global brute force or no solution found
             if( !(!first && p.isUseGlobal()) ){
 
-                log.info(() -> "Processed all edits or reached hard threshold - no cograph-edit found!!!"); // todo: hth, sth... wie verwenden?
+                log.info(() -> "Processed all edits or reached hard threshold - no cograph-edit found!!!");
                 log.info(() -> "To remove (below soft threshold): " + edgesToRemove);
 
                 // ok if we're in step 1:
@@ -450,8 +476,9 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                         u = wedge.getSecond();
                         v = wedge.getFirst();
                     }
+                    // this would be very bad for the heuristic. Does it happen? todo: grep -e the logs.
                     if(bestVal == val && !edgeToCount.containsKey(new Edge(u,v)))
-                        log.warning("Optimal edge " + wedge + "has subgraph-score 0!");
+                        log.severe("Optimal edge " + wedge + "has subgraph-score 0!");
                 }
             }
 
@@ -515,7 +542,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                                 log.info("Tree: " + MDTree.beautify(subTree.toString()));
                             }
                         } else {
-                        Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> check = ForbiddenSubgraph.verticesToForbidden(this, new HashMap<>(),true);
+                        Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> check = ForbiddenSubgraph.verticesToForbidden(this, new HashMap<>(),true,null);
                         success = check.getFirst().isEmpty() && check.getSecond().isEmpty();
                         }
                         if(success){
@@ -618,7 +645,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
         HashMap<Edge,Integer> edgeToCount = new HashMap<>();
         currEdgeList.add(new WeightedEdge(u,v,weight));
         edit(currEdgeList);
-        Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> badSubs = ForbiddenSubgraph.verticesToForbidden(this, edgeToCount,false);
+        Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> badSubs = ForbiddenSubgraph.verticesToForbidden(this, edgeToCount,false,null);
         edit(currEdgeList);
         int badScore = badSubs.getSecond().size() + badSubs.getFirst().size();
         boolean solved = badScore == 0;

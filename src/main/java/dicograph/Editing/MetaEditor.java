@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Logger;
@@ -64,6 +65,7 @@ public class MetaEditor {
     private double bestTTDistance;
     private int bestCost;
     private Solution lazySolution;
+    private Map<ForbiddenSubgraph,Integer> subgraphCounts;
 
 
     // Original Graph and all the parameters
@@ -237,6 +239,7 @@ public class MetaEditor {
         log.info("Starting Editor for method: " + method);
         MDEditor firstEditor = new MDEditor(inputGraph, origTree, log, method, p);
         TreeMap<Integer, List<Solution>> firstSolns = firstEditor.editIntoCograph();
+        subgraphCounts = firstEditor.getSubgraphStats();
 
         // 1st run gives only one solution whenever we plan a 2nd run.
         Solution firstSol = firstSolns.firstEntry().getValue().get(0);
@@ -293,4 +296,9 @@ public class MetaEditor {
     public Solution getLazySolution() {
         return lazySolution;
     }
+
+    public Map<ForbiddenSubgraph, Integer> getSubgraphCounts() {
+        return subgraphCounts;
+    }
 }
+
