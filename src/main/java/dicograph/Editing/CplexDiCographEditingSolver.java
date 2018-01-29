@@ -165,8 +165,9 @@ class CplexDiCographEditingSolver {
             }
         }
 
+        System.out.println(Runtime.getRuntime().maxMemory()/1024);
         // max nodefile size = JVM max mem.
-        solver.setParam(IloCplex.Param.MIP.Limits.TreeMemory, Runtime.getRuntime().maxMemory() );
+        solver.setParam(IloCplex.Param.MIP.Limits.TreeMemory, Runtime.getRuntime().maxMemory()/1024 );
 
         if(parameters.getMaximumMemory() > 0) {
             solver.setParam(IloCplex.Param.WorkMem, parameters.getMaximumMemory());
