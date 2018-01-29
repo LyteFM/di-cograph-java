@@ -76,3 +76,10 @@ mv target/DCEdit-1.0.jar .
 java -jar DCEdit-1.0.jar -test 5 50 10 -MD
 
 java -Djava.library.path=/opt/ibm/ILOG/CPLEX_Studio1271/cplex/bin/x86-64_linux -jar DCEdit-1.0.jar -test 5 50 10 -gilp -gforce -v
+
+**Important note on memory management:**
+
+For larger n, the JVM will require more memory. Increase it e.g. to 2GB by adding -Xmx2048m -ea as first java-option.
+
+While OSX manages the memory consumed by CPLex well, the Linux kernel will simply kill the process when it consumes too much memory.
+Use the method parameter -mem to limit the available memory for CPlex and keep both the sum of both low enough.

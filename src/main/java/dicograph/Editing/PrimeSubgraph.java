@@ -610,8 +610,8 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                                 }
                                 smallestCost = cost;
                             }
-                            if(++solCount >= p.getMaxBFResults()){
-                                log.warning("Stopping Brute force after " + p.getMaxBFResults() + " found edits. Use -bflimit to include more.");
+                            if(++solCount >= p.getMaxResults()){
+                                log.warning("Stopping Brute force after " + p.getMaxResults() + " found edits. Use -bflimit to include more.");
                                 return costToEdges;
                             }
                         }

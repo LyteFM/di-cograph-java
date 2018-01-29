@@ -89,7 +89,9 @@ class CplexDiCographEditingSolver {
 
         solver = new IloCplex();
         solver.setName("DiCographEditingSolver");
-        solver.setParam(IloCplex.Param.WorkMem, params.getMaximumMemory());
+        if(params.getMaximumMemory() > 0) {
+            solver.setParam(IloCplex.Param.WorkMem, params.getMaximumMemory());
+        }
         solutionGraphs = new ArrayList<>();
         editingDistances = new ArrayList<>();
 
@@ -180,7 +182,7 @@ class CplexDiCographEditingSolver {
         if (parameters.getSolutionGap() >= 0){
             solver.setParam(IloCplex.DoubleParam.SolnPoolAGap, parameters.getSolutionGap()); // should be 0 to only get the best solutions.
             solver.setParam(IloCplex.IntParam.SolnPoolIntensity, 4);
-            solver.setParam(IloCplex.IntParam.PopulateLim, 100);
+            solver.setParam(IloCplex.IntParam.PopulateLim, parameters.getMaxResults());
             solver.populate();
         }
 

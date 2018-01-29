@@ -51,12 +51,12 @@ public class Parameters {
     // when to stop brute force:
     private int bruteForceGap = 0;
     private int bruteForceLimit = 0;
-    private int maxBFResults = 50; // stops Brute force after finding this many edits
+    private int maxResults = 10; // stops Brute force or ILP after finding this many possible solutions
 
     // methods
     private boolean lazy = true;
 
-    private double maximumMemory = 3072;
+    private double maximumMemory = -1;
 
 
     public Parameters(String[] args) {
@@ -112,7 +112,7 @@ public class Parameters {
         options.addOption("bfth",true,"Step 2 when number of primes < brute-force-TH. Default: 10");
         options.addOption("bfgap",true,"Exit module-bf when subset-size > best solution + bfgap. Default: 0; -1 exits after first.");
         options.addOption("bflimit",true,"Abort module-bf when subset-size > this. Default: size of the prime");
-        options.addOption("bfsize", true, "Abort module-bf when number of found solutions > this. Default: 50");
+        options.addOption("bfsize", true, "Abort module-bf or ILP when number of found solutions >= this. Default: 10");
 
         options.addOption("pskip", "Skipping (u,v) if u,v path in graph of the edit-edge-set");
         options.addOption("vskip", "Skips (u,v) if u,v in vertex set of edit-edge-set's graph");
@@ -174,7 +174,7 @@ public class Parameters {
                 weightMultiplier = Double.parseDouble( input.getOptionValue("wm"));
             }
             if(input.hasOption("bfsize")){
-                maxBFResults = Integer.parseInt( input.getOptionValue("bfsize"));
+                maxResults = Integer.parseInt( input.getOptionValue("bfsize"));
             }
             if(input.hasOption("lzreach")){
                 lazyreach = Integer.parseInt( input.getOptionValue("lzreach"));
@@ -349,8 +349,8 @@ public class Parameters {
         return weightMultiplier;
     }
 
-    public int getMaxBFResults() {
-        return maxBFResults;
+    public int getMaxResults() {
+        return maxResults;
     }
 
     public int getLazyreach() {
