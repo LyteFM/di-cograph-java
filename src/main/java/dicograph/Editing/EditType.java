@@ -27,7 +27,7 @@ public enum  EditType {
     ILPGlobal,
     None;
 
-    boolean checkPrimesSize(){
+    boolean secondPrimeRun(){
         return (this == BruteForce || this == GreedyILP);
     }
 

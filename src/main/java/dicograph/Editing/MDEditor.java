@@ -119,7 +119,7 @@ class MDEditor {
             for(MDTreeNode primeNode : entry.getValue()){
 
                 // Skip them during first edit.
-                if(firstRun && type.checkPrimesSize() &&  primeNode.getNumChildren() <= p.getBruteForceThreshold()){
+                if(firstRun && type.secondPrimeRun() &&  primeNode.getNumChildren() <= p.getBruteForceThreshold()){
                     log.info("Skipping small prime during first run: " + primeNode);
                     continue;
                 }

@@ -56,6 +56,8 @@ public class Parameters {
     // methods
     private boolean lazy = true;
 
+    private double maximumMemory = 3072;
+
 
     public Parameters(String[] args) {
 
@@ -119,6 +121,8 @@ public class Parameters {
         options.addOption("lzreach", true,"Number of next possible edits to be included during lazy run. Default: sqrt(no. of prime's children) + 2.");
         options.addOption("lzre",true, "Restarts lazy method when no of primes improved by lzre. Default: 9" );
 
+        options.addOption("mem",true,"Maximum memory to be used by CPlex-Solver. Default: 3072");
+
         Option weightm = new Option("wm",true,"Weight multiplier. Default: 1.0; Set lower if no solution, higher if too expensive");
         weightm.setArgName("double");
         options.addOption(weightm);
@@ -177,6 +181,9 @@ public class Parameters {
             }
             if(input.hasOption("lzre")){
                 lazyRestart = Integer.parseInt( input.getOptionValue("lzre"));
+            }
+            if(input.hasOption("mem")){
+                maximumMemory = Integer.parseInt( input.getOptionValue("mem"));
             }
         }
     }
@@ -352,5 +359,9 @@ public class Parameters {
 
     public int getLazyRestart() {
         return lazyRestart;
+    }
+
+    public double getMaximumMemory() {
+        return maximumMemory;
     }
 }

@@ -261,7 +261,7 @@ public class MetaEditor {
                 if(currPrimeSize == 0){
                     log.info(()-> method + " method was successful during first loop.");
                     return firstSolns;
-                } else if( method.checkPrimesSize() && currPrimeSize == p.getBruteForceThreshold()){
+                } else if( method.secondPrimeRun() && currPrimeSize <= p.getBruteForceThreshold()){
                     break;
                 }
             }

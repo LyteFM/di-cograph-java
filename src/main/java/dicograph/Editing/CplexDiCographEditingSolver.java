@@ -89,6 +89,7 @@ class CplexDiCographEditingSolver {
 
         solver = new IloCplex();
         solver.setName("DiCographEditingSolver");
+        solver.setParam(IloCplex.Param.WorkMem, params.getMaximumMemory());
         solutionGraphs = new ArrayList<>();
         editingDistances = new ArrayList<>();
 

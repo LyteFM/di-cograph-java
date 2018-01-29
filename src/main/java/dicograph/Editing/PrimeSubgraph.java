@@ -366,6 +366,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                                     if(sol.getSecond() != null)
                                         editCost += Math.round(sol.getSecond().getWeight());
                                     if(editCost < currCost){
+                                        currCost = editCost;
                                         List<WeightedEdge> bestSol = new LinkedList<>(allEdgesList);
                                         if(sol.getFirst() != null)
                                             bestSol.add(sol.getFirst());
@@ -410,10 +411,10 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                                 return costToEdges;
 
                             } else if ((initialPrimeSize / p.getLazyRestart() > primeSize /p.getLazyRestart()) ||
-                                    first && !p.isStopOnlyAtHardThreshold() && primeSize <= p.getBruteForceThreshold() ) {
-                                // primeSize <= p.getBruteForceThreshold() && first && !p.isStopOnlyAtHardThreshold() && method.checkPrimesSize() -> always.
+                                    first && method.secondPrimeRun() && !p.isStopOnlyAtHardThreshold() && primeSize <= p.getBruteForceThreshold() ) {
+                                // primeSize <= p.getBruteForceThreshold() && first && !p.isStopOnlyAtHardThreshold() && method.secondPrimeRun() -> always.
                                 // exit point for brute force/ greedy ILP
-                                if(primeSize <= p.getBruteForceThreshold()) {
+                                if(method.secondPrimeRun() && primeSize <= p.getBruteForceThreshold()) {
                                     log.info(() -> "Size of prime modules now below " + p.getBruteForceThreshold() + ". Ready for second run.");
                                 } else {
                                     log.info(() -> "Restarting Lazy run with smaller prime size " + primeSize);
@@ -467,18 +468,18 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                             log.severe(()->"lazy: no better value (shouldn't happen!)");
                             break;
                         }
-                    } else {
 
-                        if(currentBestSolution != null){
-                            List<List<WeightedEdge>> res = new LinkedList<>();
-                            res.add(currentBestSolution.getSecond());
-                            costToEdges.put(currentBestSolution.getFirst(),res);
-                        } else {
-                            log.warning(() -> "Lazy: Method aborted with empty edit-map.");
-                            break;
-                        }
+                    } else if(currentBestSolution == null){
+                        log.warning(() -> "Lazy: Method aborted with empty edit-map.");
+                        break;
                     }
                 }
+            }
+
+            if(currentBestSolution != null) {
+                List<List<WeightedEdge>> res = new LinkedList<>();
+                res.add(currentBestSolution.getSecond());
+                costToEdges.put(currentBestSolution.getFirst(), res);
             }
 
             // either continue with global brute force or no solution found
