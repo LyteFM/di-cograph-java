@@ -1,6 +1,7 @@
 package dicograph.Editing;
 
 import org.jgrapht.Graph;
+import org.jgrapht.alg.util.Pair;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.io.ImportException;
@@ -163,7 +164,7 @@ class MDEditor {
         if(currentSolutions.isEmpty()){
             log.info(()->"No changes after first step.");
             LinkedList<Solution> trivial = new LinkedList<>();
-            trivial.add( new Solution(workGraph, new LinkedList<>(), type));
+            trivial.add( new Solution(workGraph, inputTree, new LinkedList<>(), type));
             finalSolutions.put(0,trivial);
             return finalSolutions;
         }
@@ -182,7 +183,10 @@ class MDEditor {
         for ( List<Edge> possibleEdit : currentSolutions) {
 
             // verify, remove doubles, check loops
-            int cost = verifyAndClean(possibleEdit);
+            Pair <Integer,MDTree> verificationRes = verifyAndClean(possibleEdit);
+            int cost = verificationRes.getFirst();
+            MDTree solTree = verificationRes.getSecond();
+
             // only consider better edits or edits within gap
             if ( p.getSolutionGap() < 0 && cost < lowestCost ||
                     p.getSolutionGap() >= 0 && cost <= lowestCost + p.getSolutionGap()){
@@ -196,7 +200,7 @@ class MDEditor {
                     // final solutions: add with real cost (or negative, if 1st run)
                     finalSolutions.putIfAbsent(cost, new LinkedList<>());
                     editGraph(workGraph, possibleEdit);
-                    Solution sol = new Solution(GraphGenerator.deepClone(workGraph), possibleEdit, type);
+                    Solution sol = new Solution(GraphGenerator.deepClone(workGraph), solTree, possibleEdit, type);
                     finalSolutions.get(cost).add(sol);
                     editGraph(workGraph,possibleEdit);
                 }
@@ -279,7 +283,7 @@ class MDEditor {
         return allRealEdits;
     }
 
-    private int verifyAndClean(List<Edge> currentList) throws ImportException, InterruptedException, IOException{
+    private Pair<Integer,MDTree> verifyAndClean(List<Edge> currentList) throws ImportException, InterruptedException, IOException{
 
         // check for loops and doubles:
         List<Edge> loops = new LinkedList<>();
@@ -324,6 +328,7 @@ class MDEditor {
                 if (looplessRes.getPrimeModulesBottomUp().isEmpty()) {
                     log.info(()->"Removing Loops: " + loops);
                     currentList.removeAll(loops);
+                    verifyTree = looplessRes;
                 }
                 editGraph(workGraph, loops); // edit back.
             }
@@ -334,7 +339,7 @@ class MDEditor {
         }
         editGraph(workGraph, currentList);
 
-        return ret;
+        return new Pair<>(ret,verifyTree);
     }
 
     // testing purposes only

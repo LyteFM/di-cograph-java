@@ -96,7 +96,7 @@ public class MetaEditor {
         log.info("MD of input graph:\n" + MDTree.beautify(origTree.toString()));
         if(origTree.getPrimeModulesBottomUp().isEmpty()){
             log.info("Input graph is already a dicograph. Aborting.");
-            Solution trivial = new Solution(inputGraph, new LinkedList<>(), EditType.None);
+            Solution trivial = new Solution(inputGraph, origTree, new LinkedList<>(), EditType.None);
             bestSolutions.add(trivial);
             return bestSolutions;
         }
@@ -216,7 +216,7 @@ public class MetaEditor {
         return bestSolutions;
     }
 
-    private TreeMap<Integer, List<Solution>> computeGlobalILP() throws IloException{
+    private TreeMap<Integer, List<Solution>> computeGlobalILP() throws Exception{
         TreeMap<Integer, List<Solution>> ret = new TreeMap<>();
         CplexDiCographEditingSolver glSolver = new CplexDiCographEditingSolver(inputGraph, p, log);
         glSolver.solve();
@@ -227,8 +227,10 @@ public class MetaEditor {
             for(WeightedEdge e : glSolver.getSolutionEdgeEdits().get(i)){
                 edges.add( new Edge(e.getFirst(), e.getSecond()));
             }
+            DirectedMD solMD = new DirectedMD(glSolver.getSolutionGraphs().get(i), log,false);
+            MDTree solTree = solMD.computeModularDecomposition();
             ret.putIfAbsent(val,new LinkedList<>());
-            ret.get(val).add(new Solution(glSolver.getSolutionGraphs().get(i),edges, EditType.ILPGlobal));
+            ret.get(val).add(new Solution(glSolver.getSolutionGraphs().get(i),solTree,edges, EditType.ILPGlobal));
         }
         return ret;
     }

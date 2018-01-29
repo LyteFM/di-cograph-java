@@ -5,6 +5,7 @@ import org.jgrapht.graph.SimpleDirectedGraph;
 
 import java.util.List;
 
+import dicograph.modDecomp.MDTree;
 import dicograph.utils.Edge;
 
 /*
@@ -32,12 +33,14 @@ public class Solution {
     private final SimpleDirectedGraph<Integer,DefaultEdge> graph;
     private final List<Edge> edits;
     private double treeDistance;
+    private MDTree tree;
 
-    Solution(SimpleDirectedGraph<Integer,DefaultEdge> _graph, List<Edge> _edges, EditType _type){
+    Solution(SimpleDirectedGraph<Integer,DefaultEdge> _graph, MDTree _tree, List<Edge> _edges, EditType _type){
         graph = _graph;
         edits = _edges;
         type = _type;
         treeDistance = Double.MAX_VALUE;
+        tree = _tree;
     }
 
     public EditType getType() {

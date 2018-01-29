@@ -1,26 +1,17 @@
 package dicograph.modDecomp;
 
 import org.jgrapht.Graph;
-import org.jgrapht.alg.util.Pair;
 import org.jgrapht.graph.DefaultEdge;
 
 import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
-import java.util.logging.Logger;
+
 
 import dicograph.graphIO.DirectedInducedIntSubgraph;
 import dicograph.graphIO.UndirectedInducedIntSubgraph;
-import dicograph.utils.Triple;
-import sun.plugin.dom.exception.InvalidStateException;
 
 /**
  *   This source file is part of the program for computing the modular
@@ -210,7 +201,7 @@ class RootedTree {
         RootedTreeNode previous = root;
         while (true){
             if(xList.isEmpty() || yList.isEmpty())
-                throw new InvalidStateException("Empty lists in LCA search!");
+                throw new IllegalStateException("Empty lists in LCA search!");
             RootedTreeNode nextX = xList.pop();
             RootedTreeNode nextY = yList.pop();
             if(!nextX.equals(nextY))
