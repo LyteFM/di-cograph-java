@@ -27,7 +27,6 @@ import dicograph.utils.WeightedEdge;
 import ilog.concert.IloException;
 
 import static com.google.common.math.IntMath.binomial;
-import static com.google.common.math.IntMath.factorial;
 
 /*
  *   This source file is part of the program for editing directed graphs
@@ -167,8 +166,7 @@ public class MetaEditor {
                 for(List<Solution> solutions : solutionMap.values()) {
                     for(Solution solution : solutions) {
 
-                        DirectedMD solMD = new DirectedMD(solution.getGraph(), log, false);
-                        MDTree solTree = solMD.computeModularDecomposition();
+                        MDTree solTree = solution.getTree();
                         log.fine("Tree of solution: " + MDTree.beautify(solTree.toString()));
                         Set<Triple> solTriples = solTree.getTriples();
                         Set<Triple> coTriples = new HashSet<>(cotreeTriples);
@@ -195,13 +193,12 @@ public class MetaEditor {
             int cost = solution.getCost();
             log.info(() -> solution.getType() + ": Found solution with " + cost + " edits: " + solution.getEdits());
             log.fine(() ->"Edit-Graph: " + solution.getGraph());
-//            todo: activate!!!
-//            if(!done && solution.getCost() == bestCost){
-//                System.out.println("//Edits: " + solution.getEdits());
-//                DOTExporter<Integer,DefaultEdge> exporter = new DOTExporter<>(new IntegerComponentNameProvider<>(), null, null);
-//                exporter.exportGraph(solution.getGraph(), System.out);
-//                done = true;
-//            }
+            if(!done && solution.getCost() == bestCost){
+                System.out.println("//Edits: " + solution.getEdits());
+                DOTExporter<Integer,DefaultEdge> exporter = new DOTExporter<>(new IntegerComponentNameProvider<>(), null, null);
+                exporter.exportGraph(solution.getGraph(), System.out);
+                done = true;
+            }
 
         }
         if(bestDistSolution != null){
@@ -216,7 +213,7 @@ public class MetaEditor {
         return bestSolutions;
     }
 
-    private TreeMap<Integer, List<Solution>> computeGlobalILP() throws Exception{
+    private TreeMap<Integer, List<Solution>> computeGlobalILP() throws IOException, ImportException, IloException, InterruptedException{
         TreeMap<Integer, List<Solution>> ret = new TreeMap<>();
         CplexDiCographEditingSolver glSolver = new CplexDiCographEditingSolver(inputGraph, p, log);
         glSolver.solve();
@@ -243,21 +240,42 @@ public class MetaEditor {
         TreeMap<Integer, List<Solution>> firstSolns = firstEditor.editIntoCograph();
         subgraphCounts = firstEditor.getSubgraphStats();
 
-        // 1st run gives only one solution whenever we plan a 2nd run.
         Solution firstSol = firstSolns.firstEntry().getValue().get(0);
-        DirectedMD firstMD = new DirectedMD(firstSol.getGraph(), log, false);
-        MDTree firstTree = firstMD.computeModularDecomposition();
-
-        if(firstTree.getPrimeModulesBottomUp().isEmpty()){
+        MDTree firstTree = firstSol.getTree();
+        if(firstTree.getMaxPrimeSize() == 0){
             log.info(()-> method + " method was successful after first run.");
             return firstSolns;
-        } else if (method == EditType.ILP){
-            log.severe(()-> "Error: ILP found no solution.");
         }
 
+        if(method.doLazyOnFirst()){
+            int prevPrimeSize = origTree.getMaxPrimeSize();
+            int currPrimeSize = firstSol.getTree().getMaxPrimeSize();
+
+            // repeat and let prime size decrease.
+            while (currPrimeSize < prevPrimeSize){ // abort if no changes
+                firstEditor = new MDEditor(inputGraph,firstSol.getTree(), log, firstSol.getEdits(), method, p, true);
+                firstSolns = firstEditor.editIntoCograph();
+                firstSol = firstSolns.firstEntry().getValue().get(0);
+                firstTree = firstSol.getTree();
+                currPrimeSize = firstTree.getMaxPrimeSize();
+                if(currPrimeSize == 0){
+                    log.info(()-> method + " method was successful during first loop.");
+                    return firstSolns;
+                } else if( method.checkPrimesSize() && currPrimeSize == p.getBruteForceThreshold()){
+                    break;
+                }
+            }
+
+        } else {
+            // ILP: 1st run must be successful!
+            log.severe(() -> "Error: ILP found no solution.");
+            return new TreeMap<>();
+        }
+
+
         // second call. Input graph original but firstTree edited.
-        log.info(() ->"Starting second run.");
-        MDEditor secondEdit = new MDEditor(inputGraph, firstTree, log, firstSol.getEdits(), method, p);
+        log.info(()-> method + ": Starting second run - using brute force/ ILP now.");
+        MDEditor secondEdit = new MDEditor(inputGraph, firstTree, log, firstSol.getEdits(), method, p, false);
         TreeMap<Integer, List<Solution>> secondSolns = secondEdit.editIntoCograph();
         if(secondSolns.isEmpty()){
             log.warning(()-> method + " method was unsuccessful.");

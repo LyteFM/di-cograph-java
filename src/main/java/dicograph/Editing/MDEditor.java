@@ -50,7 +50,7 @@ import ilog.concert.IloException;
 class MDEditor {
 
     private final SimpleDirectedGraph<Integer,DefaultEdge> inputGraph;
-    private final  int nVertices;
+    private final int nVertices;
     private final Logger log;
     private final MDTree inputTree;
     private final List<Edge> oldInputEdits;
@@ -75,7 +75,7 @@ class MDEditor {
 
 
     public MDEditor(SimpleDirectedGraph<Integer,DefaultEdge> input, MDTree tree, Logger logger,
-                    List<Edge> oldEdits, EditType ed, Parameters params){
+                    List<Edge> oldEdits, EditType ed, Parameters params, boolean first){
         inputGraph = input;
         p = params;
         nVertices = inputGraph.vertexSet().size();
@@ -84,12 +84,12 @@ class MDEditor {
         type = ed;
         inputTree = tree;
         oldInputEdits = oldEdits;
-        firstRun = oldEdits == null;
+        firstRun = first;
         subgraphStats = new LinkedHashMap<>();
     }
 
     public MDEditor(SimpleDirectedGraph<Integer,DefaultEdge> input, MDTree tree, Logger logger,EditType ed, Parameters params){
-        this(input, tree, logger, null, ed, params);
+        this(input, tree, logger, null, ed, params,true);
     }
 
 
@@ -119,7 +119,7 @@ class MDEditor {
             for(MDTreeNode primeNode : entry.getValue()){
 
                 // Skip them during first edit.
-                if(firstRun && type.checkPrimesSize() &&  primeNode.getNumPrimeChildren() <= p.getBruteForceThreshold()){
+                if(firstRun && type.checkPrimesSize() &&  primeNode.getNumChildren() <= p.getBruteForceThreshold()){
                     log.info("Skipping small prime during first run: " + primeNode);
                     continue;
                 }

@@ -67,6 +67,10 @@ public class Solution {
         this.treeDistance = treeDistance;
     }
 
+    public MDTree getTree() {
+        return tree;
+    }
+
     @Override
     public String toString(){
         return "Type: " + type + ", Cost: " + getCost() + ", Edits: " + edits;

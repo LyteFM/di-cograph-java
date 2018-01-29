@@ -91,6 +91,10 @@ public class Main {
             consoleHandler.setLevel( command.getLogLevel() );
             log.addHandler( consoleHandler );
             log.getParent().setLevel( command.getLogLevel() );
+            StringBuilder in = new StringBuilder();
+            for(String arg : args)
+                in.append(arg).append(" ");
+            log.info("Parameters: " + in.toString());
 
             if(command.isTest()){
                 String[] params = command.getTestParams();

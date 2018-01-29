@@ -8,7 +8,6 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.util.logging.Level;
 
@@ -45,6 +44,7 @@ public class Parameters {
     private int solutionGap = 0; // all best solutions by default.
 
     private int lazyreach = -1;
+    private int lazyRestart = 9;
 
     // When to start brute force:
     private int bruteForceThreshold = 10;
@@ -115,7 +115,9 @@ public class Parameters {
         options.addOption("pskip", "Skipping (u,v) if u,v path in graph of the edit-edge-set");
         options.addOption("vskip", "Skips (u,v) if u,v in vertex set of edit-edge-set's graph");
         options.addOption("sth", true,"Soft threshold: No edit found in 1st lazy run -> discards edges with subgraph-score <= this");
+
         options.addOption("lzreach", true,"Number of next possible edits to be included during lazy run. Default: sqrt(no. of prime's children) + 2.");
+        options.addOption("lzre",true, "Restarts lazy method when no of primes improved by lzre. Default: 9" );
 
         Option weightm = new Option("wm",true,"Weight multiplier. Default: 1.0; Set lower if no solution, higher if too expensive");
         weightm.setArgName("double");
@@ -172,6 +174,9 @@ public class Parameters {
             }
             if(input.hasOption("lzreach")){
                 lazyreach = Integer.parseInt( input.getOptionValue("lzreach"));
+            }
+            if(input.hasOption("lzre")){
+                lazyRestart = Integer.parseInt( input.getOptionValue("lzre"));
             }
         }
     }
@@ -343,5 +348,9 @@ public class Parameters {
 
     public int getLazyreach() {
         return lazyreach;
+    }
+
+    public int getLazyRestart() {
+        return lazyRestart;
     }
 }
