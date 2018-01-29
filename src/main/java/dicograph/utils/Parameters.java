@@ -57,6 +57,7 @@ public class Parameters {
     private boolean lazy = true;
 
     private double maximumMemory = -1;
+    private int noThreads = -1;
 
 
     public Parameters(String[] args) {
@@ -122,6 +123,7 @@ public class Parameters {
         options.addOption("lzre",true, "Restarts lazy method when no of primes improved by lzre. Default: 9" );
 
         options.addOption("mem",true,"Maximum memory to be used by CPlex-Solver. Default: 3072");
+        options.addOption("threads",true,"Number of Threads to be used by CPlex-Solver. Default: automatic.");
 
         Option weightm = new Option("wm",true,"Weight multiplier. Default: 1.0; Set lower if no solution, higher if too expensive");
         weightm.setArgName("double");
@@ -183,7 +185,10 @@ public class Parameters {
                 lazyRestart = Integer.parseInt( input.getOptionValue("lzre"));
             }
             if(input.hasOption("mem")){
-                maximumMemory = Integer.parseInt( input.getOptionValue("mem"));
+                maximumMemory = Double.parseDouble( input.getOptionValue("mem"));
+            }
+            if(input.hasOption("threads")){
+                noThreads = Integer.parseInt( input.getOptionValue("threads"));
             }
         }
     }
@@ -363,5 +368,9 @@ public class Parameters {
 
     public double getMaximumMemory() {
         return maximumMemory;
+    }
+
+    public int getNoThreads() {
+        return noThreads;
     }
 }

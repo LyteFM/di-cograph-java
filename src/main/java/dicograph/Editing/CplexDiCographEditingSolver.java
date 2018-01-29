@@ -89,10 +89,6 @@ class CplexDiCographEditingSolver {
 
         solver = new IloCplex();
         solver.setName("DiCographEditingSolver");
-        if(params.getMaximumMemory() > 0) {
-            solver.setParam(IloCplex.Param.WorkMem, params.getMaximumMemory());
-            solver.setParam(IloCplex.Param.Parallel, 4);
-        }
         solutionGraphs = new ArrayList<>();
         editingDistances = new ArrayList<>();
 
@@ -169,6 +165,12 @@ class CplexDiCographEditingSolver {
             }
         }
 
+        if(parameters.getMaximumMemory() > 0) {
+            solver.setParam(IloCplex.Param.WorkMem, parameters.getMaximumMemory());
+        }
+        if(parameters.getNoThreads() > 0){
+            solver.setParam(IloCplex.Param.Threads, parameters.getNoThreads());
+        }
         if (parameters.getTimeOut()>0){
             solver.setParam(IloCplex.DoubleParam.TiLim, parameters.getTimeOut());
         }
