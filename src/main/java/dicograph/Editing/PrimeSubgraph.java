@@ -262,10 +262,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                                 firstIndex = index;
                             }
                             posEdit = testEditEdge(u,v,u_v_res.getFirst(),v_u_res.getFirst(),both_score, weight, edge,editsByLocalScore);
-                            if(posEdit.getFirst() != null)
-                                lazyReachCount++;
-                            if(posEdit.getSecond() != null)
-                                lazyReachCount++;
+                            lazyReachCount++;
                         } else {
                             log.fine("Discarded: edge (" + u + "," + v + ") which doesn't improve the module");
                         }
