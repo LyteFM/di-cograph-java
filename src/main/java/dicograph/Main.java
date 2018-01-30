@@ -118,26 +118,30 @@ public class Main {
 
                         // todo: what if lazy fails???
                         // get the results for statistics
-                        if(!command.isMDOnly() && command.isLazy() && command.isIlpMD()) {
+                        if(!command.isMDOnly()) {
 
                             int best = editor.getBestCost();
                             int lazy = editor.getLazyCost();
 
                             // only if not optimal:
-                            if(lazy > best) {
+                            if(command.isLazy() && command.isIlpMD() && lazy > best) {
                                 lazyNotOptimal++;
                                 ilpCostToLazyCorrects.putIfAbsent(best, new LinkedList<>());
                                 ilpCostToLazyCorrects.get(best).add(editor.getLazyCorrectRun());
                             }
 
-                            if(editor.getLazySolution() != null) {
-                                bestCostToLazyCost.putIfAbsent(editor.getBestCost(), new LinkedList<>());
-                                bestCostToLazyCost.get(editor.getBestCost()).add(editor.getLazyCost());
+                            if(command.isLazy()) {
+                                if (editor.getLazySolution() != null) {
+                                    if(command.isIlpMD()) {
+                                        bestCostToLazyCost.putIfAbsent(editor.getBestCost(), new LinkedList<>());
+                                        bestCostToLazyCost.get(editor.getBestCost()).add(editor.getLazyCost());
+                                    }
 
-                                // Trees:
-                                tripleDistances.add(editor.getLazyTTDistance());
-                            } else {
-                                lazyFailures++;
+                                    // Trees:
+                                    tripleDistances.add(editor.getLazyTTDistance());
+                                } else {
+                                    lazyFailures++;
+                                }
                             }
 
                             // stats

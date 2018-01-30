@@ -231,8 +231,8 @@ class CplexDiCographEditingSolver {
         StringBuilder solution = new StringBuilder();
         bestObjectiveValue = Math.round(solver.getBestObjValue());
 
-        log.fine("Solution status = " + solver.getStatus());
-        log.fine("CographEditDistance: " + bestObjectiveValue);
+        log.info("Solution status = " + solver.getStatus());
+        log.info("CographEditDistance: " + bestObjectiveValue);
 
 
 

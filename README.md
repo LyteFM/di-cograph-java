@@ -80,6 +80,13 @@ java -Djava.library.path=/opt/ibm/ILOG/CPLEX_Studio1271/cplex/bin/x86-64_linux -
 **Important note on memory management:**
 
 For larger n, the JVM will require more memory. Increase it e.g. to 2GB by adding -Xmx2048m -ea as first java-option.
+Max CPlex tree size is set to same value.
 
-While OSX manages the memory consumed by CPLex well, the Linux kernel will simply kill the process when it consumes too much memory.
-Use the method parameter -mem to limit the available memory for CPlex and keep both the sum of both low enough.
+2 GB per thread??? osx -> 4 threads -> ok;
+ubuntu -> 8 threads -> immediately ram full. Swap fills -> crash.
+ubuntu -> 4 threads, 64 mb -> Ram full, swap 8 GB -> OK!
+While OSX manages the memory consumed by CPLex well by automatically adjusting the swap, the Linux kernel will simply kill the process when it consumes too much memory.
+Use the method parameter -mem to limit the available memory (in MB) for CPlex.
+Or make sure that your swapfile / swap partition is active and has about the same size as your RAM.
+
+OSX - continues even if Swap runs full :O (35 GB java Speicher!)

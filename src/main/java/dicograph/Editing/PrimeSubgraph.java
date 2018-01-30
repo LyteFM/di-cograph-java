@@ -293,7 +293,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                                 log.info(msg + "Subgraph-score " + edge.getValue() + " reached -hth" );
                             }
                             break;
-                        } else if(editsByLocalScore.size() > 2 && timer.elapsedSeconds() > p.getTimeOut() ){
+                        } else if(lazyReachCount > 2 && timer.elapsedSeconds() > p.getTimeOut() ){
                             log.warning("Stopping after first three found edit due to timeout: " + p.getTimeOut());
                             break;
                         }
