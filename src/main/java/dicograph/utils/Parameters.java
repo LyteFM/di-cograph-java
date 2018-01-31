@@ -45,7 +45,7 @@ public class Parameters {
 
     private int lazyreach = -1;
     private int lazyRestart = 9;
-    private int editStart = 0;
+    private int editStart = -1;
 
     // When to start brute force:
     private int bruteForceThreshold = 10;

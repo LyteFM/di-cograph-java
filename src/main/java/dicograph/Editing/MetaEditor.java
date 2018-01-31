@@ -58,12 +58,12 @@ public class MetaEditor {
     private final int nVertices;
     private Set<Triple> cotreeTriples;
     private int ilpCost;
-    private int lazyCost;
-    private int lazyCorrectRun;
-    private double lazyTTDistance;
+    private int greedyCost;
+    private int greedyCorrectRun;
+    private double greedyTTDistance;
     private double bestTTDistance;
     private int bestCost;
-    private Solution lazySolution;
+    private Solution greedySolution;
     private Map<ForbiddenSubgraph,Integer> subgraphCounts;
 
 
@@ -77,12 +77,12 @@ public class MetaEditor {
         log = logger;
         DirectedMD modDecomp = new DirectedMD(inputGraph, log, false);
         origTree = modDecomp.computeModularDecomposition();
-        lazyCorrectRun = 0;
+        greedyCorrectRun = 0;
         bestTTDistance = Double.MAX_VALUE;
-        lazyTTDistance = Double.MAX_VALUE;
+        greedyTTDistance = Double.MAX_VALUE;
         bestCost = Integer.MAX_VALUE;
-        lazyCost = Integer.MAX_VALUE;
-        lazySolution = null;
+        greedyCost = Integer.MAX_VALUE;
+        greedySolution = null;
     }
 
     // best tt distance will be first.
@@ -107,11 +107,15 @@ public class MetaEditor {
             TreeMap<Integer, List<Solution>> sols =  computeEditFor(EditType.Lazy);
             allMethodsSolutions.add( sols );
             if(!sols.isEmpty()) {
-                lazySolution = sols.firstEntry().getValue().get(0);
+                greedySolution = sols.firstEntry().getValue().get(0);
             }
         }
         if(p.isBruteForce()){
-            allMethodsSolutions.add( computeEditFor(EditType.BruteForce) );
+            TreeMap<Integer, List<Solution>> sols =  computeEditFor(EditType.BruteForce);
+            allMethodsSolutions.add( sols );
+            if(!sols.isEmpty() && !p.isLazy()) {
+                greedySolution = sols.firstEntry().getValue().get(0);
+            }
         }
         if(p.isIlpMD()){
             TreeMap<Integer, List<Solution>> sols = computeEditFor(EditType.ILP);
@@ -126,11 +130,11 @@ public class MetaEditor {
         }
 
         // how good was lazy compared to ILP?
-        if(lazySolution != null && bestILPSolns != null){
+        if(greedySolution != null && bestILPSolns != null){
             ilpCost= bestILPSolns.get(0).getCost();
             for(Solution sol : bestILPSolns){
                 int count = 0;
-                for( Edge edit : lazySolution.getEdits()) {
+                for( Edge edit : greedySolution.getEdits()) {
                     if(sol.getEdits().contains(edit)){
                         sol.getEdits().remove(edit);
                         sol.getEdits().add(count,edit); // reorder for easier comparison.
@@ -139,13 +143,13 @@ public class MetaEditor {
                         break;
                     }
                 }
-                if(count > 0 && count > lazyCorrectRun){
-                    lazyCorrectRun = count;
+                if(count > 0 && count > greedyCorrectRun){
+                    greedyCorrectRun = count;
                 }
             }
-            lazyCost = lazySolution.getCost();
-            log.info("Lazy got the first " + lazyCorrectRun + " of " + ilpCost + " edits right.");
-            log.info("Lazy cost: " + lazyCost + "; ILP cost: " + ilpCost);
+            greedyCost = greedySolution.getCost();
+            log.info("Lazy got the first " + greedyCorrectRun + " of " + ilpCost + " edits right.");
+            log.info("Lazy cost: " + greedyCost + "; ILP cost: " + ilpCost);
         }
 
         // best solution(s) - with gap
@@ -179,7 +183,7 @@ public class MetaEditor {
                         solution.setTreeDistance(tt_distance_normed);
                         log.info("TT-distance: " + tt_dist + ", Normalized: " + df.format(tt_distance_normed) + " for solution: " + solution);
                         if(solution.getType() == EditType.Lazy)
-                            lazyTTDistance = tt_distance_normed;
+                            greedyTTDistance = tt_distance_normed;
 
                         if (tt_distance_normed < bestTTDistance) {
                             bestTTDistance = tt_distance_normed;
@@ -314,12 +318,12 @@ public class MetaEditor {
         return ilpCost;
     }
 
-    public int getLazyCost() {
-        return lazyCost;
+    public int getGreedyCost() {
+        return greedyCost;
     }
 
-    public int getLazyCorrectRun() {
-        return lazyCorrectRun;
+    public int getGreedyCorrectRun() {
+        return greedyCorrectRun;
     }
 
     public double getBestTTDistance() {
@@ -330,12 +334,12 @@ public class MetaEditor {
         return bestCost;
     }
 
-    public double getLazyTTDistance() {
-        return lazyTTDistance;
+    public double getGreedyTTDistance() {
+        return greedyTTDistance;
     }
 
-    public Solution getLazySolution() {
-        return lazySolution;
+    public Solution getGreedySolution() {
+        return greedySolution;
     }
 
     public Map<ForbiddenSubgraph, Integer> getSubgraphCounts() {

@@ -121,24 +121,24 @@ public class Main {
                         if(!command.isMDOnly()) {
 
                             int best = editor.getBestCost();
-                            int lazy = editor.getLazyCost();
+                            int lazy = editor.getGreedyCost();
 
                             // only if not optimal:
                             if(command.isLazy() && command.isIlpMD() && lazy > best) {
                                 lazyNotOptimal++;
                                 ilpCostToLazyCorrects.putIfAbsent(best, new LinkedList<>());
-                                ilpCostToLazyCorrects.get(best).add(editor.getLazyCorrectRun());
+                                ilpCostToLazyCorrects.get(best).add(editor.getGreedyCorrectRun());
                             }
 
-                            if(command.isLazy()) {
-                                if (editor.getLazySolution() != null) {
+                            if(command.isLazy() || command.isBruteForce()) {
+                                if (editor.getGreedySolution() != null) {
 
                                     bestCostToLazyCost.putIfAbsent(editor.getBestCost(), new LinkedList<>());
-                                    bestCostToLazyCost.get(editor.getBestCost()).add(editor.getLazyCost());
+                                    bestCostToLazyCost.get(editor.getBestCost()).add(editor.getGreedyCost());
 
 
                                     // Trees:
-                                    tripleDistances.add(editor.getLazyTTDistance());
+                                    tripleDistances.add(editor.getGreedyTTDistance());
                                 } else {
                                     lazyFailures++;
                                 }
@@ -162,10 +162,10 @@ public class Main {
 
                 log.info("All generated Graphs:");
                 log.info(allGraphs.toString().substring(0,allGraphs.length()-1));
-                log.info("ILP to correct lazy (when not optimal): " + ilpCostToLazyCorrects);
-                log.info( "Best cost to lazy: " + bestCostToLazyCost);
+                log.info("ILP to correct greey (when not optimal): " + ilpCostToLazyCorrects);
+                log.info( "Best cost to greedy: " + bestCostToLazyCost);
                 log.info("Tree distances: " + new DecimalFormat("0.000000000").format(tripleDistances));
-                log.info("Lazy failed " + lazyFailures + " times, worse than ILP " + lazyNotOptimal + " times.");
+                log.info("Greedy failed " + lazyFailures + " times, worse than ILP " + lazyNotOptimal + " times.");
                 log.info("Subgraph stats: " + subgraphCounts);
                 System.out.print("\u0007");
                 System.out.flush();
@@ -272,9 +272,9 @@ public class Main {
         List<Solution> solutions = testMeta.computeSolutionsForMethods();
         if(!solutions.isEmpty()){
 
-            if(p.isLazy() && p.isIlpMD()){
-                cost = testMeta.getLazyCost();
-                dist = testMeta.getLazyCorrectRun();
+            if((p.isLazy()|| p.isBruteForce()) && p.isIlpMD()){
+                cost = testMeta.getGreedyCost();
+                dist = testMeta.getGreedyCorrectRun();
             } else {
                 cost = solutions.get(0).getCost();
                 dist = solutions.get(0).getTreeDistance(); // might _not_ be the best!
