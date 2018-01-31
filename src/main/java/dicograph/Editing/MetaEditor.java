@@ -265,14 +265,14 @@ public class MetaEditor {
         int denom = 2;
 
         if(method.doLazyOnFirst()){
-            int prevPrimeSize = origTree.getMaxPrimeSize() +1; // else might not start with -start
-            int currPrimeSize = firstSol.getTree().getMaxPrimeSize();
+            int prevPrimeSize = origTree.getMaxPrimeSize() +2; // else might not start with -start
+            int currPrimeSize = firstSol.getTree().getMaxPrimeSize() +1;
 
 
             // repeat and let prime size decrease.
             while (currPrimeSize < prevPrimeSize){ // abort if no changes todo why infloop?
-                //double timeFrac = 1.0 / denom / timeFracSum; // max rel time with large window for this run
 
+                prevPrimeSize = currPrimeSize;
                 firstEditor = new MDEditor(inputGraph,firstSol.getTree(), log, firstSol.getEdits(), method, p, true);
                 firstSolns = firstEditor.editIntoCograph(1.0 /denom); // geometric for time. Most is spend on the 1st edit.
                 firstSol = firstSolns.firstEntry().getValue().get(0);
