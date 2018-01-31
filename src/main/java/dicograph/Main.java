@@ -164,7 +164,7 @@ public class Main {
                 log.info(allGraphs.toString().substring(0,allGraphs.length()-1));
                 log.info("ILP to correct lazy (when not optimal): " + ilpCostToLazyCorrects);
                 log.info( "Best cost to lazy: " + bestCostToLazyCost);
-                log.info("Tree distances: " + tripleDistances);
+                log.info("Tree distances: " + new DecimalFormat("0.000000000").format(tripleDistances));
                 log.info("Lazy failed " + lazyFailures + " times, worse than ILP " + lazyNotOptimal + " times.");
                 log.info("Subgraph stats: " + subgraphCounts);
                 System.out.print("\u0007");
@@ -280,7 +280,7 @@ public class Main {
                 dist = solutions.get(0).getTreeDistance(); // might _not_ be the best!
             }
 
-            String solName = expPath + "_edit-cost_" + cost + "_TT-dist_" + new DecimalFormat("0.000000").format(dist) + ".txt";
+            String solName = expPath + "_edit-cost_" + cost + "_TT-dist_" + new DecimalFormat("0.000000000").format(dist) + ".txt";
             exportSolution(solutions.get(0), ".txt", solName);
             System.out.println("Exported solution to: " + solName);
         }
