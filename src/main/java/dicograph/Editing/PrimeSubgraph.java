@@ -92,7 +92,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
 
     // an entry in the map means: if present -> remove, if not -> add.
     // Key > 0 => success! Key < 0 => not yet done, but ok after round 1; Key = 0 ->  empty => fail after step 2.
-    public TreeMap<Integer, List<List<WeightedEdge>>> computeEdits(boolean first, Map<ForbiddenSubgraph,Integer> subgraphCounts, double relTime)
+    public TreeMap<Integer, List<List<WeightedEdge>>> computeEdits(boolean first, Map<ForbiddenSubgraph,Integer> subgraphCounts, double relTime, boolean veryFirstTime)
     throws InterruptedException, IOException, ImportException, IloException{
         TreeMap<Integer, List<List<WeightedEdge>>> costToEdges = new TreeMap<>(); // results
 
@@ -153,7 +153,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
             int glSubcount = currScore;
             log.info(()->"Lazy reach: " + lazyReach);
             log.info(()->"Total no of forbidden subs: " + glSubcount);
-            cnt = -1; // to init intToEdge for other edit-sets (by global edit-score)
+            cnt = -1; // to init intToEdge for other edit-sets (by global edit-score) or count until editStart
             double weight;
             for (index = 0; index < edgesToScore.size(); ) {
 
@@ -295,6 +295,9 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                         } else if(lazyReachCount > 2 && timer.elapsedSeconds() > timeOutSecs ){
                             log.warning("Stopping after first three found edit due to timeout: " + timeOutSecs + " = max time " + p.getTimeOut() + " x " + relTime );
                             break;
+                        } else if(veryFirstTime && cnt < p.getEditStart() && lazyReachCount == 1 ){
+                            log.info("Added " + ++cnt + "th of " + p.getEditStart() + " edges directly.");
+                            break;
                         }
                     }
 
@@ -308,6 +311,8 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                         int correspondingSubgraphScore = Integer.MAX_VALUE;
                         int bestGlobalScore = Integer.MAX_VALUE;
 
+                        boolean justOne = editsByLocalScore.firstEntry().getValue().size() == 1;
+
                         for( Pair<Map.Entry<Edge,Integer>, Pair<WeightedEdge, WeightedEdge>> best : editsByLocalScore.firstEntry().getValue()){
                             // take best cost, if several possible.
                             WeightedEdge one = best.getSecond().getFirst();
@@ -315,20 +320,24 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                             int currGlobalScore = Integer.MAX_VALUE;
                             double w1 = 0;
                             double w2 = 0;
-                            if(one != null){
-                                w1 = one.getWeight();
-                                currGlobalScore = computeEditScoreForEgde(one.getFirst(),one.getSecond(),w1,currEdgeList).getFirst();
+
+                            // else I must compare
+                            if(!justOne) {
+                                if (one != null) {
+                                    w1 = one.getWeight();
+                                    currGlobalScore = computeEditScoreForEgde(one.getFirst(), one.getSecond(), w1, currEdgeList).getFirst();
+                                    currEdgeList.clear();
+                                }
+                                if (two != null) {
+                                    w2 = two.getWeight();
+                                    currGlobalScore = computeEditScoreForEgde(two.getFirst(), two.getSecond(), w2, currEdgeList).getFirst();
+                                }
+                                if (one != null && two != null) {
+                                    // for both
+                                    currGlobalScore = computeEditScoreForEgde(one.getFirst(), one.getSecond(), w1, currEdgeList).getFirst();
+                                }
                                 currEdgeList.clear();
                             }
-                            if(two != null){
-                                w2 = two.getWeight();
-                                currGlobalScore = computeEditScoreForEgde(two.getFirst(),two.getSecond(),w2,currEdgeList).getFirst();
-                            }
-                            if(one != null && two != null){
-                                // for both
-                                currGlobalScore = computeEditScoreForEgde(one.getFirst(),one.getSecond(),w1,currEdgeList).getFirst();
-                            }
-                            currEdgeList.clear();
 
 
                             if(w1 + w2 < bestWeight || w1 + w2 < bestWeight + 0.1 && currGlobalScore < bestGlobalScore ){
@@ -436,20 +445,20 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                             }
 
                             if(fastRun){
-                                // keep the other possible entries, but continue on last index.
+                                // keep the other possible entries, but continue on last index. todo: off by one!!!
                                 int lastIndex = 0;
                                 LinkedList<Map.Entry<Edge,Integer>> copyEntries = new LinkedList<>();
                                 for(List <Pair<Map.Entry<Edge,Integer>, Pair<WeightedEdge, WeightedEdge>> > possEdits  : editsByLocalScore.values()){
                                     for (int i = 0; i < possEdits.size(); i++) {
                                         Map.Entry<Edge,Integer> entry = possEdits.get(i).getFirst();
-                                        if(!entry.equals(bestEntry)) {
-                                            int currIndex = edgesToScore.indexOf(entry);
-                                            copyEntries.add(entry);
-                                            if(currIndex > lastIndex)
-                                                lastIndex = currIndex;
-                                        } else{
-                                            edgesToScore.remove(entry);
+                                        int currIndex = edgesToScore.indexOf(entry);
+                                        if(currIndex > lastIndex) {
+                                            lastIndex = currIndex;
                                         }
+                                        if(!entry.equals(bestEntry)) {
+                                            copyEntries.add(entry);
+                                        }
+                                        // else nothing, will be skipped as I continue at lastIndex +1...
                                     }
                                 }
                                 edgesToScore = edgesToScore.subList(lastIndex+1,edgesToScore.size());

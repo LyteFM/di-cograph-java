@@ -255,7 +255,7 @@ public class MetaEditor {
             return firstSolns;
         }
 
-        Solution firstSol = firstSolns.firstEntry().getValue().get(0); // Todo: Here, CPlex might have NO SOLUTION !!!
+        Solution firstSol = firstSolns.firstEntry().getValue().get(0);
         MDTree firstTree = firstSol.getTree();
         if(firstTree.getMaxPrimeSize() == 0){
             log.info(()-> method + " method was successful after first run.");
@@ -265,13 +265,12 @@ public class MetaEditor {
         int denom = 2;
 
         if(method.doLazyOnFirst()){
-            int prevPrimeSize = origTree.getMaxPrimeSize();
+            int prevPrimeSize = origTree.getMaxPrimeSize() +1; // else might not start with -start
             int currPrimeSize = firstSol.getTree().getMaxPrimeSize();
 
 
-
             // repeat and let prime size decrease.
-            while (currPrimeSize < prevPrimeSize){ // abort if no changes
+            while (currPrimeSize < prevPrimeSize){ // abort if no changes todo why infloop?
                 //double timeFrac = 1.0 / denom / timeFracSum; // max rel time with large window for this run
 
                 firstEditor = new MDEditor(inputGraph,firstSol.getTree(), log, firstSol.getEdits(), method, p, true);

@@ -235,7 +235,7 @@ class MDEditor {
             subgraphCounts.put(sg,0);
         // negative cost - not yet successful (aborted in step 1 due to threshold/ processed all)
         // empty: nothing found in step 2
-        TreeMap<Integer, List<List<WeightedEdge>>> allPossibleEdits = subGraph.computeEdits(firstRun, subgraphCounts, relTime);
+        TreeMap<Integer, List<List<WeightedEdge>>> allPossibleEdits = subGraph.computeEdits(firstRun, subgraphCounts, relTime, oldInputEdits == null);
 
         // - compute ALL feasable edits within bruteForceGap
         // - choose the BEST edit when taking the original graph into account

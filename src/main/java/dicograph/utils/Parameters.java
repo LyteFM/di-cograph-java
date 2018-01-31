@@ -37,7 +37,7 @@ public class Parameters {
 
     // Editing-Parameters with Default values:
     private long timeOut = 3600;
-    private int softThreshold = 0; // If no succesful edit found, discard edits with forbiddenSub-score <= this value - atm for my bad tests.
+    private int softThreshold = 1; // If no succesful edit found, discard edits with forbiddenSub-score <= this value - atm for my bad tests.
     private int hardThreshold = 0; // Exclude edges with a forbiddenSubgraph-score <= this threshold from the edge-edit-set.
     // prev: Force stop if forbiddenSub-Score <= this value during first run and use brute-force/branching/ILP in second run to complete.
     private double weightMultiplier = 1.0;
@@ -45,6 +45,7 @@ public class Parameters {
 
     private int lazyreach = -1;
     private int lazyRestart = 9;
+    private int editStart = 0;
 
     // When to start brute force:
     private int bruteForceThreshold = 10;
@@ -52,6 +53,8 @@ public class Parameters {
     private int bruteForceGap = 0;
     private int bruteForceLimit = 0;
     private int maxResults = 10; // stops Brute force or ILP after finding this many possible solutions
+
+
 
     // methods
     private boolean lazy = true;
@@ -125,6 +128,8 @@ public class Parameters {
         options.addOption("mem",true,"Maximum memory to be used by CPlex-Solver.");
         options.addOption("threads",true,"Number of Threads to be used by CPlex-Solver. Default: automatic.");
 
+        options.addOption("start", true, "Number of first edges to be edited without using lazyreach.");
+
         Option weightm = new Option("wm",true,"Weight multiplier. Default: 1.0; Set lower if no solution, higher if too expensive");
         weightm.setArgName("double");
         options.addOption(weightm);
@@ -189,6 +194,9 @@ public class Parameters {
             }
             if(input.hasOption("threads")){
                 noThreads = Integer.parseInt( input.getOptionValue("threads"));
+            }
+            if(input.hasOption("start")){
+                editStart = Integer.parseInt( input.getOptionValue("start"));
             }
         }
     }
@@ -372,5 +380,9 @@ public class Parameters {
 
     public int getNoThreads() {
         return noThreads;
+    }
+
+    public int getEditStart() {
+        return editStart;
     }
 }
