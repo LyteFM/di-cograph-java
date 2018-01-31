@@ -23,9 +23,13 @@ Comilation of the C++ sources (necessary)
 - boost 1.55 or higher
 - cmake
 - gcc
+
 Running the .jar (necessary):
+
 - Java Runtime Environment 8
+
 Compilation of the Java sources (optional):
+
 - Java Development Kit 8
 - maven
 - Cplex v.12.7 (older versions might work, too)
