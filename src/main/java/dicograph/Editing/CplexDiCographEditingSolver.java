@@ -52,7 +52,7 @@ class CplexDiCographEditingSolver {
     private Parameters parameters;
 
     private List<SimpleDirectedGraph<Integer, DefaultEdge>> solutionGraphs;
-    private List<Double> editingDistances;
+    private List<Integer> editingDistances;
 
     // CPLEX solver
     private IloCplex solver;
@@ -175,7 +175,7 @@ class CplexDiCographEditingSolver {
             solver.setParam(IloCplex.Param.Threads, parameters.getNoThreads());
         }
         if (parameters.getTimeOut()>0){
-            solver.setParam(IloCplex.DoubleParam.TiLim, parameters.getTimeOut());
+            solver.setParam(IloCplex.DoubleParam.TiLim, parameters.getTimeOut()/2); // two steps!
         }
 
         // solve
@@ -233,39 +233,45 @@ class CplexDiCographEditingSolver {
 
         log.info("Solution status = " + solver.getStatus());
         log.info("CographEditDistance: " + bestObjectiveValue);
+        log.info( "Number solutions: " + noSolutions);
 
 
 
+        int best = Integer.MAX_VALUE; // bestObjValue -> no solution if just feasible.
         for (int solutionId=0; solutionId<noSolutions; solutionId++){
-            if (Math.round(solver.getObjValue(solutionId)) <=bestObjectiveValue + parameters.getSolutionGap() + 1){
 
+            int val = (int) Math.round(solver.getObjValue(solutionId));
+            if( val <= best + parameters.getSolutionGap() + 1 ) {
+
+                if(val < best)
+                    best = val;
                 // initialize JGraph with same vertex-Set:
                 SimpleDirectedGraph<Integer, DefaultEdge> solutionGraph = new SimpleDirectedGraph<>(DefaultEdge.class);
-                for(int vertex = 0; vertex < vertexCount; vertex++){
+                for (int vertex = 0; vertex < vertexCount; vertex++) {
                     solutionGraph.addVertex(vertex);
                 }
                 List<WeightedEdge> edgeEdits = new LinkedList<>();
 
                 solution.append("Adjacency Matrix:\n");
 
-                for (int vertex_x = 0; vertex_x < vertexCount; vertex_x++ ){
-                    for (int vertex_y = 0; vertex_y < vertexCount; vertex_y++){
+                for (int vertex_x = 0; vertex_x < vertexCount; vertex_x++) {
+                    for (int vertex_y = 0; vertex_y < vertexCount; vertex_y++) {
                         double variable = 0;
-                        if (vertex_x!=vertex_y){
+                        if (vertex_x != vertex_y) {
                             variable = solver.getValue(E[vertex_x][vertex_y], solutionId);
                         }
-                        boolean hasEdge = variable>0.5;
-                        solution.append( hasEdge ?"1 " : "0 ");
+                        boolean hasEdge = variable > 0.5;
+                        solution.append(hasEdge ? "1 " : "0 ");
                         boolean edgeEdit;
-                        if(hasEdge){
+                        if (hasEdge) {
                             solutionGraph.addEdge(vertex_x, vertex_y);
-                            edgeEdit = !inputGraph.containsEdge(vertex_x,vertex_y);
+                            edgeEdit = !inputGraph.containsEdge(vertex_x, vertex_y);
                         } else {
-                            edgeEdit = inputGraph.containsEdge(vertex_x,vertex_y);
+                            edgeEdit = inputGraph.containsEdge(vertex_x, vertex_y);
                         }
-                        if(edgeEdit){
-                            WeightedEdge editEdge = new WeightedEdge(vertex_x,vertex_y);
-                            if(weightMatrix != null){
+                        if (edgeEdit) {
+                            WeightedEdge editEdge = new WeightedEdge(vertex_x, vertex_y);
+                            if (weightMatrix != null) {
                                 editEdge.setWeight(weightMatrix[vertex_x][vertex_y]);
                             }
                             edgeEdits.add(editEdge);
@@ -274,18 +280,19 @@ class CplexDiCographEditingSolver {
                     solution.append("\n");
                 }
                 solutionEdgeEdits.add(edgeEdits);
-                editingDistances.add(solver.getObjValue(solutionId));
+                editingDistances.add(val);
                 solutionGraphs.add(solutionGraph);
                 solution.append("\n\n")
                         .append(solver.getObjValue(solutionId))
                         .append("\n");
             }
         }
+
         return solution.toString();
     }
 
     // These two go together (same order)
-    public List<Double> getEditingDistances() {
+    public List<Integer> getEditingDistances() {
         return editingDistances;
     }
 

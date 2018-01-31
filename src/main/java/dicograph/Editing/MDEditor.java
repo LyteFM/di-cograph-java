@@ -96,7 +96,7 @@ class MDEditor {
 
     // want:
     // key < -1 means unsuccessful. Need empty entry if already below prime trh
-    public TreeMap<Integer, List<Solution>> editIntoCograph()
+    public TreeMap<Integer, List<Solution>> editIntoCograph(double relTime)
             throws ImportException, IOException, InterruptedException, IloException{
 
         TreeMap<Integer, List<Solution>> finalSolutions = new TreeMap<>();
@@ -126,7 +126,7 @@ class MDEditor {
 
                 log.info(()->"Editing prime: " + MDTree.beautify(primeNode.toString()));
 
-                currentEditResults = computeRealEditsForNode(primeNode);
+                currentEditResults = computeRealEditsForNode(primeNode, relTime);
                 if(currentEditResults.isEmpty()){
                     log.warning(() -> "Aborting, no edit found for this prime: " + primeNode);
                     return finalSolutions;
@@ -218,7 +218,7 @@ class MDEditor {
     }
 
     // Positive, empty or negative.
-    private TreeMap<Integer,List<List<Edge>>> computeRealEditsForNode(MDTreeNode primeNode)throws ImportException, IOException, InterruptedException,
+    private TreeMap<Integer,List<List<Edge>>> computeRealEditsForNode(MDTreeNode primeNode, double relTime)throws ImportException, IOException, InterruptedException,
             IloException{
 
         TreeMap<Integer,List<List<Edge>>> allRealEdits = new TreeMap<>();
@@ -235,7 +235,7 @@ class MDEditor {
             subgraphCounts.put(sg,0);
         // negative cost - not yet successful (aborted in step 1 due to threshold/ processed all)
         // empty: nothing found in step 2
-        TreeMap<Integer, List<List<WeightedEdge>>> allPossibleEdits = subGraph.computeEdits(firstRun, subgraphCounts);
+        TreeMap<Integer, List<List<WeightedEdge>>> allPossibleEdits = subGraph.computeEdits(firstRun, subgraphCounts, relTime);
 
         // - compute ALL feasable edits within bruteForceGap
         // - choose the BEST edit when taking the original graph into account

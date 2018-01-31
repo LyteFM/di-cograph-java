@@ -132,10 +132,10 @@ public class Main {
 
                             if(command.isLazy()) {
                                 if (editor.getLazySolution() != null) {
-                                    if(command.isIlpMD()) {
-                                        bestCostToLazyCost.putIfAbsent(editor.getBestCost(), new LinkedList<>());
-                                        bestCostToLazyCost.get(editor.getBestCost()).add(editor.getLazyCost());
-                                    }
+
+                                    bestCostToLazyCost.putIfAbsent(editor.getBestCost(), new LinkedList<>());
+                                    bestCostToLazyCost.get(editor.getBestCost()).add(editor.getLazyCost());
+
 
                                     // Trees:
                                     tripleDistances.add(editor.getLazyTTDistance());

@@ -120,9 +120,9 @@ public class Parameters {
         options.addOption("sth", true,"Soft threshold: No edit found in 1st lazy run -> discards edges with subgraph-score <= this");
 
         options.addOption("lzreach", true,"Number of next possible edits to be included during lazy run. Default: sqrt(no. of prime's children) + 2.");
-        options.addOption("lzre",true, "Restarts lazy method when no of primes improved by lzre. Default: 9" );
+        options.addOption("lzrestart",true, "Restarts lazy method when no of primes improved by lzre. Default: 9" );
 
-        options.addOption("mem",true,"Maximum memory to be used by CPlex-Solver. Default: 3072");
+        options.addOption("mem",true,"Maximum memory to be used by CPlex-Solver.");
         options.addOption("threads",true,"Number of Threads to be used by CPlex-Solver. Default: automatic.");
 
         Option weightm = new Option("wm",true,"Weight multiplier. Default: 1.0; Set lower if no solution, higher if too expensive");
@@ -181,8 +181,8 @@ public class Parameters {
             if(input.hasOption("lzreach")){
                 lazyreach = Integer.parseInt( input.getOptionValue("lzreach"));
             }
-            if(input.hasOption("lzre")){
-                lazyRestart = Integer.parseInt( input.getOptionValue("lzre"));
+            if(input.hasOption("lzrestart")){
+                lazyRestart = Integer.parseInt( input.getOptionValue("lzrestart"));
             }
             if(input.hasOption("mem")){
                 maximumMemory = Double.parseDouble( input.getOptionValue("mem"));

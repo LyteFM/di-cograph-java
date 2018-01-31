@@ -219,7 +219,7 @@ public class MetaEditor {
         glSolver.solve();
         for (int i = 0; i < glSolver.getEditingDistances().size(); i++) {
 
-            int val = (int) Math.round(glSolver.getEditingDistances().get(i));
+            int val = glSolver.getEditingDistances().get(i);
             List<Edge> edges = new ArrayList<>(glSolver.getSolutionEdgeEdits().get(i).size());
             for(WeightedEdge e : glSolver.getSolutionEdgeEdits().get(i)){
                 edges.add( new Edge(e.getFirst(), e.getSecond()));
@@ -237,24 +237,37 @@ public class MetaEditor {
 
         log.info("Starting Editor for method: " + method);
         MDEditor firstEditor = new MDEditor(inputGraph, origTree, log, method, p);
-        TreeMap<Integer, List<Solution>> firstSolns = firstEditor.editIntoCograph();
+
+        // compute time limits for each lazy step. First step: 1/2, next: 1/3 etc.
+        double timeFracSum = 0;
+        int maxDenom = nVertices / p.getLazyRestart() + 2;
+        for(int i = 2; i <= maxDenom; i++){
+            timeFracSum += 1.0 / i;
+        }
+
+        TreeMap<Integer, List<Solution>> firstSolns = firstEditor.editIntoCograph(0.5/timeFracSum);
         subgraphCounts = firstEditor.getSubgraphStats();
 
-        Solution firstSol = firstSolns.firstEntry().getValue().get(0);
+        Solution firstSol = firstSolns.firstEntry().getValue().get(0); // Todo: Here, CPlex might have NO SOLUTION !!!
         MDTree firstTree = firstSol.getTree();
         if(firstTree.getMaxPrimeSize() == 0){
             log.info(()-> method + " method was successful after first run.");
             return firstSolns;
         }
 
+        int denom = 3;
+
         if(method.doLazyOnFirst()){
             int prevPrimeSize = origTree.getMaxPrimeSize();
             int currPrimeSize = firstSol.getTree().getMaxPrimeSize();
 
+
+
             // repeat and let prime size decrease.
             while (currPrimeSize < prevPrimeSize){ // abort if no changes
+                double timeFrac = 1.0 / denom / timeFracSum; // max rel time with large window for this run
                 firstEditor = new MDEditor(inputGraph,firstSol.getTree(), log, firstSol.getEdits(), method, p, true);
-                firstSolns = firstEditor.editIntoCograph();
+                firstSolns = firstEditor.editIntoCograph(timeFrac);
                 firstSol = firstSolns.firstEntry().getValue().get(0);
                 firstTree = firstSol.getTree();
                 currPrimeSize = firstTree.getMaxPrimeSize();
@@ -264,6 +277,7 @@ public class MetaEditor {
                 } else if( method.secondPrimeRun() && currPrimeSize <= p.getBruteForceThreshold()){
                     break;
                 }
+                denom ++;
             }
 
         } else {
@@ -276,7 +290,7 @@ public class MetaEditor {
         // second call. Input graph original but firstTree edited.
         log.info(()-> method + ": Starting second run - using brute force/ ILP now.");
         MDEditor secondEdit = new MDEditor(inputGraph, firstTree, log, firstSol.getEdits(), method, p, false);
-        TreeMap<Integer, List<Solution>> secondSolns = secondEdit.editIntoCograph();
+        TreeMap<Integer, List<Solution>> secondSolns = secondEdit.editIntoCograph(1.0 / denom / timeFracSum);
         if(secondSolns.isEmpty()){
             log.warning(()-> method + " method was unsuccessful.");
             secondSolns.clear();

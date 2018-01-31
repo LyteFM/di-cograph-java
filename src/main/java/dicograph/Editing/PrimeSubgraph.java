@@ -92,7 +92,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
 
     // an entry in the map means: if present -> remove, if not -> add.
     // Key > 0 => success! Key < 0 => not yet done, but ok after round 1; Key = 0 ->  empty => fail after step 2.
-    public TreeMap<Integer, List<List<WeightedEdge>>> computeEdits(boolean first, Map<ForbiddenSubgraph,Integer> subgraphCounts)
+    public TreeMap<Integer, List<List<WeightedEdge>>> computeEdits(boolean first, Map<ForbiddenSubgraph,Integer> subgraphCounts, double relTime)
     throws InterruptedException, IOException, ImportException, IloException{
         TreeMap<Integer, List<List<WeightedEdge>>> costToEdges = new TreeMap<>(); // results
 
@@ -134,6 +134,8 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
 
         TimerLog timer = new TimerLog(log, log.getParent().getLevel());
         boolean timeOut = false;
+        long timeOutSecs = (long) (p.getTimeOut() * relTime);
+
 
         // todo: reqgl for lazy!!!
         // Lazy method. Not for normal ILP! -> but yes on 1st run for greedy-ILP
@@ -290,8 +292,8 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                                 log.info(msg + "Subgraph-score " + edge.getValue() + " reached -hth" );
                             }
                             break;
-                        } else if(lazyReachCount > 2 && timer.elapsedSeconds() > p.getTimeOut() ){
-                            log.warning("Stopping after first three found edit due to timeout: " + p.getTimeOut());
+                        } else if(lazyReachCount > 2 && timer.elapsedSeconds() > timeOutSecs ){
+                            log.warning("Stopping after first three found edit due to timeout: " + timeOutSecs + " = max time " + p.getTimeOut() + " x " + relTime );
                             break;
                         }
                     }
@@ -508,10 +510,13 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
         if(first && method == EditType.ILP || !first && method == EditType.GreedyILP){
             CplexDiCographEditingSolver primeSolver = new CplexDiCographEditingSolver(
                     this, p, weightMatrix, log);
-            primeSolver.solve();
-            int bestVal = (int) primeSolver.getBestObjectiveValue();
+            primeSolver.solve(); // empty if unsuccessful!
+            int bestVal = Integer.MAX_VALUE; // bestVal = (int) primeSolver.getBestObjectiveValue()
             for (int i = 0; i < primeSolver.getEditingDistances().size(); i++) {
-                int val = (int) Math.round(primeSolver.getEditingDistances().get(i));
+                int val = primeSolver.getEditingDistances().get(i);
+                if(val < bestVal)
+                    bestVal = val;
+
                 costToEdges.putIfAbsent(val,new LinkedList<>());
                 costToEdges.get(val).add(primeSolver.getSolutionEdgeEdits().get(i));
 
@@ -620,7 +625,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
 
 
                     count++;
-                    timeOut = count % 5000 == 0 && timer.elapsedSeconds() > p.getTimeOut();
+                    timeOut = count % 100000 == 0 && timer.elapsedSeconds() > timeOutSecs;
                     if(timeOut)
                         break;
                 }
@@ -633,7 +638,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                     log.info("Exiting: i = " + i + ", every cost was > " + maxCost);
                     return costToEdges;
                 } else if(timeOut){
-                    log.warning("Aborting due to timeout.");
+                    log.warning("Stopping due to timeout: " + timeOutSecs + " = max time " + p.getTimeOut() + " x " + relTime);
                     return costToEdges;
                 }
             }
