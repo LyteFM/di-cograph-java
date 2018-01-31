@@ -301,7 +301,7 @@ public class MetaEditor {
         // second call. Input graph original but firstTree edited.
         log.info(()-> method + ": Starting second run - using brute force/ ILP now.");
         MDEditor secondEdit = new MDEditor(inputGraph, firstTree, log, firstSol.getEdits(), method, p, false);
-        TreeMap<Integer, List<Solution>> secondSolns = secondEdit.editIntoCograph(1.0 / denom);
+        TreeMap<Integer, List<Solution>> secondSolns = secondEdit.editIntoCograph(1.0 / p.getLazyRestart()); // don't want early timeout for brute force!!!
         if(secondSolns.isEmpty()){
             log.warning(()-> method + " method was unsuccessful.");
             secondSolns.clear();
