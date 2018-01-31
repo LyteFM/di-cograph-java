@@ -232,9 +232,8 @@ class CplexDiCographEditingSolver {
         bestObjectiveValue = Math.round(solver.getBestObjValue());
 
         log.info("Solution status = " + solver.getStatus());
-        log.info("CographEditDistance: " + bestObjectiveValue);
+        log.info("Best objective valule: " + bestObjectiveValue);
         log.info( "Number solutions: " + noSolutions);
-
 
 
         int best = Integer.MAX_VALUE; // bestObjValue -> no solution if just feasible.
@@ -285,6 +284,9 @@ class CplexDiCographEditingSolver {
                 solution.append("\n\n")
                         .append(solver.getObjValue(solutionId))
                         .append("\n");
+                if(solutionId == 0){
+                    log.info(solution.toString());
+                }
             }
         }
 

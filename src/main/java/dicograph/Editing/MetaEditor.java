@@ -151,6 +151,8 @@ public class MetaEditor {
         // best solution(s) - with gap
         Solution bestDistSolution = null;
         for(TreeMap<Integer, List<Solution>> solutionMap : allMethodsSolutions){
+            if(solutionMap.isEmpty())
+                continue;
             int cost = solutionMap.firstKey();
             if( cost <= bestCost){
                 if( cost < bestCost && bestCost - cost > p.getSolutionGap()){
@@ -245,8 +247,13 @@ public class MetaEditor {
 //            timeFracSum += 1.0 / i;
 //        }
 
-        TreeMap<Integer, List<Solution>> firstSolns = firstEditor.editIntoCograph(0.5); // /timeFracSum
+        TreeMap<Integer, List<Solution>> firstSolns = firstEditor.editIntoCograph(0.5); // might be empty.
         subgraphCounts = firstEditor.getSubgraphStats();
+
+        if(firstSolns.isEmpty()){
+            log.warning(()-> method + " method was unsuccessful.");
+            return firstSolns;
+        }
 
         Solution firstSol = firstSolns.firstEntry().getValue().get(0); // Todo: Here, CPlex might have NO SOLUTION !!!
         MDTree firstTree = firstSol.getTree();
