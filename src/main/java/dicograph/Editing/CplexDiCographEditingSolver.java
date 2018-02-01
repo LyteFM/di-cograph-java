@@ -236,7 +236,7 @@ class CplexDiCographEditingSolver {
         log.info( "Number solutions: " + noSolutions);
 
 
-        int best = Integer.MAX_VALUE; // bestObjValue -> no solution if just feasible.
+        int best = Integer.MAX_VALUE - parameters.getSolutionGap() - 1; // bestObjValue -> no solution if just feasible.
         for (int solutionId=0; solutionId<noSolutions; solutionId++){
 
             int val = (int) Math.round(solver.getObjValue(solutionId));

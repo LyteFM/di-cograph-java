@@ -121,8 +121,10 @@ public class MetaEditor {
         }
         if(p.isIlpMD()){
             TreeMap<Integer, List<Solution>> sols = computeEditFor(EditType.ILP);
-            allMethodsSolutions.add( sols );
-            bestILPSolns = sols.firstEntry().getValue();
+            if(!sols.isEmpty()) {
+                allMethodsSolutions.add(sols);
+                bestILPSolns = sols.firstEntry().getValue();
+            }
         }
         if(p.isGreedyPlusILP()){
             allMethodsSolutions.add( computeEditFor(EditType.GreedyILP));
