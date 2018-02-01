@@ -108,6 +108,7 @@ public class MetaEditor {
             allMethodsSolutions.add( sols );
             if(!sols.isEmpty()) {
                 greedySolution = sols.firstEntry().getValue().get(0);
+                greedyCost = greedySolution.getCost();
             }
         }
         if(p.isBruteForce()){
@@ -115,6 +116,7 @@ public class MetaEditor {
             allMethodsSolutions.add( sols );
             if(!sols.isEmpty() && !p.isLazy()) {
                 greedySolution = sols.firstEntry().getValue().get(0);
+                greedyCost = greedySolution.getCost();
             }
         }
         if(p.isIlpMD()){
@@ -147,7 +149,6 @@ public class MetaEditor {
                     greedyCorrectRun = count;
                 }
             }
-            greedyCost = greedySolution.getCost();
             log.info("Lazy got the first " + greedyCorrectRun + " of " + ilpCost + " edits right.");
             log.info("Lazy cost: " + greedyCost + "; ILP cost: " + ilpCost);
         }
