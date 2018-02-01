@@ -564,17 +564,7 @@ public class DirectedMD {
                 // Step 2: Take the initialized inclusion tree of σ(T_s, T_g) and test its nodes for membership in A* and B*
                 // Saving a HashMap from element of σ to P_a allows us to compute the R_U-equivalence classes.
 
-//                if (maximumMembers.size() == 1) {
-//                    // todo: I never get here, do I??
-//                    elementsOfA.put(setEntryOfSigma.getValue(), setEntryOfSigma.getKey());
-//                    elementOfAToP_a.put(setEntryOfSigma.getValue(), maximumMembers.stream().findFirst().get());
-//                    log.finer(logPrefix + "Added: " + setEntryOfSigma.toString() + " directly");
-//                    throw new IllegalStateException("Shouldn't happen.");
-//
-//                } else if (maximumMembers.size() == 0) {
-//                    log.warning(logPrefix + "Strange: no max member for " + setEntryOfSigma.toString());
-//                    throw new IllegalStateException("Shouldn't happen.");
-                if(maximumMembers.size() < 2){
+                if(maximumMembers.size() < 2){ // doesn't happen.
                     throw new IllegalStateException("Number of max. members: " + maximumMembers.size() + ", entries: " + maximumMembers);
                 } else {
                     // compute the LCA of all maximum members and check if it is complete.
