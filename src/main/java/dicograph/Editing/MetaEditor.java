@@ -78,8 +78,8 @@ public class MetaEditor {
         DirectedMD modDecomp = new DirectedMD(inputGraph, log, false);
         origTree = modDecomp.computeModularDecomposition();
         greedyCorrectRun = 0;
-        bestTTDistance = Double.MAX_VALUE;
-        greedyTTDistance = Double.MAX_VALUE;
+        bestTTDistance = 12345678.9;
+        greedyTTDistance = 12345678.9;
         bestCost = Integer.MAX_VALUE;
         greedyCost = Integer.MAX_VALUE;
         greedySolution = null;

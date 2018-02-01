@@ -43,7 +43,7 @@ public class Parameters {
     private int solutionGap = 0; // all best solutions by default.
 
     private int lazyreach = -1;
-    private int lazyRestart = 9;
+    private int lazyRestart = 5;
     private int editStart = -1;
 
     // When to start brute force:

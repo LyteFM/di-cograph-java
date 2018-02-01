@@ -158,7 +158,7 @@ public class Main {
                         System.err.println("Error occured after " + i + " successful runs.");
                         break;
                     }
-                    System.out.println("Yay, " + i +" test runs went successful!");
+                    System.out.println("Yay, " + i +" of " + mTrials + " test runs went successful!");
                 }
 
                 log.info("All generated Graphs:");
@@ -277,12 +277,12 @@ public class Main {
         List<Solution> solutions = testMeta.computeSolutionsForMethods();
         if(!solutions.isEmpty()){
 
-            if((p.isLazy()|| p.isBruteForce())){
+            if(((p.isLazy()|| p.isBruteForce() )) && testMeta.getGreedyCost() < Integer.MAX_VALUE){
                 cost = testMeta.getGreedyCost();
                 dist = testMeta.getGreedyTTDistance();
             } else {
                 cost = testMeta.getBestCost();
-                dist = testMeta.getBestTTDistance(); // might _not_ be the best!
+                dist = testMeta.getBestTTDistance();
             }
 
             String solName = expPath + "_edit-cost_" + cost + "_TT-dist_" + new DecimalFormat("0.000000000").format(dist) + ".txt";
