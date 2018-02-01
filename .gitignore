@@ -9,8 +9,7 @@ importFiles/
 leftovers/
 OverlapComponentProg/*.o
 OverlapComponentProg/main
-graphs/*.txt
-graphs/*.dot
+graphs/
 logs/
 FP_to_DMD/build/
 MD/build/
