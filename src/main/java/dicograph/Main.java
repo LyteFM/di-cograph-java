@@ -42,7 +42,7 @@ import dicograph.modDecomp.DirectedMD;
 import dicograph.modDecomp.MDTree;
 import dicograph.utils.Parameters;
 import dicograph.utils.VerySimpleFormatter;
-import ilog.concert.IloException;
+//import ilog.concert.IloException;
 
 
 /**
@@ -268,7 +268,7 @@ public class Main {
     }
 
     private static MetaEditor editingTest(Logger log, SimpleDirectedGraph<Integer,DefaultEdge> importGraph, String expPath, MDTree cotree, Parameters p)
-            throws IOException, ImportException, InterruptedException, IloException, ExportException{
+            throws IOException, ImportException, InterruptedException, ExportException{
         int cost;
         double dist;
 
@@ -294,7 +294,7 @@ public class Main {
     }
 
     private static MetaEditor testRun( Logger log, Handler baseHandler, Parameters p, int nVertices, int nDisturb, StringBuilder allPaths)
-            throws ImportException, InterruptedException, IloException, ExportException, IOException{
+            throws ImportException, InterruptedException, ExportException, IOException{
 
         String timeStamp = new SimpleDateFormat("MM-dd_HH:mm:ss:SSS").format(Calendar.getInstance().getTime());
         String fileName = "randDigraph_n_" + nVertices + "_edits_" + nDisturb + "_" + timeStamp;

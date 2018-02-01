@@ -26,7 +26,7 @@ import dicograph.modDecomp.MDTreeNode;
 import dicograph.utils.Edge;
 import dicograph.utils.Parameters;
 import dicograph.utils.WeightedEdge;
-import ilog.concert.IloException;
+//import ilog.concert.IloException;
 
 /*
  *   This source file is part of the program for editing directed graphs
@@ -97,7 +97,7 @@ class MDEditor {
     // want:
     // key < -1 means unsuccessful. Need empty entry if already below prime trh
     public TreeMap<Integer, List<Solution>> editIntoCograph(double relTime)
-            throws ImportException, IOException, InterruptedException, IloException{
+            throws ImportException, IOException, InterruptedException{
 
         TreeMap<Integer, List<Solution>> finalSolutions = new TreeMap<>();
         TreeMap<Integer, List<List<Edge>>> currentEditResults;
@@ -218,8 +218,7 @@ class MDEditor {
     }
 
     // Positive, empty or negative.
-    private TreeMap<Integer,List<List<Edge>>> computeRealEditsForNode(MDTreeNode primeNode, double relTime)throws ImportException, IOException, InterruptedException,
-            IloException{
+    private TreeMap<Integer,List<List<Edge>>> computeRealEditsForNode(MDTreeNode primeNode, double relTime)throws ImportException, IOException, InterruptedException{
 
         TreeMap<Integer,List<List<Edge>>> allRealEdits = new TreeMap<>();
         PrimeSubgraph subGraph = new PrimeSubgraph(workGraph,primeNode,p, log, type);

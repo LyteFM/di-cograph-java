@@ -28,7 +28,6 @@ import dicograph.utils.Edge;
 import dicograph.utils.Parameters;
 import dicograph.utils.TimerLog;
 import dicograph.utils.WeightedEdge;
-import ilog.concert.IloException;
 
 /*
  *   This source file is part of the program for editing directed graphs
@@ -93,7 +92,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
     // an entry in the map means: if present -> remove, if not -> add.
     // Key > 0 => success! Key < 0 => not yet done, but ok after round 1; Key = 0 ->  empty => fail after step 2.
     public TreeMap<Integer, List<List<WeightedEdge>>> computeEdits(boolean first, Map<ForbiddenSubgraph,Integer> subgraphCounts, double relTime, boolean veryFirstTime)
-    throws InterruptedException, IOException, ImportException, IloException{
+    throws InterruptedException, IOException, ImportException{
         TreeMap<Integer, List<List<WeightedEdge>>> costToEdges = new TreeMap<>(); // results
 
         // Maximum edge-subset size
@@ -516,48 +515,48 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
             }
         }
         // ILP on the quotient-graph (with costs)
-        if(first && method == EditType.ILP || !first && method == EditType.GreedyILP){
-            CplexDiCographEditingSolver primeSolver = new CplexDiCographEditingSolver(
-                    this, p, weightMatrix, log);
-            primeSolver.solve(); // empty if unsuccessful!
-            int bestVal = Integer.MAX_VALUE; // bestVal = (int) primeSolver.getBestObjectiveValue()
-            for (int i = 0; i < primeSolver.getEditingDistances().size(); i++) {
-                int val = primeSolver.getEditingDistances().get(i);
-                if(val < bestVal)
-                    bestVal = val;
-
-                costToEdges.putIfAbsent(val,new LinkedList<>());
-                costToEdges.get(val).add(primeSolver.getSolutionEdgeEdits().get(i));
-
-                // I assume, for greedy, that all the best edits have a subgraph-score of at least one:
-                for(WeightedEdge wedge : primeSolver.getSolutionEdgeEdits().get(i)){
-                    int u,v;
-                    if(wedge.getFirst() < wedge.getSecond()){
-                        u = wedge.getFirst();
-                        v = wedge.getSecond();
-                    } else {
-                        u = wedge.getSecond();
-                        v = wedge.getFirst();
-                    }
-                    // this would be very bad for the heuristic. Does it happen? todo: grep -e the logs.
-                    if(bestVal == val && !edgeToCount.containsKey(new Edge(u,v)))
-                        log.severe("Optimal edge " + wedge + "has subgraph-score 0!");
-                }
-            }
-
-
-            if(!primeSolver.getSolutionEdgeEdits().isEmpty()) {
-                log.info("MD Tree for CPlex subgraph solution:");
-                edit(primeSolver.getSolutionEdgeEdits().get(0));
-                DirectedMD subMD = new DirectedMD(this, log, false);
-                MDTree subTree = subMD.computeModularDecomposition();
-                log.info(MDTree.beautify(subTree.toString()));
-            } else {
-                log.severe("CPlex solver stopped without solution!");
-            }
-
-            return costToEdges;
-        }
+//        if(first && method == EditType.ILP || !first && method == EditType.GreedyILP){
+//            CplexDiCographEditingSolver primeSolver = new CplexDiCographEditingSolver(
+//                    this, p, weightMatrix, log);
+//            primeSolver.solve(); // empty if unsuccessful!
+//            int bestVal = Integer.MAX_VALUE; // bestVal = (int) primeSolver.getBestObjectiveValue()
+//            for (int i = 0; i < primeSolver.getEditingDistances().size(); i++) {
+//                int val = primeSolver.getEditingDistances().get(i);
+//                if(val < bestVal)
+//                    bestVal = val;
+//
+//                costToEdges.putIfAbsent(val,new LinkedList<>());
+//                costToEdges.get(val).add(primeSolver.getSolutionEdgeEdits().get(i));
+//
+//                // I assume, for greedy, that all the best edits have a subgraph-score of at least one:
+//                for(WeightedEdge wedge : primeSolver.getSolutionEdgeEdits().get(i)){
+//                    int u,v;
+//                    if(wedge.getFirst() < wedge.getSecond()){
+//                        u = wedge.getFirst();
+//                        v = wedge.getSecond();
+//                    } else {
+//                        u = wedge.getSecond();
+//                        v = wedge.getFirst();
+//                    }
+//                    // this would be very bad for the heuristic. Does it happen? todo: grep -e the logs.
+//                    if(bestVal == val && !edgeToCount.containsKey(new Edge(u,v)))
+//                        log.severe("Optimal edge " + wedge + "has subgraph-score 0!");
+//                }
+//            }
+//
+//
+//            if(!primeSolver.getSolutionEdgeEdits().isEmpty()) {
+//                log.info("MD Tree for CPlex subgraph solution:");
+//                edit(primeSolver.getSolutionEdgeEdits().get(0));
+//                DirectedMD subMD = new DirectedMD(this, log, false);
+//                MDTree subTree = subMD.computeModularDecomposition();
+//                log.info(MDTree.beautify(subTree.toString()));
+//            } else {
+//                log.severe("CPlex solver stopped without solution!");
+//            }
+//
+//            return costToEdges;
+//        }
         // Cost-aware Brute Force
         else if(method == EditType.BruteForce){
             int maxCost;

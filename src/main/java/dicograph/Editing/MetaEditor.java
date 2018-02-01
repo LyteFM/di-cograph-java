@@ -24,7 +24,7 @@ import dicograph.utils.Edge;
 import dicograph.utils.Parameters;
 import dicograph.utils.Triple;
 import dicograph.utils.WeightedEdge;
-import ilog.concert.IloException;
+////import ilog.concert.IloException;
 
 import static com.google.common.math.IntMath.binomial;
 
@@ -86,7 +86,7 @@ public class MetaEditor {
     }
 
     // best tt distance will be first.
-    public List<Solution> computeSolutionsForMethods() throws IOException, ImportException, IloException, InterruptedException, ExportException{
+    public List<Solution> computeSolutionsForMethods() throws IOException, ImportException, InterruptedException, ExportException{
 
         List<Solution> bestSolutions = new LinkedList<>();
 
@@ -119,19 +119,19 @@ public class MetaEditor {
                 greedyCost = greedySolution.getCost();
             }
         }
-        if(p.isIlpMD()){
-            TreeMap<Integer, List<Solution>> sols = computeEditFor(EditType.ILP);
-            if(!sols.isEmpty()) {
-                allMethodsSolutions.add(sols);
-                bestILPSolns = sols.firstEntry().getValue();
-            }
-        }
+//        if(p.isIlpMD()){
+//            TreeMap<Integer, List<Solution>> sols = computeEditFor(EditType.ILP);
+//            if(!sols.isEmpty()) {
+//                allMethodsSolutions.add(sols);
+//                bestILPSolns = sols.firstEntry().getValue();
+//            }
+//        }
         if(p.isGreedyPlusILP()){
             allMethodsSolutions.add( computeEditFor(EditType.GreedyILP));
         }
-        if(p.isIlpOnly()){
-            allMethodsSolutions.add(  computeGlobalILP() );
-        }
+//        if(p.isIlpOnly()){
+//            allMethodsSolutions.add(  computeGlobalILP() );
+//        }
 
         // how good was lazy compared to ILP?
         if(greedySolution != null && bestILPSolns != null){
@@ -222,27 +222,27 @@ public class MetaEditor {
         return bestSolutions;
     }
 
-    private TreeMap<Integer, List<Solution>> computeGlobalILP() throws IOException, ImportException, IloException, InterruptedException{
-        TreeMap<Integer, List<Solution>> ret = new TreeMap<>();
-        CplexDiCographEditingSolver glSolver = new CplexDiCographEditingSolver(inputGraph, p, log);
-        glSolver.solve();
-        for (int i = 0; i < glSolver.getEditingDistances().size(); i++) {
-
-            int val = glSolver.getEditingDistances().get(i);
-            List<Edge> edges = new ArrayList<>(glSolver.getSolutionEdgeEdits().get(i).size());
-            for(WeightedEdge e : glSolver.getSolutionEdgeEdits().get(i)){
-                edges.add( new Edge(e.getFirst(), e.getSecond()));
-            }
-            DirectedMD solMD = new DirectedMD(glSolver.getSolutionGraphs().get(i), log,false);
-            MDTree solTree = solMD.computeModularDecomposition();
-            ret.putIfAbsent(val,new LinkedList<>());
-            ret.get(val).add(new Solution(glSolver.getSolutionGraphs().get(i),solTree,edges, EditType.ILPGlobal));
-        }
-        return ret;
-    }
+//    private TreeMap<Integer, List<Solution>> computeGlobalILP() throws IOException, ImportException, IloException, InterruptedException{
+//        TreeMap<Integer, List<Solution>> ret = new TreeMap<>();
+//        CplexDiCographEditingSolver glSolver = new CplexDiCographEditingSolver(inputGraph, p, log);
+//        glSolver.solve();
+//        for (int i = 0; i < glSolver.getEditingDistances().size(); i++) {
+//
+//            int val = glSolver.getEditingDistances().get(i);
+//            List<Edge> edges = new ArrayList<>(glSolver.getSolutionEdgeEdits().get(i).size());
+//            for(WeightedEdge e : glSolver.getSolutionEdgeEdits().get(i)){
+//                edges.add( new Edge(e.getFirst(), e.getSecond()));
+//            }
+//            DirectedMD solMD = new DirectedMD(glSolver.getSolutionGraphs().get(i), log,false);
+//            MDTree solTree = solMD.computeModularDecomposition();
+//            ret.putIfAbsent(val,new LinkedList<>());
+//            ret.get(val).add(new Solution(glSolver.getSolutionGraphs().get(i),solTree,edges, EditType.ILPGlobal));
+//        }
+//        return ret;
+//    }
 
     private TreeMap<Integer, List<Solution>> computeEditFor(EditType method) throws
-    IOException, ImportException, InterruptedException, IloException{
+    IOException, ImportException, InterruptedException{
 
         log.info("Starting Editor for method: " + method);
         MDEditor firstEditor = new MDEditor(inputGraph, origTree, log, method, p);

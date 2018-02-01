@@ -69,13 +69,6 @@
             <artifactId>commons-cli</artifactId>
             <version>1.4</version>
         </dependency>
-        <!-- mvn install:install-file -Dfile=/Path-to/cplex-12.7.jar -DgroupId=ilog -DartifactId=cplex -Dversion=12.7 -Dpackaging=jar -->
-        <dependency>
-            <groupId>ilog</groupId>
-            <artifactId>cplex</artifactId>
-            <version>12.7</version>
-        </dependency>
-
     </dependencies>
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
