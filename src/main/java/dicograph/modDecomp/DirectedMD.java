@@ -50,7 +50,7 @@ import dicograph.utils.TimerLog;
  */
 public class DirectedMD {
 
-    private final static int overlapCodeBufferSize = 1000; // size of text buffer in the C code
+    private final static int overlapCodeBufferLimit = 3500; // max n for size of text buffer in the C code (16384)
     private final static String overlapTransferFile = "OverlapComponentProg/doNotDelete.txt";
 
     final SimpleDirectedGraph<Integer, DefaultEdge> inputGraph;
@@ -338,8 +338,8 @@ public class DirectedMD {
         }
 
         // I need to make sure that the program breaks if the char-Buffer would overflow // todo: edit C code to get rid of this.
-        if (nVertices > overlapCodeBufferSize / 3)
-            throw new IndexOutOfBoundsException("Error: adapt the size of the char buff[" + overlapCodeBufferSize +"] in OverlapComponentProg/main.cc and recompile.");
+        if (nVertices > overlapCodeBufferLimit)
+            throw new IndexOutOfBoundsException("Error: adapt the size of the char buff[" + 16384 +"] in OverlapComponentProg/main.c and recompile.");
 
         ArrayList<Integer> overlapComponentNumbers = dahlhausProcessDelegator(log);
 

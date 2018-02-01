@@ -37,7 +37,7 @@ public class Parameters {
 
     // Editing-Parameters with Default values:
     private long timeOut = 3600;
-    private int softThreshold = 1; // If no succesful edit found, discard edits with forbiddenSub-score <= this value - atm for my bad tests.
+    private int softThreshold = 0; // If no succesful edit found, discard edits with forbiddenSub-score  - shouldn't be used.
     private int hardThreshold = 0; // Exclude edges with a forbiddenSubgraph-score <= this threshold from the edge-edit-set.
     // prev: Force stop if forbiddenSub-Score <= this value during first run and use brute-force/branching/ILP in second run to complete.
     private double weightMultiplier = 1.0;
