@@ -197,18 +197,20 @@ public class MetaEditor {
             }
         }
         // output one best solution as .dot:
-        boolean done = false;
-        for(Solution solution : bestSolutions){
-            int cost = solution.getCost();
-            log.info(() -> solution.getType() + ": Found solution with " + cost + " edits: " + solution.getEdits());
-            log.fine(() ->"Edit-Graph: " + solution.getGraph());
-            if(!done && solution.getCost() == bestCost){
-                System.out.println("//Edits: " + solution.getEdits());
-                DOTExporter<Integer,DefaultEdge> exporter = new DOTExporter<>(new IntegerComponentNameProvider<>(), null, null);
-                exporter.exportGraph(solution.getGraph(), System.out);
-                done = true;
-            }
+        if(!p.isTest()) {
+            boolean done = false;
+            for (Solution solution : bestSolutions) {
+                int cost = solution.getCost();
+                log.info(() -> solution.getType() + ": Found solution with " + cost + " edits: " + solution.getEdits());
+                log.fine(() -> "Edit-Graph: " + solution.getGraph());
+                if (!done && solution.getCost() == bestCost) {
+                    System.out.println("//Edits: " + solution.getEdits());
+                    DOTExporter<Integer, DefaultEdge> exporter = new DOTExporter<>(new IntegerComponentNameProvider<>(), null, null);
+                    exporter.exportGraph(solution.getGraph(), System.out);
+                    done = true;
+                }
 
+            }
         }
         if(bestDistSolution != null){
             log.info("Best TT-Distance: " + df.format(bestTTDistance) + " for solution: " + bestDistSolution);

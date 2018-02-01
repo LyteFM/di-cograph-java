@@ -102,13 +102,13 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
         // Recognize all forbidden subgraphs and compute subgraph-scores for edits.
         HashMap<Edge,Integer> edgeToCount = new HashMap<>();
         Pair<Map<BitSet,ForbiddenSubgraph>,Map<BitSet,ForbiddenSubgraph>> badSubs = ForbiddenSubgraph.verticesToForbidden(this, edgeToCount,false, subgraphCounts);
-        log.fine(()->"Length 3:\n" + badSubs.getFirst());
-        log.fine(()->"Length 4:\n" + badSubs.getSecond());
+        log.finer(()->"Length 3:\n" + badSubs.getFirst());
+        log.finer(()->"Length 4:\n" + badSubs.getSecond());
         log.info(()->"Occurences for each Subgraph: " + subgraphCounts);
         // sort descending
         List<Map.Entry<Edge,Integer>> edgesToScore = new ArrayList<>(edgeToCount.entrySet());
         edgesToScore.sort( Comparator.comparingInt(e ->  -e.getValue()));
-        log.info("Edges by subgraph-score: " + edgesToScore.size() + "\n" + edgesToScore);
+        log.fine("Edges by subgraph-score: " + edgesToScore.size() + "\n" + edgesToScore);
 
 
 
@@ -148,7 +148,6 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
             List<WeightedEdge> currEdgeList = new LinkedList<>(); // just one edge
             List<WeightedEdge> allEdgesList = new LinkedList<>();
             Pair<Integer,List<WeightedEdge>> currentBestSolution = null;
-            List<WeightedEdge> edgesToRemove = new LinkedList<>(); // remove edits below threshold, if no successful edit found.
             int index, u,v, global_u_v,global_v_u, both_global;
             int currScore = badSubs.getFirst().size() + badSubs.getSecond().size();
             int glSubcount = currScore;
@@ -390,10 +389,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                             log.info(()->"Added best edit(s): " + addEdges + " edit-score: " + bestEditScore + ", weight: " + addEdges.getFirst().getWeight());
                             allEdgesList.addAll(addEdges);
                             currScore = bestEditScore;
-                            // if unsuccessful:
-                            if(correspondingSubgraphScore <= p.getSoftThreshold()){
-                                edgesToRemove.addAll(addEdges);
-                            }
+
 
                             edit(allEdgesList);
                             DirectedMD checkSizeMD = new DirectedMD(this, log, false);
@@ -496,13 +492,10 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
             if( !(!first && p.isUseGlobal()) ){
 
                 log.info(() -> "Processed all edits or reached hard threshold - no cograph-edit found!!!");
-                log.info(() -> "To remove (below soft threshold): " + edgesToRemove);
 
                 // ok if we're in step 1:
                 if (first) {
                     List<List<WeightedEdge>> res = new LinkedList<>();
-                    // remove those below soft threshold:
-                    allEdgesList.removeAll(edgesToRemove);
                     res.add(allEdgesList);
                     int editCost = 0;
                     for (WeightedEdge w : allEdgesList) {
