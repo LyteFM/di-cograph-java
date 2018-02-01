@@ -142,6 +142,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
         if(first && method.doLazyOnFirst() || !first && method.doLazyOnSecond(p.isUseGlobal())){
 
             int initialPrimeSize = primeNode.getNumChildren();
+            log.info(()->"Initial Prime size: " + initialPrimeSize);
             SimpleDirectedGraph<Integer,DefaultEdge> graphOfEditEdges = new SimpleDirectedGraph<>(DefaultEdge.class);
             ConnectivityInspector<Integer,DefaultEdge> pathFinder = new ConnectivityInspector<>(graphOfEditEdges);
             List<WeightedEdge> currEdgeList = new LinkedList<>(); // just one edge
@@ -418,10 +419,11 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                                 }
                                 return costToEdges;
 
-                            } else if ((initialPrimeSize / p.getLazyRestart() > primeSize /p.getLazyRestart()) ||
-                                    first && method.secondPrimeRun() && !p.isStopOnlyAtHardThreshold() && primeSize <= p.getBruteForceThreshold() ) {
+                            } else if ( first && ((initialPrimeSize / p.getLazyRestart() > primeSize /p.getLazyRestart()) ||
+                                    method.secondPrimeRun() && !p.isStopOnlyAtHardThreshold() && primeSize <= p.getBruteForceThreshold() )) {
                                 // primeSize <= p.getBruteForceThreshold() && first && !p.isStopOnlyAtHardThreshold() && method.secondPrimeRun() -> always.
                                 // exit point for brute force/ greedy ILP
+                                log.fine("Subgraph-Tree: " + MDTree.beautify(checkSizeTree.toString()));
                                 if(method.secondPrimeRun() && primeSize <= p.getBruteForceThreshold()) {
                                     log.info(() -> "Size of prime modules now below " + p.getBruteForceThreshold() + ". Ready for second run.");
                                 } else {

@@ -277,12 +277,12 @@ public class Main {
         List<Solution> solutions = testMeta.computeSolutionsForMethods();
         if(!solutions.isEmpty()){
 
-            if((p.isLazy()|| p.isBruteForce()) && p.isIlpMD()){
+            if((p.isLazy()|| p.isBruteForce())){
                 cost = testMeta.getGreedyCost();
-                dist = testMeta.getGreedyCorrectRun();
+                dist = testMeta.getGreedyTTDistance();
             } else {
-                cost = solutions.get(0).getCost();
-                dist = solutions.get(0).getTreeDistance(); // might _not_ be the best!
+                cost = testMeta.getBestCost();
+                dist = testMeta.getBestTTDistance(); // might _not_ be the best!
             }
 
             String solName = expPath + "_edit-cost_" + cost + "_TT-dist_" + new DecimalFormat("0.000000000").format(dist) + ".txt";

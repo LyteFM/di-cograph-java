@@ -310,7 +310,8 @@ class MDEditor {
 //                throw new IllegalStateException("Error: Multiple duplicates in edit: " + currentList);
 //            }
 //        }
-        currentList.removeAll(doubles.keySet());
+        if(currentList.removeAll(doubles.keySet()))
+            log.info("Removed doubles: " + doubles.keySet());
 
         // 1st: is this edit a solution?
         editGraph(workGraph,currentList); // no loops removed yet

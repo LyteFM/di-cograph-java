@@ -272,12 +272,12 @@ public class MetaEditor {
         int denom = 2;
 
         if(method.doLazyOnFirst()){
-            int prevPrimeSize = origTree.getMaxPrimeSize() +2; // else might not start with -start
-            int currPrimeSize = firstSol.getTree().getMaxPrimeSize() +1;
-
+            int prevPrimeSize = origTree.getMaxPrimeSize() + 2;
+            int currPrimeSize = firstSol.getTree().getMaxPrimeSize() + 1;
+            boolean tryNextOnce = false;
 
             // repeat and let prime size decrease.
-            while (currPrimeSize < prevPrimeSize){ // abort if no changes todo why infloop?
+            while (tryNextOnce || currPrimeSize < prevPrimeSize){ // abort if no changes todo why infloop?
 
                 prevPrimeSize = currPrimeSize;
                 firstEditor = new MDEditor(inputGraph,firstSol.getTree(), log, firstSol.getEdits(), method, p, true);
@@ -290,8 +290,14 @@ public class MetaEditor {
                     return firstSolns;
                 } else if( method.secondPrimeRun() && currPrimeSize <= p.getBruteForceThreshold()){
                     break;
+                } else if(currPrimeSize >= prevPrimeSize){
+                    tryNextOnce = !tryNextOnce; // only allow re-checking once.
+                    log.warning("Starting next run with prime-size: " + currPrimeSize + ", prev: " + prevPrimeSize);
+                } else {
+                    denom = denom * 2;
+                    tryNextOnce = false;
+                    log.info("Starting next run!");
                 }
-                denom = denom *2;
             }
 
         } else {
