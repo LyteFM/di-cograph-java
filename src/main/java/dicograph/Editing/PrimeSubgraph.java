@@ -177,13 +177,13 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                 if(p.isUseGlobal() && !first){
 
                     currEdgeList.clear();
-                    global_u_v = computeEditScoreForEgde(u,v,weight,currEdgeList).getFirst();
+                    global_u_v = computeEditScoreForEgde(u,v,weight,currEdgeList,true).getFirst();
                     log.fine("("+ u + ","  +v + ") global edit-score: " + global_u_v);
                     currEdgeList.clear();
-                    global_v_u = computeEditScoreForEgde(v,u,weight,currEdgeList).getFirst();
+                    global_v_u = computeEditScoreForEgde(v,u,weight,currEdgeList,true).getFirst();
                     log.fine("("+ v + ","  +u + ") global edit-score: "+ global_v_u);
                     //currEdgeList.add(new WeightedPair<>(u,v,weight)); v,u already there
-                    both_global = (int) Math.round(computeEditScoreForEgde(u,v,weight,currEdgeList).getFirst() + weight * p.getWeightMultiplier());
+                    both_global = (int) Math.round(computeEditScoreForEgde(u,v,weight,currEdgeList,true).getFirst() + weight * p.getWeightMultiplier());
                     log.fine("both global: "+ both_global);
                     currEdgeList.clear();
 
@@ -242,15 +242,15 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                         // compute local edit scores
                         currEdgeList.clear();
                         currEdgeList.addAll(allEdgesList);
-                        u_v_res = computeEditScoreForEgde(u, v, weight, currEdgeList);
+                        u_v_res = computeEditScoreForEgde(u, v, weight, currEdgeList, first);
                         log.fine("(" + u + "," + v + ") local edit-score: " + u_v_res.getFirst());
 
                         currEdgeList.clear();
                         currEdgeList.addAll(allEdgesList);
-                        v_u_res = computeEditScoreForEgde(v, u, weight, currEdgeList);
+                        v_u_res = computeEditScoreForEgde(v, u, weight, currEdgeList, first);
                         log.fine("(" + v + "," + u + ") local edit-score: " + v_u_res.getFirst());
 
-                        both_local = computeEditScoreForEgde(u, v, weight, currEdgeList);
+                        both_local = computeEditScoreForEgde(u, v, weight, currEdgeList, first);
                         int both_score = (int) Math.round(both_local.getFirst() + weight * p.getWeightMultiplier());
 
                         log.fine("Both local: " + both_local.getFirst());
@@ -325,16 +325,16 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                             if(!justOne) {
                                 if (one != null) {
                                     w1 = one.getWeight();
-                                    currGlobalScore = computeEditScoreForEgde(one.getFirst(), one.getSecond(), w1, currEdgeList).getFirst();
+                                    currGlobalScore = computeEditScoreForEgde(one.getFirst(), one.getSecond(), w1, currEdgeList, true).getFirst();
                                     currEdgeList.clear();
                                 }
                                 if (two != null) {
                                     w2 = two.getWeight();
-                                    currGlobalScore = computeEditScoreForEgde(two.getFirst(), two.getSecond(), w2, currEdgeList).getFirst();
+                                    currGlobalScore = computeEditScoreForEgde(two.getFirst(), two.getSecond(), w2, currEdgeList, true).getFirst();
                                 }
                                 if (one != null && two != null) {
                                     // for both
-                                    currGlobalScore = computeEditScoreForEgde(one.getFirst(), one.getSecond(), w1, currEdgeList).getFirst();
+                                    currGlobalScore = computeEditScoreForEgde(one.getFirst(), one.getSecond(), w1, currEdgeList, true).getFirst();
                                 }
                                 currEdgeList.clear();
                             }
@@ -514,6 +514,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
         if(first && method == EditType.ILP || !first && method == EditType.GreedyILP){
             CplexDiCographEditingSolver primeSolver = new CplexDiCographEditingSolver(
                     this, p, weightMatrix, log);
+            log.info(()-> "Starting ILP solver.");
             primeSolver.solve(); // empty if unsuccessful!
             int bestVal = Integer.MAX_VALUE; // bestVal = (int) primeSolver.getBestObjectiveValue()
             for (int i = 0; i < primeSolver.getEditingDistances().size(); i++) {
@@ -681,10 +682,10 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
 
             // resolve ties by using global.
             LinkedList<WeightedEdge> currEdgeList = new LinkedList<>();
-            int global_u_v = computeEditScoreForEgde(u,v,weight,currEdgeList).getFirst();
+            int global_u_v = computeEditScoreForEgde(u,v,weight,currEdgeList, true).getFirst();
             log.info(()->"("+ u + ","  +v + ") global edit-score: " + global_u_v);
             currEdgeList.clear();
-            int global_v_u = computeEditScoreForEgde(v,u,weight,currEdgeList).getFirst();
+            int global_v_u = computeEditScoreForEgde(v,u,weight,currEdgeList, true).getFirst();
             log.info(()->"("+ v + ","  +u + ") global edit-score: "+ global_v_u);
 
             editsByLocalScore.putIfAbsent(u_v_score,new LinkedList<>());
@@ -705,7 +706,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
     }
 
     // high score means bad edit.
-    private Pair<Integer,Boolean> computeEditScoreForEgde(int u, int v, double weight, List<WeightedEdge> currEdgeList){
+    private Pair<Integer,Boolean> computeEditScoreForEgde(int u, int v, double weight, List<WeightedEdge> currEdgeList, boolean useWeights){
         HashMap<Edge,Integer> edgeToCount = new HashMap<>();
         currEdgeList.add(new WeightedEdge(u,v,weight));
         edit(currEdgeList);
@@ -716,7 +717,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
         if(solved)
             log.info(()->"Prime edited to cograph with: " + currEdgeList);
         // todo: really???
-        if( weight > 1.5){
+        if( useWeights && weight > 1.5){
             badScore =  (int) Math.round( badScore + (p.getWeightMultiplier() * weight));
         }
         return new Pair<>(badScore,solved);
