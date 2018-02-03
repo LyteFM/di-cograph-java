@@ -492,6 +492,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
             if( !(!first && p.isUseGlobal()) ){
 
                 log.info(() -> "Processed all edits or reached hard threshold - no cograph-edit found!!!");
+                log.info(this::toString);
 
                 // ok if we're in step 1:
                 if (first) {

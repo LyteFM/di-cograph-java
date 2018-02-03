@@ -159,19 +159,19 @@ public class Main {
                         break;
                     }
                     System.out.println("Yay, " + i +" of " + mTrials + " test runs went successful!");
+                    log.info("ILP to correct greedy (when not optimal): " + ilpCostToLazyCorrects);
+                    log.info( "Best cost to greedy: " + bestCostToLazyCost);
+                    StringBuilder dists = new StringBuilder("Tree distances: ");
+                    for(double d : tripleDistances){
+                        dists.append(dFormat.format(d)).append(", ");
+                    }
+                    log.info( dists.toString() );
+                    log.info("Greedy failed " + lazyFailures + " times, worse than ILP " + lazyNotOptimal + " times.");
+                    log.info("Subgraph stats: " + subgraphCounts);
                 }
 
                 log.info("All generated Graphs:");
                 log.info(allGraphs.toString().substring(0,allGraphs.length()-1));
-                log.info("ILP to correct greedy (when not optimal): " + ilpCostToLazyCorrects);
-                log.info( "Best cost to greedy: " + bestCostToLazyCost);
-                StringBuilder dists = new StringBuilder("Tree distances: ");
-                for(double d : tripleDistances){
-                    dists.append(dFormat.format(d)).append(", ");
-                }
-                log.info( dists.toString() );
-                log.info("Greedy failed " + lazyFailures + " times, worse than ILP " + lazyNotOptimal + " times.");
-                log.info("Subgraph stats: " + subgraphCounts);
                 System.out.print("\u0007");
                 System.out.flush();
                 return;
