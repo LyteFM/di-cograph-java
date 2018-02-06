@@ -69,6 +69,14 @@ public class MetaEditor {
 
     // Original Graph and all the parameters
     // Calls MDEditor twice for each mode (firstRun & oldInputEdits as flag)
+
+    /**
+     * Creates an instance of the DCEdit-problem
+     * @param g G_0
+     * @throws IOException
+     * @throws ImportException
+     * @throws InterruptedException
+     */
     public MetaEditor(SimpleDirectedGraph<Integer,DefaultEdge> g, Parameters params, Logger logger)
             throws IOException, ImportException, InterruptedException{
         inputGraph = g;
@@ -249,13 +257,6 @@ public class MetaEditor {
         log.info("Starting Editor for method: " + method);
         MDEditor firstEditor = new MDEditor(inputGraph, origTree, log, method, p);
 
-        // compute time limits for each lazy step. First step: 1/2, next: 1/3 etc.
-//        double timeFracSum = 0;
-//        int maxDenom = nVertices / p.getLazyRestart() + 2;
-//        for(int i = 2; i <= maxDenom; i++){
-//            timeFracSum += 1.0 / i;
-//        }
-
         TreeMap<Integer, List<Solution>> firstSolns = firstEditor.editIntoCograph(0.5); // might be empty.
         subgraphCounts = firstEditor.getSubgraphStats();
 
@@ -279,7 +280,7 @@ public class MetaEditor {
             boolean tryNextOnce = false;
 
             // repeat and let prime size decrease.
-            while (tryNextOnce || currPrimeSize < prevPrimeSize){ // abort if no changes todo why infloop?
+            while (tryNextOnce || currPrimeSize < prevPrimeSize){ // abort if no changes.
 
                 prevPrimeSize = currPrimeSize;
                 firstEditor = new MDEditor(inputGraph,firstSol.getTree(), log, firstSol.getEdits(), method, p, true);
@@ -310,7 +311,7 @@ public class MetaEditor {
 
 
         // second call. Input graph original but firstTree edited.
-        log.info(()-> method + ": Starting second run - using brute force/ ILP now.");
+        log.info(()-> method + ": Starting second run.");
         MDEditor secondEdit = new MDEditor(inputGraph, firstTree, log, firstSol.getEdits(), method, p, false);
         TreeMap<Integer, List<Solution>> secondSolns = secondEdit.editIntoCograph(1.0 / p.getLazyRestart()); // don't want early timeout for brute force!!!
         if(secondSolns.isEmpty()){

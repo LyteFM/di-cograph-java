@@ -84,7 +84,7 @@ class CplexDiCographEditingSolver {
     CplexDiCographEditingSolver(SimpleDirectedGraph<Integer, DefaultEdge> inputGraph, Parameters params, double[][] weights, Logger logger) throws IloException {
         this.inputGraph = inputGraph;
         // want the vertex set of the graph in sorted order for easier display and to uniquely define the matrix
-        sortedVertexSet = new TreeSet<>(inputGraph.vertexSet()); // todo: not necessary!
+        sortedVertexSet = new TreeSet<>(inputGraph.vertexSet());
         vertexCount = sortedVertexSet.size();
 
         solver = new IloCplex();

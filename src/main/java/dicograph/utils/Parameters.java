@@ -209,7 +209,7 @@ public class Parameters {
                 "Behaviour of 2-step greedy methods:\n" +
                 " -hth (step 1), - glscore (step 2)\n\n";
 
-        String footer = "\nRefer to thesis for details."; // todo: page/diagram!!!
+        String footer = "\nRefer to thesis for details.";
         helpF.printHelp(usage,header,options,footer,false);
     }
 

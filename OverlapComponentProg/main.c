@@ -87,7 +87,7 @@ int main(int argc, char **argv)
 
     ts=0;
     while(!feof(in)) {
-      char buff[16384];
+      char buff[1000];
       fscanf(in,"%s",buff);
       if(atoi(buff)>=0) {
 	set[ts]=atoi(buff);

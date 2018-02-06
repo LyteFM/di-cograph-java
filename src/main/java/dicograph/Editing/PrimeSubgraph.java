@@ -51,7 +51,7 @@ import ilog.concert.IloException;
 
 public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
 
-    private static final boolean useMD = false; // If used for large n (>200), MD might be more efficient than subgraph computation.
+    private static final boolean useMD = false; // If used for large n (>100), MD might be more efficient than subgraph computation.
     private static final boolean fastRun = true; // More speed, but a now optimal edit between but not among the possible edits of the previous step will be skipped.
 
     private final Parameters p;
@@ -68,6 +68,12 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
     private int lazyReach;
 
 
+    /**
+     * Constructor of the subgraph of a prime module
+     * @param baseGraph G_0
+     * @param node prime node of MD tree
+     * @param type edit method
+     */
     public PrimeSubgraph(SimpleDirectedGraph<Integer,DefaultEdge> baseGraph, MDTreeNode node, Parameters params, Logger logger, EditType type){
         super(new ClassBasedEdgeFactory<>(DefaultEdge.class),true);
         base = baseGraph;
@@ -92,6 +98,19 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
 
     // an entry in the map means: if present -> remove, if not -> add.
     // Key > 0 => success! Key < 0 => not yet done, but ok after round 1; Key = 0 ->  empty => fail after step 2.
+
+    /**
+     *
+     * @param first yes for step one (lazy run) false for step two (ILP/Brute force/lazy without weights)
+     * @param subgraphCounts map for subgraph statistics
+     * @param relTime percentage of paremeter -t to be spent here
+     * @param veryFirstTime used for parameter -start
+     * @return Cost -> edge edits. Negative cost if not yet a solution.
+     * @throws InterruptedException
+     * @throws IOException
+     * @throws ImportException
+     * @throws IloException
+     */
     public TreeMap<Integer, List<List<WeightedEdge>>> computeEdits(boolean first, Map<ForbiddenSubgraph,Integer> subgraphCounts, double relTime, boolean veryFirstTime)
     throws InterruptedException, IOException, ImportException, IloException{
         TreeMap<Integer, List<List<WeightedEdge>>> costToEdges = new TreeMap<>(); // results
@@ -137,8 +156,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
         long timeOutSecs = (long) (p.getTimeOut() * relTime);
 
 
-        // todo: reqgl for lazy!!!
-        // Lazy method. Not for normal ILP! -> but yes on 1st run for greedy-ILP
+        // Entry point for Lazy method.
         if(first && method.doLazyOnFirst() || !first && method.doLazyOnSecond(p.isUseGlobal())){
 
             int initialPrimeSize = primeNode.getNumChildren();
@@ -169,7 +187,6 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
 
                 weight = subVertexToWeight[u] * subVertexToWeight[v];
                 log.fine("Subgraph-Score: " + edge.getValue() + ", weight: " + weight);
-                // determine the edit direction (Problem: what if both?)
                 currEdgeList.clear();
 
                 // if global: do global thing
@@ -281,7 +298,6 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                             }
                         }
 
-                        // todo: what if I reached the end??? -> set hth to 0 if still want to do this for 1s...
                         // how do I make sure it does the same as before when hard is reached?
                         // -> break after first found!
                         if(lazyReachCount >= lazyReach || edge.getValue() <= p.getHardThreshold() && editsByLocalScore.size() > 0 ) {
@@ -301,14 +317,13 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                         }
                     }
 
-                    // Analysis - choose the best! todo: but I need to save a cograph-edit!!!
+                    // Analysis - choose the lowest cost but save a cograph edit.
                     if(editsByLocalScore.size() > 0){
 
                         LinkedList<WeightedEdge> addEdges = new LinkedList<>();
                         double bestWeight = 100000;
                         Map.Entry<Edge,Integer> bestEntry = null;
                         int bestEditScore = editsByLocalScore.firstKey();
-                        int correspondingSubgraphScore = Integer.MAX_VALUE;
                         int bestGlobalScore = Integer.MAX_VALUE;
 
                         boolean justOne = editsByLocalScore.firstEntry().getValue().size() == 1;
@@ -347,7 +362,6 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                                 }
                                 bestGlobalScore = currGlobalScore;
                                 bestEntry = best.getFirst();
-                                correspondingSubgraphScore = bestEntry.getValue();
                                 bestWeight = w1 + w2;
                                 addEdges.clear();
                                 if(one != null)
@@ -417,8 +431,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
 
                             } else if ( first && ((initialPrimeSize / p.getLazyRestart() > primeSize /p.getLazyRestart()) ||
                                     method.secondPrimeRun() && !p.isStopOnlyAtHardThreshold() && primeSize <= p.getBruteForceThreshold() )) {
-                                // primeSize <= p.getBruteForceThreshold() && first && !p.isStopOnlyAtHardThreshold() && method.secondPrimeRun() -> always.
-                                // exit point for brute force/ greedy ILP
+                                // exit point for brute force/ greedy ILP/ restart.
                                 log.fine("Subgraph-Tree: " + MDTree.beautify(checkSizeTree.toString()));
                                 if(method.secondPrimeRun() && primeSize <= p.getBruteForceThreshold()) {
                                     log.info(() -> "Size of prime modules now below " + p.getBruteForceThreshold() + ". Ready for second run.");
@@ -435,7 +448,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                                 return costToEdges;
                             }
 
-                            // update graph
+                            // update graph of edits to skip paths
                             for(WeightedEdge added : addEdges){
                                 graphOfEditEdges.addVertex(added.getFirst());
                                 graphOfEditEdges.addVertex(added.getSecond());
@@ -443,7 +456,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                             }
 
                             if(fastRun){
-                                // keep the other possible entries, but continue on last index. todo: off by one!!!
+                                // keep the other possible entries, but continue on last index.
                                 int lastIndex = 0;
                                 LinkedList<Map.Entry<Edge,Integer>> copyEntries = new LinkedList<>();
                                 for(List <Pair<Map.Entry<Edge,Integer>, Pair<WeightedEdge, WeightedEdge>> > possEdits  : editsByLocalScore.values()){
@@ -536,7 +549,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                         u = wedge.getSecond();
                         v = wedge.getFirst();
                     }
-                    // this would be very bad for the heuristic. Does it happen? todo: grep -e the logs.
+                    // this would be very bad for the heuristic. Does it happen? todo: grep the logs.
                     if(bestVal == val && !edgeToCount.containsKey(new Edge(u,v)))
                         log.severe("Optimal edge " + wedge + "has subgraph-score 0!");
                 }
@@ -578,7 +591,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
                 boolean costStillValid = false;
 
                 int count = 0;
-                boolean success = false;
+                boolean success;
 
 
                 for (Set<Integer> edgeSubset : combinations) {
@@ -764,7 +777,7 @@ public class PrimeSubgraph extends SimpleDirectedGraph<Integer,DefaultEdge> {
         return addEdges;
     }
 
-    // this doesn't give the desired results.
+    // this doesn't give useful results.
     @Deprecated
     private int computePrimeScoreForEdge(int u, int v, double weight, List<WeightedEdge> currEdgeList, Logger log)
             throws InterruptedException,IOException,ImportException {

@@ -78,76 +78,6 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         return  (PartitiveFamilyTreeNode) super.removeThis();
     }
 
-    /*
-    PartitiveFamilyTreeNode deleteWeakAndrecoverMerged(DirectedMD data,
-                                                       BitSet[] outNeighbors, BitSet[] inNeighbors, List<PartitiveFamilyLeafNode> orderedLeaves, int[] positionInPermutation){
-        // Inspect bottom-up, as merging/deleting of lower nodes might change the upper ones.
-
-        Logger log = data.log;
-        PartitiveFamilyTreeNode currentChild = (PartitiveFamilyTreeNode) getFirstChild();
-        if(currentChild != null) {
-            while (currentChild != null) {
-                if(!currentChild.isALeaf()){
-                    // because currentChild might be deleted, I need to return the right sibling.
-                    currentChild = currentChild.reorderAllInnerNodes(data, outNeighbors, inNeighbors, orderedLeaves, positionInPermutation);
-                } else {
-                    currentChild = (PartitiveFamilyTreeNode) currentChild.getRightSibling();
-                }
-            }
-        }
-
-        PartitiveFamilyTreeNode myRightSibling = (PartitiveFamilyTreeNode) getRightSibling();
-
-        if (type.isDegenerate() || type == MDNodeType.ORDER) {
-            // According to Lem 20:
-            log.finer(() -> type + ": computing equivalence classes");
-            computeEquivalenceClassesAndReorderChildren(log, outNeighbors, inNeighbors, orderedLeaves, positionInPermutation);
-
-            // A module identified as order might be strong, but not have a transitive tournament
-            // i.e. it's not a strong order, but a prime with an order module as child
-            if (isModuleInG && type == MDNodeType.ORDER) {
-                // According to Lem 21:
-                log.finer(() -> type + ": computing fact perm of tournament " + inducedPartialSubgraph);
-                List<Pair<Integer, Integer>> perfectFactPerm = perfFactPermFromTournament.apply(inducedPartialSubgraph);
-                // results are real vertices in a new order (first) and their outdegree (second).
-                log.finer(() -> type + ": reordering and splitting merged modules according to permutation: " + perfectFactPerm);
-                // ok: if a merged module has been split, it's children are processed later
-                reorderAccordingToPerfFactPerm(perfectFactPerm, log);
-            }
-        }
-
-        if(!isModuleInG){
-            // According to Proof of Cor 19, a weak prime module's children don't constitute a merged module, only a complete
-            // module's children. Simply delete module weak modules: ->  Replace with their children.
-            // todo: if the parent node is doesn't have the same type (and esp.: is complete), that's not enough!!!
-            // E.g. a complete root might need to  be checked again!
-            log.finer(() -> "Weak module to remove: " + this);
-            PartitiveFamilyTreeNode parentNote = (PartitiveFamilyTreeNode) getParent();
-            if(parentNote.getType() == MDNodeType.ORDER){
-                // todo: here is the difficult case: weak prime below strong order.
-                // process först
-                // Doesn't do anything - root is a module ofc.
-                // parentNote.computeEquivalenceClassesAndReorderChildren(log, outNeighbors, inNeighbors, orderedLeaves, positionInPermutation);
-                log.finer(() -> type + ": computing fact perm of tournament " + parentNote.inducedPartialSubgraph);
-                List<Pair<Integer, Integer>> perfectFactPerm = perfFactPermFromTournament.apply(parentNote.inducedPartialSubgraph);
-                // results are real vertices in a new order (first) and their outdegree (second).
-                log.finer(() -> type + ": reordering and splitting merged modules according to permutation: " + perfectFactPerm);
-                // ok: if a merged module has been split, it's children are processed later
-                parentNote.reorderAccordingToPerfFactPerm(perfectFactPerm, log);
-            }
-            PartitiveFamilyTreeNode parentNode = removeThis();
-            MDNodeType oldType = parentNode.getType();
-            parentNode.determineNodeTypeForH(data); // also resets the induced subgraph
-            if (parentNode.getType() != oldType){
-                log.finer(() -> "Its parent was changed from " + oldType + " to " + parentNode.getType());
-            }
-        }
-
-        return myRightSibling;
-
-    }
-
-    */
 
     PartitiveFamilyTreeNode reorderAllInnerNodes(DirectedMD data,
                               BitSet[] outNeighbors, BitSet[] inNeighbors, List<PartitiveFamilyLeafNode> orderedLeaves, int[] positionInPermutation){
@@ -169,7 +99,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
         PartitiveFamilyTreeNode myRightSibling = (PartitiveFamilyTreeNode) getRightSibling();
 
         if (type.isDegenerate() || type == MDNodeType.PRIME) {
-            // According to Lem 20:
+            // According to Lem 20 - and also for prime seems to be necessary:
             log.finer(() -> type + ": computing equivalence classes");
             computeEquivalenceClassesAndReorderChildren(log, outNeighbors, inNeighbors, orderedLeaves, positionInPermutation); // still also splits.
 
@@ -310,159 +240,79 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
     }
 
 
-
-
-    private void handleWeakChildOfStrongOrder(List<Pair<Integer,Integer>> perfFactPerm, List<PartitiveFamilyLeafNode> initialPermutation, Logger log) {
-
-        int sz = perfFactPerm.size();
-        HashMap<Integer,Integer> positionInPermutation = new HashMap<>(sz*4/3);
-
-        for(int i = 0; i<sz; i++){
-            Pair<Integer,Integer> element = perfFactPerm.get(i);
-            int vertex = element.getFirst();
-            positionInPermutation.put(vertex, i);
-        }
-        PartitiveFamilyTreeNode[] orderedNodes = new PartitiveFamilyTreeNode[sz];
-
-        List<Integer> weakNodePositions = new LinkedList<>();
-        HashMap<Integer, RootedTreeNode> vertexPosToNode = new HashMap<>(); // or: posInPerm to ...
-
-        PartitiveFamilyTreeNode currentChild = (PartitiveFamilyTreeNode) getFirstChild();
-        if (currentChild != null) {
-            while (currentChild != null) {
-
-                int position = -1; // want an error if not found
-                int realV;
-                // computes the first position of any vertex in the child module
-                if (currentChild.isALeaf()) {
-                    realV = ((PartitiveFamilyLeafNode) currentChild).getVertex();
-                    position = positionInPermutation.get(realV);
-                } else {
-                    int skipCount = 0;
-                    for (realV = currentChild.vertices.nextSetBit(0); realV >= 0; realV = currentChild.vertices.nextSetBit(realV + 1)) {
-                        if (positionInPermutation.containsKey(realV)) {
-                            position = positionInPermutation.get(realV);
-                            break;
-                        } else {
-                            skipCount++;
-                        }
-                    }
-                    log.finer("Checked " + skipCount + " of " + currentChild.getNumChildren() + " vertices to find position " + position);
-                    if(!currentChild.isModuleInG){
-                        weakNodePositions.add(position);
-                    }
-                }
-
-                if (orderedNodes[position] != null) {
-                    throw new IllegalStateException("Vertex for position " + position + " already present for node\n" + toString());
-                }
-                orderedNodes[position] = currentChild;
-                vertexPosToNode.put(position,currentChild);
-
-                currentChild = (PartitiveFamilyTreeNode) currentChild.getRightSibling();
-            }
-        }
-        // ok, have the nodes in order now.
-
-        for(int wPos : weakNodePositions){
-            PartitiveFamilyTreeNode weakNode = orderedNodes[wPos];
-            // add the missing ones!
-            if(weakNode.le_X != weakNode.lc_X){
-                if(le_X - lc_X == 1){
-                    // just one leaf: simply add at first pos
-                    initialPermutation.get(lc_X).insertBefore(weakNode.getFirstChild());
-                } else {
-                    for (int i = lc_X; i < le_X; i++) {
-                        // create new ORDER node and add.
-                    }
-                }
-            }
-            if(weakNode.re_X != weakNode.rc_X){
-
-            }
-        }
-
-    }
-    /*
-    Draft: detection of merged
-    // detect merged modules here. According to Th3 of the fact.perm. paper, the "true" module appears consecutively
-        // => the true module is a transitive tournament, it has a total order.
-
-        // therefore, there is only room for mergers at start end end of the fact.perm.
-        // todo: unfortunately, weak module might be orderered nicely and contain a strong one
-        // idea: use outDegs and inDegs of REAL GRAPH -> not enough, need true adjacencies.
-
-        int outScore = sz - 1;
-        HashMap<Integer,Integer> primeMemberIndexInPerm = new HashMap<>();
-
-        for(int i = 0; i<sz; i++){
-            Pair<Integer,Integer> element = perfFactPerm.get(i);
-            int vertex = element.getFirst();
-            positionInPermutation.put(vertex, i);
-
-            int outDeg = element.getSecond();
-            if(outScore !=outDeg){
-                // if it's not the expected score, you're out. need to verify if that's enough, though.
-                log.finer(() -> "Detected merged vertex: " + vertex + ", outDegree " + outDeg );
-                primeMemberIndexInPerm.put(i,vertex);
-            }
-
-            outScore --;
-        }
-
-        // reordering....
-
-
-
-        boolean first = true;
-        boolean recoverMerged = !primeMemberIndexInPerm.isEmpty();
-        BitSet trueModule;
-        PartitiveFamilyTreeNode newNode;
-        trueModule = new BitSet();
-        newNode = new PartitiveFamilyTreeNode(trueModule, treeContext);
-
-        // ordering is still valid, but might need to split merged module.
-        ArrayList<PartitiveFamilyTreeNode> orderedChildren = new ArrayList<>(getNumChildren());
-        for(int i = 0; i< orderedNodes.length; i++){
-            PartitiveFamilyTreeNode node = orderedNodes[i];
-
-            if(recoverMerged){
-
-                if(primeMemberIndexInPerm.containsKey(i)){
-                    orderedChildren.add(node);
-                } else {
-                    newNode.addChild(node); // also removes it from the current node.
-                    if(node.isALeaf()){
-                        newNode.vertices.set(perfFactPerm.get(i).getFirst());
-                    } else {
-                        newNode.vertices.or( node.vertices );
-                    }
-
-                    if(first){
-                        orderedChildren.add(newNode);
-                        first = false;
-                    }
-                }
-
-            } else {
-                orderedChildren.add(node);
-            }
-        }
-
-        if (recoverMerged) {
-            type = MDNodeType.PRIME; // todo: determineNodeType.
-
-            newNode.type = MDNodeType.ORDER;
-            newNode.isModuleInG = true;
-            newNode.inducedPartialSubgraph = new DirectedInducedIntSubgraph<>(inducedPartialSubgraph.getBase(), newNode.vertices);
-            treeContext.moduleToTreenode.put(newNode.vertices,newNode);
-
-            addChild(newNode);
-            log.finer(() -> "new child created: " + newNode.toString());
-        }
-
-     */
-
+// not used
+//
+//    private void handleWeakChildOfStrongOrder(List<Pair<Integer,Integer>> perfFactPerm, List<PartitiveFamilyLeafNode> initialPermutation, Logger log) {
+//
+//        int sz = perfFactPerm.size();
+//        HashMap<Integer,Integer> positionInPermutation = new HashMap<>(sz*4/3);
+//
+//        for(int i = 0; i<sz; i++){
+//            Pair<Integer,Integer> element = perfFactPerm.get(i);
+//            int vertex = element.getFirst();
+//            positionInPermutation.put(vertex, i);
+//        }
+//        PartitiveFamilyTreeNode[] orderedNodes = new PartitiveFamilyTreeNode[sz];
+//
+//        List<Integer> weakNodePositions = new LinkedList<>();
+//        HashMap<Integer, RootedTreeNode> vertexPosToNode = new HashMap<>(); // or: posInPerm to ...
+//
+//        PartitiveFamilyTreeNode currentChild = (PartitiveFamilyTreeNode) getFirstChild();
+//        if (currentChild != null) {
+//            while (currentChild != null) {
+//
+//                int position = -1; // want an error if not found
+//                int realV;
+//                // computes the first position of any vertex in the child module
+//                if (currentChild.isALeaf()) {
+//                    realV = ((PartitiveFamilyLeafNode) currentChild).getVertex();
+//                    position = positionInPermutation.get(realV);
+//                } else {
+//                    int skipCount = 0;
+//                    for (realV = currentChild.vertices.nextSetBit(0); realV >= 0; realV = currentChild.vertices.nextSetBit(realV + 1)) {
+//                        if (positionInPermutation.containsKey(realV)) {
+//                            position = positionInPermutation.get(realV);
+//                            break;
+//                        } else {
+//                            skipCount++;
+//                        }
+//                    }
+//                    log.finer("Checked " + skipCount + " of " + currentChild.getNumChildren() + " vertices to find position " + position);
+//                    if(!currentChild.isModuleInG){
+//                        weakNodePositions.add(position);
+//                    }
+//                }
+//
+//                if (orderedNodes[position] != null) {
+//                    throw new IllegalStateException("Vertex for position " + position + " already present for node\n" + toString());
+//                }
+//                orderedNodes[position] = currentChild;
+//                vertexPosToNode.put(position,currentChild);
+//
+//                currentChild = (PartitiveFamilyTreeNode) currentChild.getRightSibling();
+//            }
+//        }
+//        // ok, have the nodes in order now.
+//
+//        for(int wPos : weakNodePositions){
+//            PartitiveFamilyTreeNode weakNode = orderedNodes[wPos];
+//            // add the missing ones!
+//            if(weakNode.le_X != weakNode.lc_X){
+//                if(le_X - lc_X == 1){
+//                    // just one leaf: simply add at first pos
+//                    initialPermutation.get(lc_X).insertBefore(weakNode.getFirstChild());
+//                } else {
+//                    for (int i = lc_X; i < le_X; i++) {
+//                        // create new ORDER node and add.
+//                    }
+//                }
+//            }
+//            if(weakNode.re_X != weakNode.rc_X){
+//
+//            }
+//        }
+//
+//    }
 
     /**
      * reorders the children of this vertex accound to the perfect factorizing permutation
@@ -546,9 +396,9 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
         for(int i = 0; i<n; i++){
 
-            int realVertexNo = VList.get(i); // unnecessary, if int-vertices from 0 to n-1. necessary, if arbitrary.
+            int realVertexNo = VList.get(i);
             Collection<Integer> cPartition = vertexToPartition.get(realVertexNo);
-            int partitionsIndex = partitions.indexOf(cPartition); // todo: ouch, linearity :/
+            int partitionsIndex = partitions.indexOf(cPartition);
 
             Set <DefaultEdge> outgoing = tournament.outgoingEdgesOf(realVertexNo);
             vertexToOutdegree.put(realVertexNo,outgoing.size());
@@ -838,7 +688,7 @@ public class PartitiveFamilyTreeNode extends RootedTreeNode {
 
         boolean first = true;
         int leftCutter = re_left;
-        int rightCutter = le_right; // todo: wie mit leerer Symdiff umgehen?
+        int rightCutter = le_right;
         for (int i = inSymDiff.nextSetBit(0); i >= 0; i = inSymDiff.nextSetBit(i+1)) {
             if(first) {
                 leftCutter = i;

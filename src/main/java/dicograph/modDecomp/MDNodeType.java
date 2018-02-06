@@ -66,26 +66,8 @@ public enum MDNodeType {
 					List<Integer> subSet = validSubsets.get(i);
 					result = SortAndCompare.checkModuleBruteForce(mainGraph, subSet,false);
 					if(!result.isEmpty()){
-						boolean stillValid = false;
-						/*
-						//if(node.isRoot()) {
-							// handle special case
-							HashSet<Integer> leaves = node.getDirectLeaves().stream().map( leaf -> {
-								//if(isDirected)
-								//	return ((PartitiveFamilyLeafNode) leaf).getVertex();
-								//else
-									return ((MDTreeLeafNode) leaf).getVertexNo();
-							}).collect(Collectors.toCollection( HashSet::new));
-							if(leaves.size() == subSet.size()){
-								leaves.removeAll(subSet);
-								stillValid = leaves.isEmpty();
-							}
-						//}
-						*/
-						if(!stillValid) {
-							builder.append("For vertices: ").append(subSet).append("\n").append(result);
-							//break; // not if I want all
-						}
+						builder.append("For vertices: ").append(subSet).append("\n").append(result);
+						//break; // not if I want all
 					}
 					if( i % 100000 == 0) {
 						System.out.println("verified subset " + (i+1) + " of " + validSubsets.size());

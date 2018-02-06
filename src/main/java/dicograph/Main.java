@@ -117,7 +117,6 @@ public class Main {
                     try {
                         editor = testRun(log, consoleHandler, command, nVertices, kDisturb, allGraphs);
 
-                        // todo: what if lazy fails???
                         // get the results for statistics
                         if(!command.isMDOnly()) {
 
@@ -158,7 +157,7 @@ public class Main {
                         System.err.println("Error occured after " + i + " successful runs.");
                         break;
                     }
-                    System.out.println("Yay, " + i +" of " + mTrials + " test runs went successful!");
+                    System.out.println("Completed " + i +" of " + mTrials + " test runs.");
                     log.info("ILP to correct greedy (when not optimal): " + ilpCostToLazyCorrects);
                     log.info( "Best cost to greedy: " + bestCostToLazyCost);
                     StringBuilder dists = new StringBuilder("Tree distances: ");

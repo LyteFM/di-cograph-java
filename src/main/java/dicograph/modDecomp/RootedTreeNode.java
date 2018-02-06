@@ -8,10 +8,8 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 
 import dicograph.utils.SortAndCompare;
-import dicograph.utils.Triple;
 
 /**
  *   This source file is part of the program for computing the modular
@@ -111,7 +109,6 @@ public class RootedTreeNode {
             currentChild.unmark();
 			currentChild = currentChild.getRightSibling();
 		}
-        // todo: assert numMarkedChildren == 0
         if (numMarkedChildren != 0)
             System.err.println("Illegal number of marked children after unmarking!!!");
     }

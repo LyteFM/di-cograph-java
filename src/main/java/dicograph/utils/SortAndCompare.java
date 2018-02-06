@@ -4,7 +4,6 @@ import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
@@ -34,17 +33,6 @@ import java.util.TreeSet;
 
 public class SortAndCompare {
 
-    public static void shuffleList(Integer[] input, SecureRandom random){
-
-        int size = input.length;
-
-        for (int i = size-1; i >= 0; i--) {
-            int newIndex = random.nextInt(i+1);
-            int tmp = input[i];
-            input[i] = input[newIndex];
-            input[newIndex] = tmp;
-        }
-    }
 
     public static List<List<Integer>> computeAllSubsets(List<Integer> inputSet){
         List<List<Integer>> retList = new LinkedList<>();
