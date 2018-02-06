@@ -1,7 +1,10 @@
 ## Directed Cograph Editing
 Java command-line tool to edit a directed graph with n vertices, vertices named 0 to n-1, into a di-cograph.
+
 Changes to all files that were not created by myself are denoted by comments starting with: "//F.L.".
+
 Changed were: ModDecomp.cpp /.h in MD, also Commons.h in FP_to_DMD; all files except SplitDirection, RecSubProblem and FactPermElement in src/java/dicograph/modDecomp.
+
 Supported input: .dot, .txt as matrix with 0/1 entries, .jtxt for JGraphT-toString() format. For .dot and .jtxt, the vertices must be labeled from 0 to n-1.
 
 
