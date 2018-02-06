@@ -117,7 +117,6 @@ public class Main {
                     try {
                         editor = testRun(log, consoleHandler, command, nVertices, kDisturb, allGraphs);
 
-                        // todo: what if lazy fails???
                         // get the results for statistics
                         if(!command.isMDOnly()) {
 
@@ -158,20 +157,20 @@ public class Main {
                         System.err.println("Error occured after " + i + " successful runs.");
                         break;
                     }
-                    System.out.println("Yay, " + i +" test runs went successful!");
+                    System.out.println("Completed " + i +" of " + mTrials + " test runs.");
+                    log.info("ILP to correct greedy (when not optimal): " + ilpCostToLazyCorrects);
+                    log.info( "Best cost to greedy: " + bestCostToLazyCost);
+                    StringBuilder dists = new StringBuilder("Tree distances: ");
+                    for(double d : tripleDistances){
+                        dists.append(dFormat.format(d)).append(", ");
+                    }
+                    log.info( dists.toString() );
+                    log.info("Greedy failed " + lazyFailures + " times, worse than ILP " + lazyNotOptimal + " times.");
+                    log.info("Subgraph stats: " + subgraphCounts);
                 }
 
                 log.info("All generated Graphs:");
                 log.info(allGraphs.toString().substring(0,allGraphs.length()-1));
-                log.info("ILP to correct greedy (when not optimal): " + ilpCostToLazyCorrects);
-                log.info( "Best cost to greedy: " + bestCostToLazyCost);
-                StringBuilder dists = new StringBuilder("Tree distances: ");
-                for(double d : tripleDistances){
-                    dists.append(dFormat.format(d)).append(", ");
-                }
-                log.info( dists.toString() );
-                log.info("Greedy failed " + lazyFailures + " times, worse than ILP " + lazyNotOptimal + " times.");
-                log.info("Subgraph stats: " + subgraphCounts);
                 System.out.print("\u0007");
                 System.out.flush();
                 return;
@@ -277,12 +276,12 @@ public class Main {
         List<Solution> solutions = testMeta.computeSolutionsForMethods();
         if(!solutions.isEmpty()){
 
-            if((p.isLazy()|| p.isBruteForce()) && p.isIlpMD()){
+            if(((p.isLazy()|| p.isBruteForce() )) && testMeta.getGreedyCost() < Integer.MAX_VALUE){
                 cost = testMeta.getGreedyCost();
-                dist = testMeta.getGreedyCorrectRun();
+                dist = testMeta.getGreedyTTDistance();
             } else {
-                cost = solutions.get(0).getCost();
-                dist = solutions.get(0).getTreeDistance(); // might _not_ be the best!
+                cost = testMeta.getBestCost();
+                dist = testMeta.getBestTTDistance();
             }
 
             String solName = expPath + "_edit-cost_" + cost + "_TT-dist_" + new DecimalFormat("0.000000000").format(dist) + ".txt";

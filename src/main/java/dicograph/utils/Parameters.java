@@ -37,21 +37,20 @@ public class Parameters {
 
     // Editing-Parameters with Default values:
     private long timeOut = 3600;
-    private int softThreshold = 1; // If no succesful edit found, discard edits with forbiddenSub-score <= this value - atm for my bad tests.
     private int hardThreshold = 0; // Exclude edges with a forbiddenSubgraph-score <= this threshold from the edge-edit-set.
     // prev: Force stop if forbiddenSub-Score <= this value during first run and use brute-force/branching/ILP in second run to complete.
     private double weightMultiplier = 1.0;
     private int solutionGap = 0; // all best solutions by default.
 
     private int lazyreach = -1;
-    private int lazyRestart = 9;
+    private int lazyRestart = 5;
     private int editStart = -1;
 
     // When to start brute force:
     private int bruteForceThreshold = 10;
     // when to stop brute force:
-    private int bruteForceGap = 0;
-    private int bruteForceLimit = 0;
+    private int bruteForceGap = 0; // max difference of subset-sizes that are solutions
+    private int bruteForceLimit = 0; // max size of the subset (if set > 0)
     private int maxResults = 10; // stops Brute force or ILP after finding this many possible solutions
 
 
@@ -174,9 +173,6 @@ public class Parameters {
             if(input.hasOption("bflimit")){
                 bruteForceLimit = Integer.parseInt( input.getOptionValue("bflimit"));
             }
-            if(input.hasOption("sth")){
-                softThreshold = Integer.parseInt( input.getOptionValue("sth"));
-            }
             if(input.hasOption("wm")){
                 weightMultiplier = Double.parseDouble( input.getOptionValue("wm"));
             }
@@ -213,7 +209,7 @@ public class Parameters {
                 "Behaviour of 2-step greedy methods:\n" +
                 " -hth (step 1), - glscore (step 2)\n\n";
 
-        String footer = "\nRefer to thesis for details."; // todo: page/diagram!!!
+        String footer = "\nRefer to thesis for details.";
         helpF.printHelp(usage,header,options,footer,false);
     }
 
@@ -352,10 +348,6 @@ public class Parameters {
 
     public boolean isSkipExistingVertices() {
         return input.hasOption("vskip"); // default: false
-    }
-
-    public int getSoftThreshold() {
-        return softThreshold;
     }
 
     public double getWeightMultiplier() {

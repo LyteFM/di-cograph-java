@@ -1,6 +1,12 @@
 ## Directed Cograph Editing
 Java command-line tool to edit a directed graph with n vertices, vertices named 0 to n-1, into a di-cograph.
+
+Changes to all files that were not created by myself are denoted by comments starting with: "//F.L.".
+
+Changed were: ModDecomp.cpp /.h in MD, also Commons.h in FP_to_DMD; all files except SplitDirection, RecSubProblem and FactPermElement in src/java/dicograph/modDecomp.
+
 Supported input: .dot, .txt as matrix with 0/1 entries, .jtxt for JGraphT-toString() format. For .dot and .jtxt, the vertices must be labeled from 0 to n-1.
+
 
 Copyright (C) 2018 Fynn Leitow
 
@@ -27,14 +33,14 @@ Comilation of the C++ sources (necessary)
 
 Compilation of the Java sources:
 
-- Java Development Kit 8 or higher
+- Java Development Kit 8
 - maven
-
-### Installation:
 
 command to install all requirements on ubuntu:
 
 sudo apt-get install openjdk-8-jdk cmake maven libboost-all-dev
+
+### Installation:
 
 **Compile the necessary C++/C sources. Use $ make -j x with x cores and 2GB RAM per core.**
 
@@ -61,11 +67,12 @@ cd ..
 
 **Compile the java sources with maven **
 
+
 mvn package
 
 mv target/DCEdit-1.0.jar .
 
-(the 'target' folder can be deleted)
+(The working directory for the .jar must me this folder. The 'target' folder can be deleted)
 
 
 **Run some examples.**

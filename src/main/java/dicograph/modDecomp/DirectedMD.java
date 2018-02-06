@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import dicograph.utils.SortAndCompare;
 import dicograph.utils.TimerLog;
@@ -50,7 +49,7 @@ import dicograph.utils.TimerLog;
  */
 public class DirectedMD {
 
-    private final static int overlapCodeBufferSize = 1000; // size of text buffer in the C code
+    private final static int overlapCodeBufferLimit = 250; // max n for size of text buffer in the C code (1000)
     private final static String overlapTransferFile = "OverlapComponentProg/doNotDelete.txt";
 
     final SimpleDirectedGraph<Integer, DefaultEdge> inputGraph;
@@ -60,7 +59,7 @@ public class DirectedMD {
     private SimpleGraph<Integer, DefaultEdge> G_s;
     private SimpleGraph<Integer, DefaultEdge> G_d;
 
-    private final boolean debugMode; // false for max speed, true for nicely sorted vertices etc.
+    private final boolean debugMode; // false for max speed, true for nicely sorted vertices and module verification
 
 
     public DirectedMD(SimpleDirectedGraph<Integer, DefaultEdge> input, Logger logger, boolean debugMode){
@@ -71,7 +70,7 @@ public class DirectedMD {
         nVertices = input.vertexSet().size();
         this.debugMode = debugMode;
 
-        // Simply: vertices have the numbers from 0 to n-1. Verify that in debug mode.
+        // vertices have the numbers from 0 to n-1. Verify that in debug mode.
         if(debugMode){
             TreeSet<Integer> sortedVertices = new TreeSet<>(input.vertexSet());
             int count = 0;
@@ -162,7 +161,7 @@ public class DirectedMD {
 
         // Step 2: T(G_d) and T(G_s) with algorithm for undirected graphs
 
-        // without null used Tedder's MD
+        // without null uses Tedder's MD
         MDTree treeForG_d = new MDTree(G_d, null, debugMode, log);
 //        if(treeForG_d.removeDummies()){
 //            log.warning("Removed dummy primes for G_d");
@@ -195,7 +194,7 @@ public class DirectedMD {
         // AND
         // Step 5: At each  2-complete node Y, select an arbitrary set S of representatives from the children.
         //         order the children of Y according to a perfect factorizing permutation of G[S].
-        treeForH.computeFactorizingPermutationAndReorderAccordingly(this, true );
+        treeForH.computeFactorizingPermutationAndReorderAccordingly(this );
         timeLog.logTime("Fact. Permutation");
 
 
@@ -338,8 +337,8 @@ public class DirectedMD {
         }
 
         // I need to make sure that the program breaks if the char-Buffer would overflow // todo: edit C code to get rid of this.
-        if (nVertices > overlapCodeBufferSize / 3)
-            throw new IndexOutOfBoundsException("Error: adapt the size of the char buff[" + overlapCodeBufferSize +"] in OverlapComponentProg/main.cc and recompile.");
+        if (nVertices > overlapCodeBufferLimit)
+            throw new IndexOutOfBoundsException("Error: adapt the size of the char buff[" + 1000 +"] in OverlapComponentProg/main.c and recompile.");
 
         ArrayList<Integer> overlapComponentNumbers = dahlhausProcessDelegator(log);
 
@@ -564,17 +563,7 @@ public class DirectedMD {
                 // Step 2: Take the initialized inclusion tree of σ(T_s, T_g) and test its nodes for membership in A* and B*
                 // Saving a HashMap from element of σ to P_a allows us to compute the R_U-equivalence classes.
 
-//                if (maximumMembers.size() == 1) {
-//                    // todo: I never get here, do I??
-//                    elementsOfA.put(setEntryOfSigma.getValue(), setEntryOfSigma.getKey());
-//                    elementOfAToP_a.put(setEntryOfSigma.getValue(), maximumMembers.stream().findFirst().get());
-//                    log.finer(logPrefix + "Added: " + setEntryOfSigma.toString() + " directly");
-//                    throw new IllegalStateException("Shouldn't happen.");
-//
-//                } else if (maximumMembers.size() == 0) {
-//                    log.warning(logPrefix + "Strange: no max member for " + setEntryOfSigma.toString());
-//                    throw new IllegalStateException("Shouldn't happen.");
-                if(maximumMembers.size() < 2){
+                if(maximumMembers.size() < 2){ // doesn't happen.
                     throw new IllegalStateException("Number of max. members: " + maximumMembers.size() + ", entries: " + maximumMembers);
                 } else {
                     // compute the LCA of all maximum members and check if it is complete.
@@ -622,28 +611,6 @@ public class DirectedMD {
         }
 
         return elementsOfA;
-    }
-
-    /**
-     * Attempt to fix small missing modules that are directly attached to the root of the undirected MD trees.
-     * Adds every subset of direct leaves of size >= 2.
-     * @param moduleToTreeNode
-     * @param t
-     */
-    private static void addCompleteRootSubsets(HashMap<BitSet,RootedTreeNode> moduleToTreeNode, MDTree t){
-        MDTreeNode rootNode = (MDTreeNode) t.root;
-        List<Integer> directLeafNumbers = rootNode.getDirectLeaves().stream()
-                .map( l -> (  (MDTreeLeafNode) l).getVertexNo() )
-                .collect(Collectors.toList());
-        List<List<Integer>> allSubsets = SortAndCompare.computeAllSubsets(directLeafNumbers).stream()
-                .filter( l -> l.size() > 1 ).collect( Collectors.toList() );
-        for( List<Integer> myList : allSubsets){
-            BitSet subSet = new BitSet();
-            for( int v : myList){
-                subSet.set(v);
-            }
-            moduleToTreeNode.putIfAbsent(subSet, rootNode);
-        }
     }
 
 }

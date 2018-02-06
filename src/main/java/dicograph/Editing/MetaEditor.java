@@ -69,6 +69,14 @@ public class MetaEditor {
 
     // Original Graph and all the parameters
     // Calls MDEditor twice for each mode (firstRun & oldInputEdits as flag)
+
+    /**
+     * Creates an instance of the DCEdit-problem
+     * @param g G_0
+     * @throws IOException
+     * @throws ImportException
+     * @throws InterruptedException
+     */
     public MetaEditor(SimpleDirectedGraph<Integer,DefaultEdge> g, Parameters params, Logger logger)
             throws IOException, ImportException, InterruptedException{
         inputGraph = g;
@@ -78,8 +86,8 @@ public class MetaEditor {
         DirectedMD modDecomp = new DirectedMD(inputGraph, log, false);
         origTree = modDecomp.computeModularDecomposition();
         greedyCorrectRun = 0;
-        bestTTDistance = Double.MAX_VALUE;
-        greedyTTDistance = Double.MAX_VALUE;
+        bestTTDistance = 12345678.9;
+        greedyTTDistance = 12345678.9;
         bestCost = Integer.MAX_VALUE;
         greedyCost = Integer.MAX_VALUE;
         greedySolution = null;
@@ -197,18 +205,20 @@ public class MetaEditor {
             }
         }
         // output one best solution as .dot:
-        boolean done = false;
-        for(Solution solution : bestSolutions){
-            int cost = solution.getCost();
-            log.info(() -> solution.getType() + ": Found solution with " + cost + " edits: " + solution.getEdits());
-            log.fine(() ->"Edit-Graph: " + solution.getGraph());
-            if(!done && solution.getCost() == bestCost){
-                System.out.println("//Edits: " + solution.getEdits());
-                DOTExporter<Integer,DefaultEdge> exporter = new DOTExporter<>(new IntegerComponentNameProvider<>(), null, null);
-                exporter.exportGraph(solution.getGraph(), System.out);
-                done = true;
-            }
+        if(!p.isTest()) {
+            boolean done = false;
+            for (Solution solution : bestSolutions) {
+                int cost = solution.getCost();
+                log.info(() -> solution.getType() + ": Found solution with " + cost + " edits: " + solution.getEdits());
+                log.fine(() -> "Edit-Graph: " + solution.getGraph());
+                if (!done && solution.getCost() == bestCost) {
+                    System.out.println("//Edits: " + solution.getEdits());
+                    DOTExporter<Integer, DefaultEdge> exporter = new DOTExporter<>(new IntegerComponentNameProvider<>(), null, null);
+                    exporter.exportGraph(solution.getGraph(), System.out);
+                    done = true;
+                }
 
+            }
         }
         if(bestDistSolution != null){
             log.info("Best TT-Distance: " + df.format(bestTTDistance) + " for solution: " + bestDistSolution);
@@ -247,13 +257,6 @@ public class MetaEditor {
         log.info("Starting Editor for method: " + method);
         MDEditor firstEditor = new MDEditor(inputGraph, origTree, log, method, p);
 
-        // compute time limits for each lazy step. First step: 1/2, next: 1/3 etc.
-//        double timeFracSum = 0;
-//        int maxDenom = nVertices / p.getLazyRestart() + 2;
-//        for(int i = 2; i <= maxDenom; i++){
-//            timeFracSum += 1.0 / i;
-//        }
-
         TreeMap<Integer, List<Solution>> firstSolns = firstEditor.editIntoCograph(0.5); // might be empty.
         subgraphCounts = firstEditor.getSubgraphStats();
 
@@ -272,12 +275,12 @@ public class MetaEditor {
         int denom = 2;
 
         if(method.doLazyOnFirst()){
-            int prevPrimeSize = origTree.getMaxPrimeSize() +2; // else might not start with -start
-            int currPrimeSize = firstSol.getTree().getMaxPrimeSize() +1;
-
+            int prevPrimeSize = origTree.getMaxPrimeSize() + 2;
+            int currPrimeSize = firstSol.getTree().getMaxPrimeSize() + 1;
+            boolean tryNextOnce = false;
 
             // repeat and let prime size decrease.
-            while (currPrimeSize < prevPrimeSize){ // abort if no changes todo why infloop?
+            while (tryNextOnce || currPrimeSize < prevPrimeSize){ // abort if no changes.
 
                 prevPrimeSize = currPrimeSize;
                 firstEditor = new MDEditor(inputGraph,firstSol.getTree(), log, firstSol.getEdits(), method, p, true);
@@ -290,8 +293,14 @@ public class MetaEditor {
                     return firstSolns;
                 } else if( method.secondPrimeRun() && currPrimeSize <= p.getBruteForceThreshold()){
                     break;
+                } else if(currPrimeSize >= prevPrimeSize){
+                    tryNextOnce = !tryNextOnce; // only allow re-checking once.
+                    log.warning("Starting next run with prime-size: " + currPrimeSize + ", prev: " + prevPrimeSize);
+                } else {
+                    denom = denom * 2;
+                    tryNextOnce = false;
+                    log.info("Starting next run!");
                 }
-                denom = denom *2;
             }
 
         } else {
@@ -302,7 +311,7 @@ public class MetaEditor {
 
 
         // second call. Input graph original but firstTree edited.
-        log.info(()-> method + ": Starting second run - using brute force/ ILP now.");
+        log.info(()-> method + ": Starting second run.");
         MDEditor secondEdit = new MDEditor(inputGraph, firstTree, log, firstSol.getEdits(), method, p, false);
         TreeMap<Integer, List<Solution>> secondSolns = secondEdit.editIntoCograph(1.0 / p.getLazyRestart()); // don't want early timeout for brute force!!!
         if(secondSolns.isEmpty()){
