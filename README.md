@@ -1,5 +1,5 @@
 ## Directed Cograph Editing
-Java command-line tool to edit a directed graph with n vertices, vertices named 0 to n-1, into a di-cograph.
+Java command-line tool to edit a directed graph with n vertices, vertices named 0 to n-1, into a di-cograph. This is the version that was included in my bachelor thesis. I will not continue development here, but I intend to separate the Modular Decomposition and rebuild it to be Java or C++ only.
 
 Changes to all files that were not created by myself are denoted by comments starting with: "//F.L.".
 
@@ -29,10 +29,6 @@ Comilation of the C++ sources (necessary)
 - boost 1.55 or higher
 - cmake
 - gcc
-
-Running the .jar (necessary):
-
-- Java Runtime Environment 8
 
 Compilation of the Java sources:
 
@@ -68,7 +64,7 @@ make -j 2
 
 cd ..
 
-**Add CPlex-jar to your local maven repository and compile. (change the path; for a different Cplex version you can either keep -Dversion or also change the POM.xml) **
+**Add CPlex-jar to your local maven repository and compile. (change the path; for a different Cplex version you can either keep -Dversion or also change the POM.xml)**
 
 mvn install:install-file -Dfile=/opt/ibm/ILOG/CPLEX_Studio1271/cplex/lib/cplex.jar -DgroupId=ilog -DartifactId=cplex -Dversion=12.7 -Dpackaging=jar
 
