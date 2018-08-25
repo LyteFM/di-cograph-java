@@ -42,6 +42,10 @@ sudo apt-get install openjdk-8-jdk cmake maven libboost-all-dev
 
 ### Installation:
 
+**Clone this project together with its submodules**
+
+git clone --recurse-submodules https://github.com/LyteFM/di-cograph-java.git
+
 **Compile the necessary C++/C sources. Use $ make -j x with x cores and 2GB RAM per core.**
 
 mkdir FP_to_DMD/build MD/build logs
