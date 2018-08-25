@@ -1,0 +1,9 @@
+[submodule "OverlapComponentsProg"]
+	path = OverlapComponentsProg
+	url = https://github.com/LyteFM/overlap-components
+[submodule "MD"]
+	path = MD
+	url = https://github.com/LyteFM/modular-decomposition
+[submodule "FP_to_DMD"]
+	path = FP_to_DMD
+	url = https://github.com/LyteFM/fact-perm-to-md
