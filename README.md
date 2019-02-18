@@ -8,7 +8,7 @@ Changed were: ModDecomp.cpp /.h in MD, also Commons.h in FP_to_DMD; all files ex
 Supported input: .dot, .txt as matrix with 0/1 entries, .jtxt for JGraphT-toString() format. For .dot and .jtxt, the vertices must be labeled from 0 to n-1.
 
 
-Copyright (C) 2018 Fynn Leitow
+Copyright (C) 2019 Fynn Leitow
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -43,51 +43,47 @@ sudo apt-get install openjdk-8-jdk cmake maven libboost-all-dev
 ### Installation:
 
 **Clone this project together with its submodules**
-
+```{bash}
 git clone --recurse-submodules https://github.com/LyteFM/di-cograph-java.git
+```
 
 (If you've already cloned it, you can get the submodules via:
-git submodule update --init --recursive)
+`git submodule update --init --recursive`)
 
 **Compile the necessary C++/C sources. Use $ make -j x with x cores and 2GB RAM per core.**
 
+```{bash}
 mkdir FP_to_DMD/build MD/build logs
-
 cd FP_to_DMD/build/
-
 cmake ..
-
 make -j 2
-
 cd ../../MD/build/
-
 cmake ..
-
 make -j 2
-
 cd ../../OverlapComponentProg/
-
 make -j 2
-
 cd ..
+```
 
 **Add CPlex-jar to your local maven repository and compile. (change the path; for a different Cplex version you can either keep -Dversion or also change the POM.xml)**
 
+```{bash}
 mvn install:install-file -Dfile=/opt/ibm/ILOG/CPLEX_Studio1271/cplex/lib/cplex.jar -DgroupId=ilog -DartifactId=cplex -Dversion=12.7 -Dpackaging=jar
-
 mvn package
-
 mv target/DCEdit-1.0.jar .
+```
 
 (The working directory for the .jar must me this folder. The 'target' folder can be deleted)
 
 **Run some examples. Specify the path to your Cplex-binaries-folder if using ILP**
 
+```{bash}
 java -Xmx2048m -jar DCEdit-1.0.jar -test 5 50 10 -MD
 
 java -Xmx2048m -jar DCEdit-1.0.jar -test 5 50 10 -lazy -gforce
 
 java -Xmx2048m -Djava.library.path=/opt/ibm/ILOG/CPLEX_Studio1271/cplex/bin/x86-64_linux -jar DCEdit-1.0.jar -test 5 50 10 -lazy -ilp  -v
+```
 
 
 **Important note on memory management:**
